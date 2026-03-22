@@ -15,6 +15,21 @@
 
 ---
 
+## CI quality checks
+
+Every push to this repository runs 4 automated checks:
+
+| Badge | What it validates |
+|---|---|
+| **Tests** | 78 pytest cases verify all 4 Python tools produce correct outputs — ASIL levels, ASPICE gap reports, CAL ratings, gate review RAG scores |
+| **Agents** | All 12 agent files are structurally valid — correct frontmatter fields, description long enough for Claude Code auto-routing, safety constraints enforced |
+| **Skills** | All 8 skill files are present and correctly formatted so they load automatically when trigger keywords appear |
+| **Lint** | Python code passes flake8 style checks — no unused imports, consistent style across all tools |
+
+If any check fails, the corresponding badge turns red and the cause is visible in the Actions tab.
+
+---
+
 ## What this is
 
 Automotive software development follows strict international standards —
