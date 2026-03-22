@@ -1,6 +1,3 @@
-# Reference folder — not part of the published project
-automotive-claude-code-agents-main/
-
 # Python
 __pycache__/
 *.py[cod]
