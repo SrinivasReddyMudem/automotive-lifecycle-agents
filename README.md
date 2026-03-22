@@ -1,143 +1,230 @@
 # Automotive Lifecycle Agents
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Built for Claude Code](https://img.shields.io/badge/Built%20for-Claude%20Code-7C3AED)](https://claude.ai/claude-code)
 [![Agents](https://img.shields.io/badge/Agents-12-green)]()
 [![Skills](https://img.shields.io/badge/Skills-8-orange)]()
+[![Standards](https://img.shields.io/badge/Standards-ISO%2026262%20%7C%20ASPICE%20%7C%20MISRA%20%7C%20ISO%2021434-blue)]()
 [![CI](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate.yml/badge.svg)](../../actions)
 
-**AI agents for automotive SW engineering roles — developer, tester, integrator, project lead.**
+> **12 AI agents purpose-built for automotive software engineering.**
+> Each agent thinks, responds, and formats output the way a domain expert would —
+> not as a general-purpose assistant answering from memory.
 
-A personal project testing how accurately AI agents perform when given proper
-automotive domain context across the full software development lifecycle.
-Background: SW developer, tester, integrator, and SW project lead experience.
+---
+
+## What this is
+
+Automotive software development follows strict international standards —
+ISO 26262 for functional safety, ASPICE for process quality, MISRA C for
+coding safety, ISO 21434 for cybersecurity. A generic AI assistant knows
+*about* these standards. These agents work *within* them.
+
+Each agent covers one engineering role in the automotive development lifecycle.
+Describe your problem in plain English. The agent classifies it, applies the
+right standard, and produces structured output a real engineer can act on.
+
+**Built from:** hands-on experience across developer, tester, integrator,
+and SW project lead roles in automotive ECU development.
 All examples use synthetic data only.
 
 ---
 
-## The key promise
+## The difference — one question, two responses
 
-Describe your problem in plain English.
-The right standards load automatically.
-**You never need to name ISO 26262, ASPICE, or MISRA. The agents detect what is needed from your words.**
+**Question asked:** *"CAN node goes bus-off after 3 minutes, only when engine running. Other nodes fine."*
+
+<table>
+<tr>
+<th width="50%">Generic AI response</th>
+<th width="50%">This agent's response</th>
+</tr>
+<tr>
+<td>
+
+> "There could be several reasons for bus-off.
+> Check your CAN bus wiring and termination.
+> Verify the baud rate settings are consistent
+> across all nodes. Look at the error counters
+> in your diagnostic tool and see if the
+> problem correlates with any specific event..."
+
+</td>
+<td>
 
 ```
-You type:    "My CAN node goes bus-off after exactly 3 minutes, only when engine running"
-You get:     Structured fault triage with ranked probable causes, TEC/REC analysis,
-             oscilloscope debug steps, and Automotive Ethernet context
+BUS ANALYSIS REPORT
+Protocol: CAN 500 kbit/s
+OSI Layer: L1 Physical (confirmed by pattern)
+TEC climb rate: ~1.4 TEC/s net
+Time to bus-off: 180 s → matches 3 min exactly
+
+Probable Causes (ranked):
+1. [HIGH] Alternator AC ripple on transceiver Vcc
+   after engine reaches steady state (~60 s warmup)
+   Test: oscilloscope Vcc pin, AC-coupled
+   Fail: ripple > 100 mV or dip below 4.5 V
+
+2. [HIGH] Ground potential shift under load
+   Test: DMM — ECU chassis GND to battery (−)
+   Fail: > 200 mV DC while engine running
+
+3. [MEDIUM] EMC from ignition/inverter switching
+   Test: scope CANH/CANL individually — look for
+   common-mode burst at ignition firing frequency
 ```
+
+</td>
+</tr>
+</table>
+
+The agent classifies the fault by OSI layer before diagnosing. It calculates
+the TEC climb rate from the symptom. It gives three ranked causes each with
+a specific measurement, a tool, and a pass/fail threshold. No guessing.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    You describe the problem                      │
+│          "bus-off after 3 min" / "ASIL-D PMHF too high"        │
+│          "ASPICE assessment in 3 weeks" / "MISRA Rule 21.3"     │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │  Claude Code reads your words
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Agent auto-routing                            │
+│  Keywords in your message → right agent activates automatically │
+│  No need to name standards. No need to pick an agent manually.  │
+└──────┬────────────┬──────────────┬────────────────┬────────────┘
+       │            │              │                │
+       ▼            ▼              ▼                ▼
+  Developer     Tester        Integrator       Project Lead
+  agents (3)    agents (3)    agents (3)       agents (3)
+       │            │              │                │
+       └────────────┴──────────────┴────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Skills layer (8 skills)                       │
+│  Agents load reference tables on demand — ASIL tables, MISRA    │
+│  rule index, ASPICE BP checklists, attack feasibility scores,   │
+│  AUTOSAR OS API, UDS service IDs, CAN error type reference      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 12 Agents — what each one produces
+
+### Developer (3 agents)
+
+| Agent | Activates when you mention | Produces |
+|---|---|---|
+| **embedded-c-developer** | embedded C, RTOS, watchdog, ISR, stack, DMA, ring buffer, Tricore, Cortex | MISRA-compliant code with per-rule annotation, worst-case stack depth calculation, windowed WDT kick window formula, TC3xx dual-core cache coherency pattern |
+| **autosar-bsw-developer** | AUTOSAR, SWC, BSW, RTE, ARXML, runnable, port, NvM, COM, CanIf | Full SWC design with exact RTE API names, port/interface definition, ASIL-B FFI partitioning note, DaVinci configuration parameter paths |
+| **misra-reviewer** | MISRA, rule violation, static analysis, Polyspace, deviation, QAC | Prioritised violation report (mandatory → required → advisory), compliant rewrite per rule, deviation justification template, root cause clusters |
+
+### Tester (3 agents)
+
+| Agent | Activates when you mention | Produces |
+|---|---|---|
+| **sw-unit-tester** | unit test, MC/DC, coverage, Unity, stub, ASIL test | Test plan with truth table, MC/DC independence pairs per ISO 26262-6 Table 13, actual Unity test code with assertions, coverage summary |
+| **sil-hil-test-planner** | SIL, HIL, dSPACE, CANoe, fault injection, SWE.5, SWE.6 | Full test plan with SIL vs HIL allocation, fault injection parameters (voltage ramp rates, sensor open/short), regression strategy by change type |
+| **regression-analyst** | regression, new failures, pass rate dropped, test delta | Failure clusters ranked by ASIL risk, commit-level change impact traceability, baseline HOLD/PROCEED recommendation, ASPICE SWE.4/5 impact |
+
+### Integrator (3 agents)
+
+| Agent | Activates when you mention | Produces |
+|---|---|---|
+| **can-bus-analyst** | CAN, bus-off, Ethernet, I2C, SPI, UART, SOME/IP, oscilloscope, TEC, NACK | OSI-layer classified fault analysis, quantified TEC climb rate, per-protocol debug tool selection guide, SOME/IP-SD timing diagnosis, pull-up resistor calculation |
+| **sw-integrator** | integration error, RTE error, linker error, ARXML, memory map | Root cause ranked diagnosis with AUTOSAR layer identification, release candidate baseline checklist, ASPICE SWE.5 impact note |
+| **field-debug-fae** | DTC, NRC, UDS session, flash failure, ECU not responding | Full DTC status byte 8-bit decode, NRC root cause analysis, UDS session sequence reconstruction, CAPL automated test pattern, EOL checklist |
+
+### Project Lead (3 agents + 1 gated)
+
+| Agent | Activates when you mention | Produces |
+|---|---|---|
+| **safety-and-cyber-lead** | HARA, ASIL, safety goal, TARA, FMEA, FTA, PMHF, cybersecurity | HARA with S/E/C justifications, ASIL determination, AIAG-VDA DFMEA 7-step, FTA with minimal cut sets, TARA with 5-factor attack feasibility, PMHF contributor breakdown |
+| **aspice-process-coach** | ASPICE assessment, gap analysis, work product, SWE.x, finding | RAG status table per process area, assessor finding prediction by BP number, formal finding response template (3-part), assessment day checklist |
+| **sw-project-lead** | project plan, change request, risk, OEM request, milestone, release | Quantified risk register (probability × impact score), CR record with working-day schedule delta, OEM escalation response draft |
+| **gate-review-approver** | `/gate-review` command only | Structured gate review report — never auto-triggers |
+
+---
+
+## 8 Skills — reference knowledge that loads automatically
+
+| Skill | Loads when you mention | Contains |
+|---|---|---|
+| **iso26262-hara** | ASIL, HARA, safety goal, hazard | Full ASIL determination table, SPFM/LFM/PMHF targets per ASIL, safety mechanism catalog |
+| **aspice-process** | ASPICE, assessment, SWE.x, gap | BP1–BP6 checklists for SWE.1–SWE.6, traceability matrix formats, work product naming |
+| **misra-c-2012** | MISRA, rule violation, static analysis | Top 15 violated rules with compliant rewrites, deviation template |
+| **iso21434-tara** | cybersecurity, TARA, CAL, OTA attack | 5-factor feasibility scoring table, STRIDE catalog, UN R155 threat list |
+| **autosar-classic** | AUTOSAR, SWC, BSW, RTE | Full OS/COM/NvM API reference, OIL configuration examples, SWC patterns |
+| **uds-diagnostics** | UDS, DTC, NRC, flash, diagnostic | All service IDs with session requirements, complete NRC table, flash sequence |
+| **can-bus-analysis** | CAN, bus-off, error frame, TEC | All 5 CAN error types, fault pattern table, TEC/REC rules |
+| **embedded-patterns** | embedded, RTOS, watchdog, ISR, stack | 5 RTOS patterns, interrupt handling, watchdog service pattern |
 
 ---
 
 ## Quick install
 
 ```bash
-# Install for a specific project
-git clone https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents .claude
-
-# Install globally for all Claude Code projects
+# Global install — agents available in all your Claude Code projects
 git clone https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents ~/.claude
 
-# Restart Claude Code — agents load automatically
+# Restart Claude Code (VS Code extension or claude CLI)
+# Agents activate automatically — no configuration needed
 ```
 
 Update anytime:
 ```bash
-git -C .claude pull
-```
-
-Remove anytime:
-```bash
-rm -rf .claude
+git -C ~/.claude pull
 ```
 
 ---
 
-## Four role examples
-
-### Developer
-```
-You type:   "Design a sender-receiver SWC for vehicle speed, ASIL-B required"
-
-You get:    AUTOSAR SWC design with port types, interface definition,
-            ARXML element names, runnable trigger config at 10ms,
-            ASIL-B freedom-from-interference note, MISRA compliance
-            considerations for the implementation
-```
-
-### Tester
-```
-You type:   "Generate unit tests for a saturating uint16 adder, ASIL-B, MC/DC"
-
-You get:    8 test cases covering all boundary values and branches,
-            branch coverage analysis, MC/DC mapping, stub requirements,
-            traceability to design reference, ASPICE SWE.4 note
-```
-
-### Integrator (FAE)
-```
-You type:   "Customer BMS fault P0A0F-00, -8C overnight, first occurrence"
-
-You get:    Structured triage report with 4 ranked probable causes,
-            physical inspection steps, freeze frame interpretation,
-            safety relevance note, escalation brief template
-```
-
-### Project Lead
-```
-You type:   "3 weeks to ASPICE assessment, SAD reviewed but not approved,
-            no traceability matrix, OTA feature added last week"
-
-You get:    Gap analysis with RAG status per SWE process area,
-            top 3 priority actions with effort estimate,
-            assessor finding prediction per gap, cybersecurity
-            impact note for the OTA feature addition
-```
-
----
-
-## Python tools
+## Python tools included
 
 ```bash
-# ASIL level calculator
+# Calculate ASIL from severity, exposure, controllability
 python tools/asil_calculator.py --severity S3 --exposure E4 --controllability C2
-# Output: ASIL C
+# → ASIL C
 
-# ASPICE gap checker
-python tools/aspice_checker.py --phase SWE4 \
-  --have "unit_test_spec,test_results,coverage_evidence"
-# Output: Gap report with risk levels and assessor questions
+# Check ASPICE readiness for a process area
+python tools/aspice_checker.py --phase SWE4 --have "unit_test_spec,test_results"
+# → Gap report with assessor risk per missing item
 
-# CAL level calculator
+# Calculate Cybersecurity Assurance Level
 python tools/cal_calculator.py --impact I3 --feasibility AF2
-# Output: CAL 2
+# → CAL 2
 
-# Gate review scorer
+# Score a gate review readiness
 python tools/gate_review_scorer.py --phase SOP \
-  --criteria "test_complete:pass,traceability:partial,safety_plan:pass,\
-  cm_baselines:fail,open_issues:partial"
-# Output: Scored readiness with RAG status
+  --criteria "test_complete:pass,traceability:partial,safety_plan:pass"
+# → Scored RAG status with blockers
 ```
 
 ---
 
-## What is inside
+## Standards this project covers
 
-| Component          | Count | What it covers                                          |
-|--------------------|-------|---------------------------------------------------------|
-| Agents             | 12    | Developer (3), Tester (3), Integrator (3), Lead (4)    |
-| Skills             | 8     | ISO 26262, ASPICE, MISRA, ISO 21434, AUTOSAR, UDS, CAN, Embedded |
-| Python tools       | 4     | ASIL calc, ASPICE checker, CAL calc, Gate scorer        |
-| Tests              | 3     | Full pytest coverage of all 4 tools                     |
-| Reference files    | 16    | Tables, templates, worked examples                      |
-
-**Standards covered:** ISO 26262 · ISO 21434 · AUTOSAR Classic/Adaptive ·
-ASPICE v3.1 · MISRA C:2012 · ISO 14229 (UDS) · CAN/CAN-FD · Automotive Ethernet
+| Standard | Area | Depth |
+|---|---|---|
+| **ISO 26262** | Functional Safety (automotive E/E systems) | HARA, ASIL, safety goals, DFMEA, FTA, FMEDA, PMHF, hardware metrics |
+| **ISO 21434** | Cybersecurity Engineering | TARA, attack feasibility, CAL, cybersecurity goals, UN R155 |
+| **ASPICE v3.1** | Software Process Assessment | SWE.1–SWE.6 base practices, PA 2.1/2.2, gap analysis, work products |
+| **MISRA C:2012** | Embedded C Coding Standard | Mandatory/required/advisory rules, deviations, static analysis review |
+| **AUTOSAR Classic** | ECU Software Architecture | SWC, BSW, RTE, COM, NvM, CanIf, OS API, OIL configuration |
+| **ISO 14229 (UDS)** | Unified Diagnostic Services | All service IDs, NRC codes, flash sequence, session management |
+| **ISO 11898** | CAN Bus | Error types, TEC/REC rules, bus-off recovery, bit timing |
+| **IEEE 802.3bw** | 100BASE-T1 Automotive Ethernet | PHY thresholds, SOME/IP, DoIP, TSN |
 
 ---
 
 ## Notes
 
 - All scenarios use synthetic data — no real company code or proprietary information
-- Safety-critical decisions always require review by a qualified engineer
-- This is a personal demonstration project, not a production safety tool
+- Safety and cybersecurity outputs require review and approval by a qualified engineer before use in any project
+- This is a personal project demonstrating AI agent accuracy for automotive SW engineering roles
