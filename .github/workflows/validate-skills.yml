@@ -1,0 +1,79 @@
+name: Skills
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-skills:
+    name: Validate skill files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate skill SKILL.md files
+        run: |
+          python - << 'PYEOF'
+          import os
+          import sys
+
+          SKILLS_DIR = "skills"
+          errors = []
+
+          for skill_name in os.listdir(SKILLS_DIR):
+              skill_path = os.path.join(SKILLS_DIR, skill_name)
+              if not os.path.isdir(skill_path):
+                  continue
+
+              skill_md = os.path.join(skill_path, "SKILL.md")
+              if not os.path.exists(skill_md):
+                  errors.append(f"{skill_path}/: Missing SKILL.md")
+                  continue
+
+              with open(skill_md, encoding="utf-8") as f:
+                  content = f.read()
+
+              if not content.startswith("---"):
+                  errors.append(f"{skill_md}: Missing YAML frontmatter")
+                  continue
+
+              end = content.find("---", 3)
+              if end == -1:
+                  errors.append(f"{skill_md}: Frontmatter not closed")
+                  continue
+              frontmatter = content[3:end]
+
+              for field in ["name:", "description:"]:
+                  if field not in frontmatter:
+                      errors.append(f"{skill_md}: Missing field: {field}")
+
+              # Description word count (min 40)
+              if "description:" in frontmatter:
+                  desc_start = frontmatter.find("description:")
+                  desc_text = frontmatter[desc_start:]
+                  word_count = len(desc_text.split())
+                  if word_count < 40:
+                      errors.append(
+                          f"{skill_md}: Description likely too short "
+                          f"({word_count} words approx)"
+                      )
+
+          if errors:
+              print("\nSkill validation FAILED:")
+              for e in errors:
+                  print(f"  ERROR: {e}")
+              sys.exit(1)
+          else:
+              skill_count = sum(
+                  1 for name in os.listdir(SKILLS_DIR)
+                  if os.path.isdir(os.path.join(SKILLS_DIR, name))
+              )
+              print(f"Skill validation PASSED — {skill_count} skills validated.")
+          PYEOF

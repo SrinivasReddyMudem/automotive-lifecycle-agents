@@ -1,0 +1,94 @@
+name: Agents
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-agents:
+    name: Validate agent frontmatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate agent files
+        run: |
+          python - << 'PYEOF'
+          import os
+          import sys
+          import re
+
+          AGENTS_DIR = "agents"
+          errors = []
+
+          for root, dirs, files in os.walk(AGENTS_DIR):
+              for fname in files:
+                  if not fname.endswith(".md"):
+                      continue
+                  fpath = os.path.join(root, fname)
+                  with open(fpath, encoding="utf-8") as f:
+                      content = f.read()
+
+                  # Check YAML frontmatter present
+                  if not content.startswith("---"):
+                      errors.append(f"{fpath}: Missing YAML frontmatter (must start with ---)")
+                      continue
+
+                  # Extract frontmatter
+                  end = content.find("---", 3)
+                  if end == -1:
+                      errors.append(f"{fpath}: Frontmatter not closed with ---")
+                      continue
+                  frontmatter = content[3:end]
+
+                  # Required fields
+                  for field in ["name:", "description:", "tools:", "maxTurns:"]:
+                      if field not in frontmatter:
+                          errors.append(f"{fpath}: Missing required frontmatter field: {field}")
+
+                  # Forbidden field
+                  if "model:" in frontmatter:
+                      errors.append(f"{fpath}: FORBIDDEN field 'model:' found in frontmatter")
+
+                  # gate-review-approver must have disable-model-invocation: true
+                  if "gate-review-approver" in fname:
+                      if "disable-model-invocation: true" not in frontmatter:
+                          errors.append(
+                              f"{fpath}: gate-review-approver must have "
+                              f"disable-model-invocation: true"
+                          )
+
+                  # Description word count check (min 50 words)
+                  desc_match = re.search(
+                      r"description:\s*\|(.+?)(?=\n\w|\ntools:|\nskills:|\nmaxTurns:|\n---)",
+                      frontmatter,
+                      re.DOTALL,
+                  )
+                  if desc_match:
+                      desc_text = desc_match.group(1)
+                      word_count = len(desc_text.split())
+                      if word_count < 50:
+                          errors.append(
+                              f"{fpath}: Description too short ({word_count} words, "
+                              f"minimum 50 for rich auto-routing)"
+                          )
+
+          if errors:
+              print("\nAgent validation FAILED:")
+              for e in errors:
+                  print(f"  ERROR: {e}")
+              sys.exit(1)
+          else:
+              agent_count = sum(
+                  1 for root, dirs, files in os.walk(AGENTS_DIR)
+                  for f in files if f.endswith(".md")
+              )
+              print(f"Agent validation PASSED — {agent_count} agents validated.")
+          PYEOF

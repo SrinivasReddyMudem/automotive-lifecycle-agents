@@ -1,10 +1,13 @@
 # Automotive Lifecycle Agents
 
+[![Tests](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/tests.yml/badge.svg)](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/tests.yml)
+[![Agents](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate-agents.yml/badge.svg)](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate-agents.yml)
+[![Skills](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate-skills.yml/badge.svg)](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate-skills.yml)
+[![Lint](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/lint.yml/badge.svg)](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/lint.yml)
 [![Built for Claude Code](https://img.shields.io/badge/Built%20for-Claude%20Code-7C3AED)](https://claude.ai/claude-code)
 [![Agents](https://img.shields.io/badge/Agents-12-green)]()
 [![Skills](https://img.shields.io/badge/Skills-8-orange)]()
 [![Standards](https://img.shields.io/badge/Standards-ISO%2026262%20%7C%20ASPICE%20%7C%20MISRA%20%7C%20ISO%2021434-blue)]()
-[![CI](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate.yml/badge.svg)](../../actions)
 
 > **12 AI agents purpose-built for automotive software engineering.**
 > Each agent thinks, responds, and formats output the way a domain expert would —
