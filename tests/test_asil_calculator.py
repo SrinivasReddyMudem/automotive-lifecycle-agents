@@ -17,7 +17,7 @@ import os
 # Make tools/ importable from tests/
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from tools.asil_calculator import lookup_asil, print_result, print_all_combinations
+from tools.asil_calculator import lookup_asil, print_result, print_all_combinations  # noqa: E402
 
 
 class TestAsilLookup:

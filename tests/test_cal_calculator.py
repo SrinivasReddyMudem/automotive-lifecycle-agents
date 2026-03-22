@@ -18,7 +18,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from tools.cal_calculator import lookup_cal, print_result, print_all_combinations, CAL_TABLE
+from tools.cal_calculator import lookup_cal, print_result, print_all_combinations, CAL_TABLE  # noqa: E402
 
 
 class TestCalLookup:

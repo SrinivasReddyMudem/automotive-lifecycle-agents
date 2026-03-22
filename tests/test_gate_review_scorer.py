@@ -11,7 +11,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from tools.gate_review_scorer import score_criteria, GATE_CRITERIA, STATUS_SCORE
+from tools.gate_review_scorer import score_criteria, GATE_CRITERIA  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from tools.aspice_checker import check_phase, print_phase_report, SWE_WORK_PRODUCTS
+from tools.aspice_checker import check_phase, print_phase_report, SWE_WORK_PRODUCTS  # noqa: E402
 
 
 class TestSwe4Complete:
