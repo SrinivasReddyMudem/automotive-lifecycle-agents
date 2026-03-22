@@ -336,6 +336,167 @@ sufficiently independent (no shared power supply, separate signal paths).
 
 ---
 
+## Design FMEA — AIAG-VDA 7-Step Method
+
+Design FMEA (DFMEA) identifies how a system element can fail, what effect it has,
+and what controls exist. For automotive use the AIAG-VDA harmonised methodology
+(2019). Output format per step:
+
+```
+DESIGN FMEA — [Item / System Element]
+ASIL: [level] | Revision: [n] | Date: [date]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1 — Planning and Preparation
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Scope: [system element + boundary]
+  Team: [SW, HW, System, Safety, Test — all required]
+  Baseline FMEA: [new / revision of FMEA-xxx-v1.x]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2 — Structure Analysis (system decomposition)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  System element     → subsystem            → component
+  [e.g. EPS ECU]     → [CAN handler SW]     → [can_receive() function]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 3 — Function Analysis
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Element ID | Element name | Function | Requirement
+  E-001      | can_receive()| Deliver steering torque CAN msg within 10 ms | SRS-012
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 4 — Failure Analysis
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  FM-ID | Failure Mode          | Failure Effect (local) | Failure Effect (end user)
+  FM-001| CAN msg not received  | Stale torque data used  | Incorrect assist command
+  FM-002| CAN msg received late | >10 ms latency          | Delayed steering response
+  FM-003| CAN msg data corrupt  | Wrong torque value used | Unintended assist direction
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 5 — Risk Analysis
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  FM-ID | Severity (S) | Cause of failure | Occurrence (O) | Prevention control | Detection (D) | AP
+  FM-001| 9            | Bus-off event    | 3              | CanSM recovery     | E2E monitor   | H
+  FM-002| 7            | High bus load    | 4              | Message priority   | Timeout DTC   | M
+  FM-003| 9            | EMC bit error    | 2              | CRC in CAN frame   | E2E CRC check | M
+
+  Severity rating (AIAG-VDA): 1=no effect, 9–10=safety/regulatory impact (no deviation)
+  Occurrence rating:           1=failure eliminated, 9–10=very high (>1 in 100)
+  Detection rating:            1=always detected before customer, 9–10=cannot detect
+  Action Priority (AP):
+    H (High):   Immediate action required — safety or regulatory severity S=9/10
+    M (Medium): Action recommended before release
+    L (Low):    Action at discretion of engineering team
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 6 — Optimisation (actions to reduce AP)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  FM-ID | Action               | Responsibility | Target date | New S/O/D | New AP
+  FM-001| Add E2E profile 5    | SW architect   | 2026-04-15  | 9/3/2     | M
+  FM-003| Add E2E CRC check    | SW developer   | 2026-04-01  | 9/2/2     | L
+
+  ASIL-D note: AP=H items with S=9/10 are hard blockers — must be closed
+  before functional safety sign-off. No waiver permitted.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 7 — Results Documentation
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Open AP=H: [n items] — release blocker
+  Open AP=M: [n items] — document residual risk and owner
+  Closed:    [n items]
+  FMEA document ID: DFMEA-[ECU]-v[X.Y] | Approved by: [Safety Eng] [Date]
+```
+
+### FMEA-MSR (Monitoring and System Response — software supplement)
+
+FMEA-MSR extends DFMEA for software monitoring and diagnostic functions.
+Use when the system has monitoring functions that must detect and respond to failures.
+
+```
+FMEA-MSR adds to each failure mode:
+  Monitoring function: [which SW function monitors for this failure?]
+  Diagnostic coverage: [% of failure mode instances detected]
+  Response time:       [max time from failure onset to safe-state entry]
+  Response action:     [what the system does when fault is detected]
+  Residual risk:       [failure modes not covered by monitoring]
+
+Example (synthetic, EPS ASIL-D):
+  Failure mode: Torque sensor stuck-at fault (FM-005)
+  Monitoring:   Plausibility check against motor current observer
+  DC achieved:  95% (out of range detected; slow drift may miss 5% of cases)
+  Response time: < 20 ms (watchdog-style check in 10 ms task)
+  Response:     Remove motor assist; set DTC; illuminate warning lamp
+  Residual:     5% of stuck-at cases (slow drift within plausible range)
+  PMHF contribution: 150 FIT × 5% residual = 7.5 FIT → feed into FMEDA table
+```
+
+---
+
+## FTA (Fault Tree Analysis) — Top-Down Hazard Decomposition
+
+FTA starts at the safety goal violation (top event) and decomposes to basic failure
+causes using AND/OR gates. Use for ASIL-C/D to confirm the safety architecture is
+sufficient and identify minimal cut sets.
+
+```
+FTA REPORT — [Safety Goal ID]
+Top Event: "[SG-001 violated: EPS fails to provide steering assist]"
+ASIL: D | Tool: [OpenFTA / Medini Analyze / manual]
+
+Tree notation:
+  OR gate  (▽): top event occurs if ANY input occurs
+  AND gate (△): top event occurs only if ALL inputs occur simultaneously
+  Basic event (○): primary failure with known failure rate (FIT from FMEDA)
+  Undeveloped event (◇): not further decomposed (analysis boundary)
+
+Example (synthetic, simplified):
+
+  TOP: EPS No Assist (SG-001 violated)
+    ▽ OR
+    ├─ (E1) SW control function fails       [OR gate]
+    │    ├─ (B1) MCU lockup: 0.5 FIT       [basic]
+    │    ├─ (B2) Stack overflow: QM          [basic]
+    │    └─ (B3) Runaway task (WDT miss): 0.2 FIT [basic]
+    │
+    ├─ (E2) Torque sensor fails             [OR gate]
+    │    ├─ (B4) Sensor open circuit: 10 FIT [basic]
+    │    └─ (B5) Sensor stuck value: 5 FIT  [basic]
+    │
+    └─ (E3) Motor driver fails AND monitoring fails [AND gate]
+         ├─ (B6) Motor driver fault: 20 FIT [basic]
+         └─ (B7) Monitor function fails: 1 FIT [basic]
+              → AND gate reduces E3 contribution to 20 × 1 / (total rate) = very small
+
+Minimal Cut Sets (MCS):
+  MCS-1: {B1} — single MCU lockup causes top event (no redundancy)
+  MCS-2: {B4} — single sensor open circuit causes top event
+  MCS-3: {B6, B7} — motor driver + monitor must both fail simultaneously
+
+MCS interpretation:
+  Single-event MCS (MCS-1, MCS-2) → ASIL-D requires these to have very low FIT or
+  a safety mechanism preventing the top event (watchdog for MCU, E2E for sensor)
+  Two-event MCS (MCS-3) → AND gate — acceptable if individual FITs are low enough
+
+Quantitative result (sum of top-event probability):
+  P(top) ≈ λ_B1 + λ_B4 + λ_B6×λ_B7×t
+           ≈ 0.5 + 10 + (20×1×8760h) = 10.5 FIT + 0.18 FIT ≈ 10.7 FIT
+  Target: < 10 FIT for ASIL-D SG → FAIL by 0.7 FIT
+
+  Action: reduce sensor open circuit contribution (add redundancy or raise DC)
+  Same approach as PMHF optimisation: Option A (redundancy) or Option B (DC improvement)
+```
+
+**ISO 26262 FTA requirements by ASIL:**
+| ASIL | FTA required? | Quantification required? |
+|------|--------------|--------------------------|
+| A    | Recommended  | No                       |
+| B    | Recommended  | No                       |
+| C    | Required     | No (qualitative sufficient) |
+| D    | Required     | Yes (quantitative — PMHF) |
+
+---
+
 ## Multi-audience output guidance
 
 When presenting safety analysis results, adapt depth to the audience:

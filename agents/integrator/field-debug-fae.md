@@ -266,3 +266,178 @@ Standards Reference:
 | 0x71 | transferDataSuspended | Data transfer interrupted; restart from 0x34 |
 | 0x72 | generalProgrammingFailure | Flash write or erase hardware failure |
 | 0x78 | requestCorrectlyReceivedResponsePending | ECU still processing; wait for final response |
+
+---
+
+## Diagnostic Test Automation — CAPL and Python Patterns
+
+### CAPL script pattern — automated UDS session sequence (CANoe)
+
+```capl
+/* Synthetic CAPL example — automated UDS flash programming sequence validation */
+/* Tests: session change → security access → request download → transfer → exit */
+
+variables {
+  msTimer g_timer;
+  byte    g_step = 0;
+  byte    g_seed[4];
+  byte    g_key[4];
+}
+
+/* Entry point: run after DUT powers up */
+on start {
+  setTimer(g_timer, 2000);  /* 2 s power-up delay before first request */
+}
+
+on timer g_timer {
+  switch (g_step) {
+
+    case 0:  /* Step 1: switch to programming session */
+      DiagSendRequest([0x10, 0x02]);
+      g_step = 1;
+      setTimer(g_timer, 500);
+      break;
+
+    case 1:  /* Step 2: request seed (security access level 0x11) */
+      DiagSendRequest([0x27, 0x11]);
+      g_step = 2;
+      setTimer(g_timer, 500);
+      break;
+
+    case 2:  /* Step 3: calculate and send key */
+      /* Seed received in on DiagResponse — key computed there */
+      DiagSendRequest([0x27, 0x12, g_key[0], g_key[1], g_key[2], g_key[3]]);
+      g_step = 3;
+      setTimer(g_timer, 500);
+      break;
+
+    case 3:  /* Step 4: request download */
+      DiagSendRequest([0x34, 0x00, 0x44,      /* dataFormatId, addressAndLengthFormatId */
+                       0x00, 0x00, 0x80, 0x00, /* memory address: 0x00008000 */
+                       0x00, 0x01, 0x00, 0x00]); /* memory size: 0x00010000 */
+      g_step = 4;
+      setTimer(g_timer, 1000);
+      break;
+
+    case 4:  /* Step 5: verify positive response received — see on DiagResponse */
+      write("CAPL: No response received to 0x34 — check session and security level");
+      g_step = 0;
+      break;
+  }
+}
+
+on DiagResponse {
+  byte service_id = this.GetByte(0);
+  byte nrc        = this.GetByte(2);
+
+  if (service_id == 0x7F) {  /* Negative response */
+    write("CAPL: NRC 0x%02X received for service 0x%02X at step %d",
+          nrc, this.GetByte(1), g_step);
+    /* Log NRC for triage — do not retry blindly */
+    g_step = 0;
+    return;
+  }
+
+  switch (g_step) {
+    case 2:  /* Received seed — compute key */
+      g_seed[0] = this.GetByte(2);
+      g_seed[1] = this.GetByte(3);
+      g_seed[2] = this.GetByte(4);
+      g_seed[3] = this.GetByte(5);
+      /* OEM key derivation — replace with actual algorithm */
+      g_key[0] = g_seed[0] ^ 0xA5;
+      g_key[1] = g_seed[1] ^ 0x5A;
+      g_key[2] = g_seed[2] ^ 0xA5;
+      g_key[3] = g_seed[3] ^ 0x5A;
+      write("CAPL: Seed received — key calculated");
+      setTimer(g_timer, 100);
+      break;
+
+    case 4:  /* 0x34 positive response: extract maxBlockLength */
+      write("CAPL: RequestDownload accepted — maxBlockLength = 0x%02X%02X",
+            this.GetByte(2), this.GetByte(3));
+      write("CAPL: Session sequence PASS — ready for 0x36 TransferData");
+      g_step = 0;
+      break;
+  }
+}
+```
+
+### EOL (End-of-Line) diagnostic test checklist
+
+Used in production line to verify ECU before vehicle assembly. Each item maps
+to a UDS service. Run in sequence — stop on first failure.
+
+```
+EOL DIAGNOSTIC TEST CHECKLIST — [ECU Name]
+==========================================
+Test order: execute top to bottom; failure at any step halts sequence
+
+Step | Service | Test description                    | Pass criterion
+─────┼─────────┼─────────────────────────────────────┼────────────────────────────
+ 1   │ 0x10 01 │ ECU responds in default session     │ Positive response 0x50 01
+ 2   │ 0x22 F1 80│ Read ECU software version (F180)   │ Returns valid version string
+ 3   │ 0x22 F1 8C│ Read ECU serial number (F18C)      │ Non-zero 17-char VIN format
+ 4   │ 0x22 F1 10│ Read supplier part number (F110)   │ Matches expected P/N for variant
+ 5   │ 0x19 01 FF│ Check for active DTCs              │ No DTC with status byte bit0=1
+ 6   │ 0x10 03 │ Switch to extended session          │ Positive response 0x50 03
+ 7   │ 0x31 01  │ Run self-test routine               │ Routine result = 0x00 (pass)
+ 8   │ 0x2E 06 01│ Write variant coding byte (DID 0x0601) │ Positive response 0x6E
+ 9   │ 0x22 06 01│ Read back variant coding           │ Matches written value
+10   │ 0x14 FF FF FF│ Clear all DTCs                  │ Positive response 0x54
+11   │ 0x19 02 FF│ Verify DTC count after clear       │ Zero confirmed DTCs
+12   │ 0x10 01 │ Return to default session           │ Positive response 0x50 01
+
+Pass: all 12 steps pass → ECU approved for vehicle assembly
+Fail: log step number, service, and NRC → report to quality station
+```
+
+### Python diagnostic automation pattern (pytest + python-udsoncan)
+
+```python
+# Synthetic example — pytest-based UDS validation
+# Uses python-udsoncan library over DoIP or CAN adapter
+
+import pytest
+import udsoncan
+from udsoncan.connections import PythonIsoTpConnection
+
+@pytest.fixture(scope="module")
+def uds_client():
+    """Establish UDS connection over ISO-TP (CAN) for test session."""
+    conn = PythonIsoTpConnection(
+        isotp_layer=isotp.CanStack(bus=can.interface.Bus("can0", bustype="socketcan"),
+                                   address=isotp.Address(isotp.AddressingMode.Normal_11bits,
+                                                         txid=0x7E0, rxid=0x7E8))
+    )
+    config = udsoncan.configs.default_client_config.copy()
+    config["request_timeout"] = 2.0
+    config["p2_timeout"] = 0.5
+    with udsoncan.Client(conn, request_timeout=2, config=config) as client:
+        yield client
+
+def test_ecu_responds_in_default_session(uds_client):
+    """ECU must respond to default session request at EOL station."""
+    response = uds_client.change_session(
+        udsoncan.services.DiagnosticSessionControl.Session.defaultSession)
+    assert response.positive, f"ECU did not respond to default session: {response.code}"
+
+def test_no_active_dtcs_at_eol(uds_client):
+    """No active DTCs allowed before vehicle assembly."""
+    uds_client.change_session(
+        udsoncan.services.DiagnosticSessionControl.Session.extendedDiagnosticSession)
+    response = uds_client.get_dtc_by_status_mask(0xFF)  # all status bits
+    active_dtcs = [dtc for dtc in response.dtcs
+                   if dtc.status.test_failed]  # bit 0 of status byte
+    assert len(active_dtcs) == 0, \
+        f"Active DTCs found at EOL: {[hex(d.id) for d in active_dtcs]}"
+
+def test_software_version_present(uds_client):
+    """SW version DID must return non-empty response."""
+    response = uds_client.read_data_by_identifier(0xF180)  # SW version number
+    assert response.positive
+    version_str = response.service_data.values[0xF180].raw_byte_list
+    assert len(version_str) > 0, "SW version DID returned empty data"
+    assert version_str != bytes([0xFF] * len(version_str)), \
+        "SW version DID returned all 0xFF — unprogrammed ECU"
+```
