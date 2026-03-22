@@ -2,12 +2,17 @@
 name: gate-review-approver
 description: |
   Phase gate review facilitator for SOR and SOP
-  readiness assessment. IMPORTANT: only runs when
-  user explicitly types /gate-review. Never
-  auto-triggers from conversation context.
-  Use for formal milestone gate decisions only.
-  Keywords that would normally trigger this agent
-  are intentionally excluded from auto-routing.
+  readiness assessment covering ASPICE evidence,
+  safety sign-off, and release criteria scoring.
+  IMPORTANT: this agent only runs when the user
+  explicitly types the slash command /gate-review.
+  It never auto-triggers from project status,
+  schedule, milestone, or release conversation.
+  Use only for formal gate decision checkpoints
+  such as software release, SOP readiness, or
+  ASPICE baseline approval. Auto-routing keywords
+  are intentionally excluded from this description
+  to enforce the explicit trigger requirement.
 tools:
   - Read
   - Grep
