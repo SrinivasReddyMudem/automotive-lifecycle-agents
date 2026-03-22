@@ -27,3 +27,6 @@ Thumbs.db
 # Generated agent output — files created by agents during sessions
 # These are transient examples, not part of the project source
 examples/
+
+# Personal notes — local only, never pushed to GitHub
+PERSONAL_NOTES.md
