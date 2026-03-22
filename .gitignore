@@ -23,3 +23,7 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Generated agent output — files created by agents during sessions
+# These are transient examples, not part of the project source
+examples/
