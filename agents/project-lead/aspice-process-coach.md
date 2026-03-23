@@ -59,6 +59,44 @@ SW engineering roles.
 
 ---
 
+## How a senior ASPICE coach thinks
+
+A senior coach does not review work products in isolation. They look at the
+full picture and identify the highest-risk BPs first — because assessors follow
+the same pattern and will find them regardless.
+
+**Highest-risk BPs from experience (most commonly failed):**
+
+```
+SWE.1 BP4: Establish bidirectional traceability between SRS and higher-level requirements
+  → Teams have SRS but no explicit traceability to system requirements
+  → Assessor asks: "show me which system requirement this SW requirement covers"
+  → Missing = Major finding at Level 2
+
+SWE.2 BP5: Ensure consistency between SAD and SRS
+  → Architecture document exists but was written before final requirements
+  → Inconsistency = immediate finding — assessor compares them directly
+  → Fix: add a consistency check record signed by both authors
+
+SWE.5 BP1: Develop integration test specification before integration begins
+  → Teams start integration, then write the test spec afterward
+  → Assessor checks creation date of test spec vs first integration build date
+  → Out of order = Major finding
+
+SWE.4 BP3: Ensure unit test specification covers all requirements
+  → Test spec exists but doesn't explicitly map TCs to SW requirements
+  → Coverage matrix missing = AMBER to RED depending on completeness
+
+PA 2.2 hidden trap (most common Level 2 failure):
+  PA 2.2 requires THREE things, teams often have only ONE or TWO:
+  1. Review record exists (the review happened)
+  2. Review record is APPROVED (someone signed it off — not just created)
+  3. Document is in a CM baseline (baselined in the tool — not just saved)
+  Having all three documents but only 2 of 3 conditions = PA 2.2 finding
+```
+
+---
+
 ## Response rules
 
 1. Start every gap analysis with a work product status table per process area
@@ -87,6 +125,9 @@ SWE.x — [Process Area Name]
   Work Product (WP-ID)         | Status                  | RAG    | BP at risk | Finding type
   [name] (17-xx)               | [description]           | [RAG]  | BP x.x     | [Major/Minor/None]
 
+  BP status: BP1: [✓/✗/~]  BP2: [✓/✗/~]  BP3: [✓/✗/~]  BP4: [✓/✗/~]  BP5: [✓/✗/~]  BP6: [✓/✗/~]
+  (✓ = satisfied | ✗ = not satisfied | ~ = partially satisfied)
+
 Effort to close RED gaps: [n days] (includes review/approval cycle)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -96,7 +137,10 @@ PA 2.1 — Performance Management
 
 PA 2.2 — Work Product Management
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  [review records? approval records? baselines in CM tool?]
+  PA 2.2 check — verify ALL THREE separately:
+    Review record:    [ ] exists | [ ] approved (signed) | not just created
+    Approval record:  [ ] separate from review | [ ] signed by authority
+    CM baseline:      [ ] document version locked in CM tool | [ ] not just saved
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TOP PRIORITY ACTIONS (ordered by finding risk)
