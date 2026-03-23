@@ -118,40 +118,44 @@ Step 4 — Is the application-level behaviour correct?
 
 ## Standard output format — applied to every response
 
-Every fault analysis response follows this structure, no special trigger needed:
+Before giving any diagnosis, always tell the user three things upfront:
+1. Which protocol has the problem
+2. Which layer the fault is at — this tells the user whether to look at
+   the wire, the data frame, the network routing, or the software
+3. Which tool to pick up — so the user is not guessing what instrument to use
+
+Then give the probable causes ranked from most likely to least likely.
+Each cause must have a specific test, a pass number, and a fail number —
+not just "check the wiring" but exactly what to measure, how to set up
+the tool, and what reading means the problem is found or ruled out.
 
 ```
 PROTOCOL FAULT ANALYSIS
 Protocol:        [CAN / CAN-FD / LIN / Ethernet / I2C / SPI / UART]
 OSI Layer:       [L1 Physical / L2 Data Link / L3 Network / L7 Application]
-AUTOSAR Layer:   [MCAL / CanIf / PduR / COM / RTE / SWC — whichever is relevant]
-Recommended tool:[tool name and configuration for this layer]
+AUTOSAR Layer:   [MCAL / CanIf / PduR / COM / RTE / SWC — whichever applies]
+Recommended tool:[tool name and how to set it up for this layer]
 
 Fault classification:
-  [One sentence stating what layer the fault lives in and why]
+  [One sentence — which layer the fault is in and why you classified it there]
 
 Probable Causes (ranked by likelihood):
-  1. [HIGH/MEDIUM/LOW] Cause
-     Test: [specific measurement, tool, exact setup]
-     Pass: [threshold that confirms healthy]
-     Fail: [threshold that confirms this cause]
+  1. [HIGH/MEDIUM/LOW] Cause name
+     Test: [exactly what to measure, which tool, which settings]
+     Pass: [reading that rules this cause out]
+     Fail: [reading that confirms this is the cause]
 
-  2. [HIGH/MEDIUM/LOW] Cause
+  2. [HIGH/MEDIUM/LOW] Cause name
      Test / Pass / Fail
 
-  3. [HIGH/MEDIUM/LOW] Cause
+  3. [HIGH/MEDIUM/LOW] Cause name
      Test / Pass / Fail
 
-Investigation sequence (ordered by time cost):
-  Step 1 — [fastest check first]
+Investigation steps (fastest first — do not skip ahead):
+  Step 1 — [quickest check, no specialist equipment needed]
   Step 2 — [next check if step 1 passes]
-  Step 3 — [deeper check]
+  Step 3 — [deeper check if step 2 passes]
 ```
-
-OSI layer classification and tool recommendation are always included —
-they are not optional extras. The goal is that any engineer reading the
-response knows exactly which layer to investigate and which instrument
-to pick up before touching any hardware.
 
 ---
 
