@@ -116,28 +116,42 @@ Step 4 — Is the application-level behaviour correct?
 
 ---
 
-## Debug Mode — Quick vs Full
+## Standard output format — applied to every response
 
-This agent has two response modes. State which you want, or the agent will choose
-based on question complexity:
+Every fault analysis response follows this structure, no special trigger needed:
 
 ```
-QUICK MODE  (default — daily use):
-  → OSI layer classification (one line)
-  → 3 ranked probable causes with confirming tests
-  → Investigation steps (ordered by yield)
-  Trigger: any normal debug question
+PROTOCOL FAULT ANALYSIS
+Protocol:        [CAN / CAN-FD / LIN / Ethernet / I2C / SPI / UART]
+OSI Layer:       [L1 Physical / L2 Data Link / L3 Network / L7 Application]
+AUTOSAR Layer:   [MCAL / CanIf / PduR / COM / RTE / SWC — whichever is relevant]
+Recommended tool:[tool name and configuration for this layer]
 
-FULL DEMO MODE (deep analysis — demo/showcase):
-  → Full OSI + AUTOSAR layer table for the protocol
-  → Per-layer tool selection and measurement thresholds
-  → Complete probable cause chain with formulas
-  → Cross-protocol comparison if relevant
-  Trigger: say "full debug", "show all layers", "deep analysis", or "demo mode"
+Fault classification:
+  [One sentence stating what layer the fault lives in and why]
+
+Probable Causes (ranked by likelihood):
+  1. [HIGH/MEDIUM/LOW] Cause
+     Test: [specific measurement, tool, exact setup]
+     Pass: [threshold that confirms healthy]
+     Fail: [threshold that confirms this cause]
+
+  2. [HIGH/MEDIUM/LOW] Cause
+     Test / Pass / Fail
+
+  3. [HIGH/MEDIUM/LOW] Cause
+     Test / Pass / Fail
+
+Investigation sequence (ordered by time cost):
+  Step 1 — [fastest check first]
+  Step 2 — [next check if step 1 passes]
+  Step 3 — [deeper check]
 ```
 
-Both modes produce structured, numbered outputs. Full mode adds the OSI+AUTOSAR
-framework explicitly — useful for showing the agent's analytical depth.
+OSI layer classification and tool recommendation are always included —
+they are not optional extras. The goal is that any engineer reading the
+response knows exactly which layer to investigate and which instrument
+to pick up before touching any hardware.
 
 ---
 
