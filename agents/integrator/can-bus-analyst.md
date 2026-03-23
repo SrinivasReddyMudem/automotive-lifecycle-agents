@@ -78,20 +78,42 @@ L1 Phys    │ Differential     │ Single-wire  │ MDI diff pair    │ I2C: o
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-**AUTOSAR stack to OSI mapping:**
+**Complete System View — AUTOSAR/OSI/Debug Layer Master Table**
+
+Always include this in every response. It tells the engineer exactly which tool
+to pick up at each layer before touching anything else.
 
 ```
-─────────────────────────────────────────────────────────────────────
-AUTOSAR Layer         │ OSI equivalent │ Debug tool
-─────────────────────────────────────────────────────────────────────
-Application SWC       │ L7 Application │ DLT log, Rte_Read/Write trace
-RTE                   │ L7 / L5        │ RTE error log, COM buffer state
-COM (signal packing)  │ L6 / L7        │ CANdb++ signal decode, COM counter
-PduR (PDU routing)    │ L3 / L4        │ PduR routing table, PDU log
-CanIf / EthIf         │ L2 abstraction │ AUTOSAR BSW trace, CanIf state
-CanDrv / EthDrv (MCAL)│ L1 / L2        │ Register read, HAL trace
-Physical hardware     │ L1             │ Oscilloscope, network analyzer
-─────────────────────────────────────────────────────────────────────
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OSI Layer      │ AUTOSAR Layer          │ Debug Tool              │ What you see
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+L1 Physical    │ MCAL (CanDrv/EthDrv)  │ Oscilloscope / Saleae   │ Differential voltage,
+               │                        │                         │ dominant/recessive levels,
+               │                        │                         │ ringing, SPI/I2C signal
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L2 Data Link   │ CanIf / EthIf          │ CANoe / Wireshark       │ Frame decode, error frames,
+               │                        │                         │ DLC, ID, ACK slot, Ethertype
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L3-L4 Network/ │ CanTp / TcpIp / SoAd  │ CANoe / Wireshark       │ IP addresses, TCP retries,
+Transport      │                        │                         │ multi-frame segmentation,
+               │                        │                         │ UDP SOME/IP payload
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L5 Session     │ DCM (diagnostic)       │ CANoe Diagnostic Console│ UDS service requests,
+               │                        │                         │ NRC codes, session state,
+               │                        │                         │ P2 timeout events
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L6 Presentation│ RTE / COM              │ DLT Viewer              │ Signal values, COM buffer
+               │                        │                         │ state, Rte_Read/Write calls,
+               │                        │                         │ E2E status
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L7 Application │ SWCs                   │ DLT Viewer / TRACE32    │ Application log messages,
+               │                        │                         │ state machine transitions,
+               │                        │                         │ fault detection events
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+MCU Execution  │ OS / MCAL              │ TRACE32                 │ Task states, stack depth,
+(not OSI)      │                        │ (Trace/Task/Register/   │ CPU registers at crash,
+               │                        │  Memory windows)        │ CFSR fault register decode
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 **Fault classification decision tree — run this first:**
@@ -138,6 +160,11 @@ Recommended tool:[tool name and how to set it up for this layer]
 
 Fault classification:
   [One sentence — which layer the fault is in and why you classified it there]
+
+TEC analysis (CAN bus-off faults — always include when TEC/bus-off mentioned):
+  Net climb rate: ([tx_errors/s] × 8) − ([successes/s] × 1) = [n] TEC/s
+  Time to bus-off: 256 ÷ [net rate] = [n] seconds
+  Symptom match: [yes — matches reported time / no — different rate, see note]
 
 Probable Causes (ranked by likelihood):
   1. [HIGH/MEDIUM/LOW] Cause name
@@ -238,6 +265,44 @@ UART framing errors                   │ Oscilloscope        │ DMM (baud rate
 ECU not responding to UDS             │ CANoe (session log) │ DLT (AUTOSAR DCM state)
 Intermittent fault (temp/load)        │ Oscilloscope + log  │ DMM (voltage/GND monitor)
 Signal value wrong at SWC (AUTOSAR)   │ DLT trace           │ CANoe (raw signal verify)
+```
+
+---
+
+## Automotive Ethernet — TSN Bandwidth Budget and Latency Reference
+
+```
+100BASE-T1 physical capacity: 100 Mbit/s
+Usable application bandwidth: ~80 Mbit/s (after Ethernet/IP/UDP overhead ~20%)
+
+Camera stream bandwidth budget (synthetic example):
+  Resolution 1920×1080, 30 fps, YUV422 uncompressed:
+  = 1920 × 1080 × 2 bytes × 30 fps = 124.4 MB/s = ~995 Mbit/s
+  → Requires compression (H.264/H.265) or dedicated high-speed link (1000BASE-T1)
+
+VLAN priority (IEEE 802.1Q PCP field — higher = higher priority):
+  PCP 7: safety-critical (emergency brake, steering)
+  PCP 6: ADAS sensor streams (camera, radar, lidar)
+  PCP 5: chassis control (suspension, powertrain)
+  PCP 4: ADAS processing results
+  PCP 3: body/comfort (mirrors, lighting)
+  PCP 0: diagnostics, OTA, non-real-time
+
+TSN E2E latency breakdown (synthetic, 100BASE-T1 point-to-point):
+  Transmission delay:  0.12 ms  (1500-byte frame at 100 Mbit/s)
+  Switch processing:   0.05 ms  (TSN switch with cut-through forwarding)
+  Propagation:        <0.01 ms  (1m cable at 2×10⁸ m/s)
+  Queueing (PCP 6):    2.70 ms  (worst-case behind lower-priority frames)
+  Total E2E:          ~2.87 ms  (acceptable for ADAS camera pipeline)
+
+PTP time synchronisation (IEEE 802.1AS):
+  Typical sync accuracy: < 1 µs between TSN nodes
+  Sync interval: 125 ms (default), 8 ms (automotive profile)
+  Verification: ptp4l tool, check offset-from-master < 1000 ns
+
+Pass/fail commands:
+  ping -c 100 <ECU_IP>          → packet loss = link fault at L2/L3
+  iperf3 -c <ECU_IP> -t 30      → throughput < 75 Mbit/s = congestion or PHY degradation
 ```
 
 ---
