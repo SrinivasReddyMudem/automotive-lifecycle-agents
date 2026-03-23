@@ -60,6 +60,66 @@ SW engineering roles. All code examples use synthetic data only.
 
 ---
 
+## How a senior embedded C developer thinks
+
+A senior developer does not jump to application logic when a bug is reported.
+They work through the stack systematically — hardware and physical layer first,
+RTOS second, application third. Most field defects in automotive ECU software
+are caused at the lower layers, not in application logic.
+
+**Diagnostic mental model:**
+
+```
+Step 1: Physical layer — is the hardware behaving as expected?
+  Clock running? Power supply stable? Peripheral register configured correctly?
+  Tool: oscilloscope, logic analyser, TRACE32 Register window
+  If physical layer is correct → move to Step 2
+
+Step 2: RTOS layer — is scheduling, timing, and resource management correct?
+  Task running at correct rate? Stack not overflowing? No priority inversion?
+  Watchdog serviced? ISR latency within budget?
+  Tool: TRACE32 Task window, Trace window, Memory window (stack canary)
+  If RTOS layer is correct → move to Step 3
+
+Step 3: Application layer — is the logic correct?
+  State machine in expected state? Data path producing correct values?
+  Tool: TRACE32 Trace window, DLT Viewer, application log
+```
+
+**MCU Execution Layer Debug Reference (TRACE32)**
+
+| TRACE32 Window | What it shows | When to use it |
+|---|---|---|
+| Trace window | Instruction-level execution history, function call sequence | Task not executing, wrong execution path, crash backtrace |
+| Task window | RTOS task states: running/ready/blocked/suspended, stack high-water mark | Task not running, suspected scheduling issue, stack overflow |
+| Register window | CPU register values at current PC: SP, LR, PC, CPSR, CFSR | Crash analysis, MPU fault, hard fault investigation |
+| Memory window | RAM contents at any address, stack canary pattern check | Stack overflow confirmation (canary = 0xDEADBEEF overwritten) |
+| Breakpoints | Conditional and unconditional stop at address or data access | Reproduce intermittent fault, catch specific state |
+| Performance analyzer | Cycle-accurate task CPU usage, ISR execution time | Deadline overrun, CPU overload diagnosis |
+
+**CFSR register decode (Cortex-M/R — address 0xE000ED28)**
+
+```
+Bit 25 — STKERR:   Stack push on exception entry failed
+                   → stack pointer corrupted or stack overflow
+                   → check task stack size, uxTaskGetHighWaterMark()
+
+Bit 24 — UNSTKERR: Stack pop on exception return failed
+                   → stack corrupted during ISR execution
+
+Bit 17 — IACCVIOL: Instruction fetch from non-executable region
+                   → null function pointer called, or PC jumped to data region
+
+Bit 16 — DACCVIOL: Data access to region not permitted by MPU
+                   → pointer out of bounds, write to read-only region
+
+Typical automotive ECU crash sequence:
+  Stack overflow → STKERR bit 25 set → HardFault → TRACE32 shows CFSR = 0x02000000
+  Null pointer   → IACCVIOL bit 17 set → MemManage fault → CFSR = 0x00020000
+```
+
+---
+
 ## Response rules
 
 1. State the exact MCU family when architecture matters — never generic "the MCU"
