@@ -51,6 +51,90 @@ SW engineering roles. All integration scenarios use synthetic examples only.
 
 ---
 
+## AUTOSAR Integration Fault Classification
+
+Classify every integration error by AUTOSAR layer before diagnosing.
+Wrong layer classification = wrong fix attempted first.
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Error Type              │ AUTOSAR Layer  │ Tool / View               │ Typical Root Cause
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"Port not connected"    │ RTE (SWC       │ DaVinci: System Design     │ Provider SWC missing from
+"no provider found"     │ composition)   │ port connection view       │ composition, or interface
+                        │                │                            │ name mismatch in ARXML
+────────────────────────┼────────────────┼───────────────────────────┼─────────────────────────────
+"Interface version      │ RTE            │ DaVinci: ARXML diff        │ SWC delivered with updated
+ mismatch"              │                │                            │ PortInterface definition,
+                        │                │                            │ consumer not updated
+────────────────────────┼────────────────┼───────────────────────────┼─────────────────────────────
+"BSW module config      │ BSW (CanIf /   │ DaVinci/tresos:            │ COM signal DLC changed,
+ inconsistency"         │ COM / PduR)    │ BSW configuration view     │ PduR routing table stale,
+                        │                │                            │ CanIf Pdu ID conflict
+────────────────────────┼────────────────┼───────────────────────────┼─────────────────────────────
+".rodata / .text        │ Linker         │ GCC/GHS .map file          │ New const array or lookup
+ section overflow"      │                │ sort by symbol size        │ table added without flash
+                        │                │                            │ reservation in linker script
+────────────────────────┼────────────────┼───────────────────────────┼─────────────────────────────
+"Stack overflow" /      │ OS / MCAL      │ TRACE32: Task window       │ Task stack sized too small
+"memory protection      │                │ Memory window (canary)     │ New call chain added without
+ violation"             │                │ TRACE32: CFSR register     │ stack depth recalculation
+────────────────────────┼────────────────┼───────────────────────────┼─────────────────────────────
+"undefined reference    │ Build / MCAL   │ GCC linker output          │ MCAL driver object not
+ to symbol"             │                │ grep symbol in .map        │ linked; missing lib in CMake
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## Integration Debug — What Each Tool Shows
+
+**DaVinci Configurator Pro / EB tresos (RTE and BSW issues)**
+```
+Port Connection view:
+  Red port icon = unconnected port  → provider missing or interface mismatch
+  Yellow warning = version mismatch → SWC ARXML version not matching composition
+
+ARXML text diff (for version-to-version delta):
+  grep "PortInterface" OldComposition.arxml > old_iface.txt
+  grep "PortInterface" NewComposition.arxml > new_iface.txt
+  diff old_iface.txt new_iface.txt
+  → Any line change = interface name/type change that breaks RTE generation
+
+BSW configuration consistency check:
+  COM: ComSignal DLC must match CanIf Pdu DLC exactly
+  PduR: every route must have a valid source and destination Pdu ID
+  CanIf: Pdu ID ranges must not overlap between different CAN controllers
+```
+
+**GCC/GHS Linker map file (memory map issues)**
+```
+How to find the largest .rodata symbols:
+  grep -A2 "\.rodata" camera_ecu.map | sort -k3 -rn | head -20
+  Output: symbol_name   section   size_hex   start_address
+  Largest symbol = almost always the root cause of overflow
+
+ROM/RAM budget tracking:
+  .text   = code (Flash)      → target < 90% of flash region
+  .rodata = const data (Flash)→ target < 90% of flash region
+  .data   = initialized vars (RAM + Flash load region)
+  .bss    = zero-init vars (RAM)
+  Headroom must be ≥ 10% on each region; < 5% = blocker for release
+```
+
+**TRACE32 (OS / stack / runtime integration issues)**
+```
+Stack overflow detection:
+  Memory window → navigate to task stack top address (from linker map)
+  Stack canary pattern (0xDEADBEEF or 0xA5A5A5A5): if overwritten = overflow
+  Task window → uxTaskGetHighWaterMark: 0 words remaining = overflow confirmed
+
+Runnable not triggered:
+  Trace window → filter on task name; check if runnable entry point appears
+  RTOS Alarm inspect → verify alarm period matches runnable activation period
+  If alarm exists but runnable missing: activation mode wrong (cyclic vs event)
+```
+
+---
+
 ## Response rules
 
 1. For any integration error: state what the error means at the AUTOSAR layer level before proposing a fix
