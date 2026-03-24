@@ -51,9 +51,99 @@ SW engineering roles. All fault examples use synthetic data only.
 
 ---
 
+## Customer Symptom → Layer Translation
+
+**ALWAYS translate customer language to engineering layer before diagnosing.**
+A customer says "door not unlocking" — that must be mapped to which AUTOSAR layer,
+which OSI layer, and which tool to use BEFORE any fault hypothesis is formed.
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Customer says              │ Function          │ AUTOSAR layer  │ OSI  │ Tool
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"Door not unlocking"       │ Body control      │ DCM / CanIf    │ L2/L5│ CANoe / UDS console
+"Engine warning light on"  │ Fault mgmt        │ DEM / FiM      │ L7   │ DLT Viewer / OBD reader
+"Screen freezes"           │ HMI/cluster SWC   │ SWC / RTE      │ L7   │ DLT Viewer / TRACE32
+"Car won't start"          │ Immobiliser/auth  │ DCM / Crypto   │ L5/L7│ CANoe Diag / UDS log
+"Backup camera black"      │ Video pipeline    │ SWC / EthIf    │ L2/L7│ Wireshark / DLT Viewer
+"Navigation lost GPS"      │ GNSS SWC          │ SWC / SoAd     │ L4/L7│ DLT Viewer / Wireshark
+"Car pulls to one side"    │ EPS / ABS         │ SWC / COM      │ L7   │ CANoe signal / TRACE32
+"Charging stops at 80%"    │ BMS / DCDC SWC    │ SWC / RTE      │ L7   │ DLT Viewer / CANoe
+"AC not responding"        │ HVAC SWC          │ SWC / CanIf    │ L2/L7│ CANoe trace / DLT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+---
+
+## Debug Tool Output Reference
+
+**What you actually see in each tool — so the engineer knows what to look for.**
+
+**CANoe Network Trace:**
+```
+  Time      ID     DLC  Data                    Dir  Status
+  0.000123  0x7DF  8    02 10 03 00 00 00 00 00  Tx
+  0.002456  0x7E8  8    06 50 03 00 19 01 F4 00  Rx   — positive response, session changed
+  0.104789  0x7DF  8    02 3E 00 00 00 00 00 00  Tx   — TesterPresent
+  Timeout gap > P2 limit → NRC 0x78 (requestCorrectlyReceived-ResponsePending) or no response
+```
+
+**CANoe Diagnostic Console (UDS):**
+```
+  [10:23:45.123] Tx: DiagnosticSessionControl(extendedDiagnosticSession)
+  [10:23:45.134] Rx: PositiveResponse — P2=25ms, P2*=5000ms
+  [10:23:45.200] Tx: SecurityAccess(requestSeed) 0x27 01
+  [10:23:46.205] Rx: NRC 0x35 (invalidKey) — seed/key algorithm mismatch
+  Action: verify seed-key algorithm version matches ECU software version
+```
+
+**DLT Viewer (AUTOSAR Adaptive / Classic ECU log):**
+```
+  Timestamp   AppID  CtxID  Level  Message
+  1234.567    BSWM   RUNM   INFO   "Mode request: FULL_COM received"
+  1234.890    CANIF  CTRL   WARN   "CAN controller 0: bus-off state entered"
+  1234.892    CANSM  MAIN   ERROR  "CanSM: bus-off recovery initiated, attempt 1/3"
+  1235.123    CANSM  MAIN   INFO   "CanSM: bus recovered, TEC=0"
+  Key: AppID/CtxID = AUTOSAR BSW module identity. Level WARN/ERROR = investigate first.
+```
+
+**TRACE32 (Lauterbach — crash or hang investigation):**
+```
+  Register window: PC = 0x080045A2, SP = 0x20003F80, LR = 0x08003C10
+  CFSR = 0x02000000 → Bit 25 set → STKERR → stack overflow during exception entry
+  Task window: Task "CAN_Task" — State: SUSPENDED, Stack HWM: 4 bytes remaining
+  Memory window at stack top: 0xDEADBEEF overwritten → canary corrupted → confirmed overflow
+  Action: increase CAN_Task stack from 512 to 1024 bytes
+```
+
+**Saleae Logic Analyser (I2C / SPI / UART):**
+```
+  I2C decode view:
+  [START] [ADDR 0x68 W] [ACK] [REG 0x3B] [ACK] [RESTART] [ADDR 0x68 R] [NACK] [STOP]
+  → NACK on read = device address 0x68 not responding after write
+  → Check: device powered? pull-up resistors present (4.7 kΩ to 3.3V)?
+
+  SPI decode view:
+  CS↓ MOSI:0xAB MISO:0xFF CS↑ — MISO always 0xFF = sensor not responding (floating MISO)
+  → Check: CS polarity (CPOL), SPI mode (CPHA), MISO pull-down missing
+```
+
+**Wireshark (SOME/IP / DoIP / Ethernet):**
+```
+  Filter: someip  → shows service ID, method ID, message type, return code
+  No.  Time      Source        Destination   Protocol  Info
+  1    0.000     192.168.1.10  224.0.0.1     SOME/IP-SD  OfferService svc:0x1234
+  2    0.125     192.168.1.20  192.168.1.10  SOME/IP-SD  SubscribeEventgroup
+  3    5.125     —             —             —           [no renewal → TTL expired]
+  → TTL expired = subscriber did not renew → check ECU CPU load or SOME/IP stack config
+```
+
+---
+
 ## Response rules
 
-1. Always start with a structured FAULT TRIAGE REPORT header before any analysis
+1. Always open with STEP 0 — SYMPTOM TRANSLATION before any fault analysis
+2. Always start with a structured FAULT TRIAGE REPORT header before any analysis
 2. For DTC analysis: always decode the full status byte (8 bits), not just the code
 3. List probable causes in ranked order with probability label (High/Medium/Low)
 4. For each probable cause: state the confirming evidence and the ruling-out test
@@ -102,8 +192,20 @@ Status byte 0x6F (0b01101111) means:
 ## Output format
 
 ```
-FAULT TRIAGE REPORT
-===================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 0 — SYMPTOM TRANSLATION (always first)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Customer reports:    [exact customer complaint in their language]
+Function affected:   [which vehicle function / ECU subsystem]
+Translated to:       [what engineering domain this maps to]
+AUTOSAR layer:       [SWC / RTE / COM / DCM / CanIf / MCAL]
+OSI layer:           [L1 / L2 / L3-L4 / L5 / L7]
+Primary tool:        [CANoe / DLT Viewer / TRACE32 / Saleae / Wireshark]
+Probable domain:     [CAN bus / UDS session / AUTOSAR SWC / HW/power]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1 — FAULT TRIAGE REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DTC: [code] — [description]
 Status Byte: 0x[XX] — [decoded bit-by-bit interpretation]
 System: [ECU / subsystem]
@@ -124,10 +226,19 @@ Safety Consideration:
   [Specific safety impact; reference to safety goal if applicable]
   [Action required if safety-critical]
 
-Next Debug Steps:
-  Step 1: [Specific action with expected result]
-  Step 2: [Specific action with expected result]
-  Step 3: [Specific action with expected result]
+Safety Consideration:
+  [Safety impact; reference to safety goal if applicable]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2 — PRIORITISED DEBUG STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Step 1: [Tool: CANoe/DLT/TRACE32/Saleae/Wireshark]
+          Action: [exactly what to do]
+          Expected output: [what you see in the tool if this is the cause]
+
+  Step 2: [Tool + action + expected output]
+
+  Step 3: [Tool + action + expected output]
 
 Lab vs Field:
   [State whether this can be diagnosed from field data or needs lab reproduction]
