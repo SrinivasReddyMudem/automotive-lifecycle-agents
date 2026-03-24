@@ -140,9 +140,9 @@ a specific measurement, a tool, and a pass/fail threshold. No guessing.
 
 | Agent | Activates when you mention | Produces |
 |---|---|---|
-| **embedded-c-developer** | embedded C, RTOS, watchdog, ISR, stack, DMA, ring buffer, Tricore, Cortex | MISRA-compliant code with per-rule annotation, worst-case stack depth calculation, windowed WDT kick window formula, TC3xx dual-core cache coherency pattern |
+| **embedded-c-developer** | embedded C, RTOS, watchdog, ISR, stack, DMA, ring buffer, Tricore, Cortex | MISRA-compliant code with per-rule annotation, worst-case stack depth calculation, windowed WDT kick window formula, TC3xx dual-core cache coherency pattern, TRACE32 MCU execution layer debug reference (Trace/Task/Register/Memory windows, CFSR register decode) |
 | **autosar-bsw-developer** | AUTOSAR, SWC, BSW, RTE, ARXML, runnable, port, NvM, COM, CanIf | Full SWC design with exact RTE API names, port/interface definition, ASIL-B FFI partitioning note, DaVinci configuration parameter paths |
-| **misra-reviewer** | MISRA, rule violation, static analysis, Polyspace, deviation, QAC | Prioritised violation report (mandatory → required → advisory), compliant rewrite per rule, deviation justification template, root cause clusters |
+| **misra-reviewer** | MISRA, rule violation, static analysis, Polyspace, deviation, QAC | Prioritised violation report (mandatory → required → advisory), compliant rewrite per rule, root cause cluster analysis with developer-intent interpretation, sprint effort estimate per cluster, deviation justification template |
 
 ### Tester (3 agents)
 
@@ -150,22 +150,22 @@ a specific measurement, a tool, and a pass/fail threshold. No guessing.
 |---|---|---|
 | **sw-unit-tester** | unit test, MC/DC, coverage, Unity, stub, ASIL test | Test plan with truth table, MC/DC independence pairs per ISO 26262-6 Table 13, actual Unity test code with assertions, coverage summary |
 | **sil-hil-test-planner** | SIL, HIL, dSPACE, CANoe, fault injection, SWE.5, SWE.6 | Full test plan with SIL vs HIL allocation, fault injection parameters (voltage ramp rates, sensor open/short), regression strategy by change type |
-| **regression-analyst** | regression, new failures, pass rate dropped, test delta | Failure clusters ranked by ASIL risk, commit-level change impact traceability, baseline HOLD/PROCEED recommendation, ASPICE SWE.4/5 impact |
+| **regression-analyst** | regression, new failures, pass rate dropped, test delta | Failure clusters ranked by ASIL risk, quantified ASIL-D/B/QM failure count per summary, commit-level change impact traceability, baseline HOLD/PROCEED recommendation with justification, ASPICE SWE.4/5 impact |
 
 ### Integrator (3 agents)
 
 | Agent | Activates when you mention | Produces |
 |---|---|---|
-| **can-bus-analyst** | CAN, bus-off, Ethernet, I2C, SPI, UART, SOME/IP, oscilloscope, TEC, NACK | OSI-layer classified fault analysis, quantified TEC climb rate, per-protocol debug tool selection guide, SOME/IP-SD timing diagnosis, pull-up resistor calculation |
-| **sw-integrator** | integration error, RTE error, linker error, ARXML, memory map | Root cause ranked diagnosis with AUTOSAR layer identification, release candidate baseline checklist, ASPICE SWE.5 impact note |
-| **field-debug-fae** | DTC, NRC, UDS session, flash failure, ECU not responding | Full DTC status byte 8-bit decode, NRC root cause analysis, UDS session sequence reconstruction, CAPL automated test pattern, EOL checklist |
+| **can-bus-analyst** | CAN, bus-off, Ethernet, I2C, SPI, UART, SOME/IP, oscilloscope, TEC, NACK | AUTOSAR/OSI/debug layer master table (7 layers, tool per layer), quantified TEC climb rate with time-to-bus-off arithmetic, TSN bandwidth budget and latency reference, per-protocol debug tool selection guide, SOME/IP-SD timing diagnosis |
+| **sw-integrator** | integration error, RTE error, linker error, ARXML, memory map | AUTOSAR integration fault classification table (RTE/BSW/Linker/Build layer), tool-specific debug reference (DaVinci port view, GCC linker map, TRACE32 stack canary), root cause ranked diagnosis, release candidate baseline checklist |
+| **field-debug-fae** | DTC, NRC, UDS session, flash failure, ECU not responding | Customer complaint → AUTOSAR/OSI layer translation (STEP 0 mandatory), fault triage with tool-specific expected outputs (CANoe trace, DLT Viewer, TRACE32, Saleae, Wireshark), DTC status byte 8-bit decode, NRC root cause analysis, UDS session reconstruction |
 
 ### Project Lead (3 agents + 1 gated)
 
 | Agent | Activates when you mention | Produces |
 |---|---|---|
 | **safety-and-cyber-lead** | HARA, ASIL, safety goal, TARA, FMEA, FTA, PMHF, cybersecurity | HARA with S/E/C justifications, ASIL determination, AIAG-VDA DFMEA 7-step, FTA with minimal cut sets, TARA with 5-factor attack feasibility, PMHF contributor breakdown |
-| **aspice-process-coach** | ASPICE assessment, gap analysis, work product, SWE.x, finding | RAG status table per process area, assessor finding prediction by BP number, formal finding response template (3-part), assessment day checklist |
+| **aspice-process-coach** | ASPICE assessment, gap analysis, work product, SWE.x, finding | RAG status table per process area with BP1–BP6 individual status, PA 2.2 hidden trap check (review record + approval record + CM baseline verified separately), assessor finding prediction by BP number, formal finding response template (3-part) |
 | **sw-project-lead** | project plan, change request, risk, OEM request, milestone, release | Quantified risk register (probability × impact score), CR record with working-day schedule delta, OEM escalation response draft |
 | **gate-review-approver** | `/gate-review` command only | Structured gate review report — never auto-triggers |
 

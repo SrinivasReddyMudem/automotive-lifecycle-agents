@@ -41,6 +41,11 @@ CAN driver, Ethernet driver, 100BASE-T1
 - Automotive Ethernet driver patterns with DMA
 - Stack sizing guidance
 - Unit test considerations per function
+- TRACE32 MCU execution layer debug reference (Trace, Task, Register, Memory windows)
+- CFSR register bit-level decode for crash analysis (STKERR, IACCVIOL, DACCVIOL)
+
+**Expert approach:** Physical layer first → RTOS second → application third.
+Never jumps to application logic before ruling out hardware or RTOS root causes.
 
 **Skills loaded automatically:** misra-c-2012, embedded-patterns
 
@@ -59,6 +64,9 @@ QAC, PC-lint
 - Exact rule ID with mandatory/required/advisory category
 - Violation explanation with synthetic code pattern
 - Compliant rewrite with explanation
+- Root cause cluster analysis: groups violations by underlying developer habit
+- Developer-intent interpretation per violation
+- Sprint effort estimate per cluster with recommended deadline per priority level
 - Deviation request template when compliant rewrite is not feasible
 
 **Note:** Read-only agent. Does not write files.
@@ -106,10 +114,15 @@ dSPACE, CANoe, integration test, SWE.5, SWE.6, qualification test
 change, coverage change, which tests changed, test comparison
 
 **What it produces:**
-- Summary delta: pass/fail change and coverage delta
-- Failure clusters ranked by risk
-- Investigation priority with approach guidance
-- Coverage delta explanation
+- Summary delta with quantified ASIL risk: ASIL-D affected / ASIL-B affected / QM count
+- Failure clusters ranked by ASIL risk — never lists without grouping
+- Probable cause linked to specific code change per cluster
+- Coverage delta: specific module and function, not just percentage
+- Flaky test identification with root cause
+- HOLD / PROCEED WITH EXCEPTIONS / PROCEED recommendation with justification
+- ASPICE SWE.4/5 impact: explicitly states if failures block a planned baseline
+
+**Expert approach:** Clusters before diagnosing. Traces every cluster to its commit.
 
 **Note:** Read-only analysis agent.
 
@@ -124,10 +137,13 @@ UDS session failure, NRC, freeze frame, ECU not responding, OBD fault, battery f
 DoIP session, DLT log
 
 **What it produces:**
-- Structured triage report with fault summary and system context
-- Ranked probable causes with confirming tests per cause
+- STEP 0 — SYMPTOM TRANSLATION: translates customer complaint to AUTOSAR/OSI layer,
+  primary debug tool, and probable domain before any diagnosis begins
+- STEP 1 — Fault triage with ranked causes and tool-specific expected outputs
+  (what you see in CANoe trace, DLT Viewer, TRACE32, Saleae, Wireshark)
+- STEP 2 — Prioritised debug steps with tool + expected output per step
+- DTC status byte 8-bit decode, NRC root cause analysis, UDS session reconstruction
 - Safety consideration flag if fault is safety-relevant
-- Next debug steps (concrete, not vague)
 - Escalation brief template for engineering escalation
 
 **Skills loaded automatically:** uds-diagnostics, can-bus-analysis
@@ -140,10 +156,12 @@ DoIP session, DLT log
 SWC port mismatch, RTE generation error, integration plan, SWE.5, release candidate
 
 **What it produces:**
-- RTE/build error diagnosis with ranked root causes
-- BSW configuration investigation steps
-- Integration plan structure per ASPICE SWE.5
-- Release candidate baseline checklist
+- AUTOSAR layer classification first — every error identified by layer before diagnosis
+- AUTOSAR Integration Fault Classification table (RTE/BSW/Linker/Build/OS)
+- Tool-specific debug reference: DaVinci port view, GCC linker map, TRACE32 stack canary
+- Ranked root cause candidates with confirming test per candidate
+- Release candidate baseline checklist (7 categories, never abbreviated)
+- ASPICE SWE.5 work product impact note
 
 **Skills loaded automatically:** autosar-classic, aspice-process
 
@@ -155,11 +173,13 @@ SWC port mismatch, RTE generation error, integration plan, SWE.5, release candid
 DBC, CANoe, PCAN, bit timing, SOME/IP, DoIP, automotive Ethernet, 100BASE-T1
 
 **What it produces:**
-- Error type classification and bus state determination
-- Fault analysis with ranked probable causes
-- Physical layer check guidance
-- Automotive Ethernet / SOME/IP / DoIP analysis
-- Concrete investigation sequence
+- AUTOSAR/OSI/Debug Layer master table (always included): 7 layers from
+  Physical/MCAL/Oscilloscope through Application/SWC/DLT and MCU/TRACE32
+- OSI-layer fault classification before any diagnosis
+- Mandatory TEC analysis block: net climb rate arithmetic + time-to-bus-off calculation
+- TSN bandwidth budget and latency reference for automotive Ethernet scenarios
+- Ranked probable causes with specific measurement, tool, pass/fail threshold
+- Concrete investigation sequence per fault pattern
 
 **Note:** Read-only analysis agent.
 
@@ -205,9 +225,16 @@ SWE.1 through SWE.6, assessor, gap analysis, Level 1/2/3
 
 **What it produces:**
 - Work product status table per SWE process area with RAG rating
+- BP1–BP6 individual status per process area
+- PA 2.2 hidden trap check: review record, approval record, and CM baseline
+  verified as three separate items
 - Top 3 priority actions with effort estimate
-- Assessor finding prediction per gap
+- Assessor finding prediction per BP number with Major/Minor severity
+- Formal 3-part finding response template (action / evidence / prevention)
 - Overall readiness assessment
+
+**Expert approach:** Focuses on highest-risk BPs from experience (SWE.1 BP4,
+SWE.2 BP5, SWE.5 BP1). PA 2.2 is the most frequent hidden trap at Level 2.
 
 ---
 
