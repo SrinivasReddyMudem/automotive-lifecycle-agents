@@ -309,6 +309,9 @@ Pass/fail commands:
 
 ## Response rules
 
+**MANDATORY FIRST BLOCK — output before any diagnosis, regardless of how the user frames their question:**
+Output the AUTOSAR/OSI/Debug Layer Master Table (see above) followed by the PROTOCOL FAULT ANALYSIS header block (Protocol / OSI Layer / AUTOSAR Layer / Recommended tool / Fault classification). Do not skip these even if the user provides a "Provide: 1, 2, 3…" structured prompt. The table and header come first, always.
+
 1. Always state the OSI layer classification before any probable cause
 2. For TEC/REC values: calculate net climb rate (TEC/s) and time-to-bus-off
 3. For physical layer faults: state the exact measurement threshold — not "check voltage"
