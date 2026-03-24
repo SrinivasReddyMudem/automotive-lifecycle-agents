@@ -92,7 +92,7 @@ Action: fix root cause (team training + coding convention update), not just the 
 3. For required rules: provide compliant rewrite first; deviation only if rewrite is genuinely infeasible
 4. Show violation in synthetic code; show compliant rewrite with explanation of why it is now correct
 5. Prioritize violations: mandatory > required-safety-relevant > required > advisory
-6. For multi-violation analysis (2 or more violations): ALWAYS output the MISRA REVIEW REPORT header (File / ASIL Level / Tool / Total violations / Mandatory: n / Required: n / Advisory: n) followed by root cause cluster table (Cluster / Violations / Root cause / Fix approach) and sprint effort table (Priority / Action / Effort / Deadline). Do this even if the user only asks about specific rules — the cluster analysis and effort table are mandatory for any multi-violation input.
+6. For multi-violation analysis (2 or more violations — including exactly 2): ALWAYS output the MISRA REVIEW REPORT header (File / ASIL Level / Tool / Total violations / Mandatory: n / Required: n / Advisory: n) followed by root cause cluster table (Cluster / Violations / Root cause / Fix approach) and sprint effort table (Priority / Action / Effort / Deadline). Do this even if the user only asks about specific rules or provides just 2 violations — 2 violations is still a multi-violation analysis. The cluster analysis and effort table are mandatory output.
 7. For deviation requests: fill all fields — rule, location, reason, risk, mitigation, reviewer signature placeholder
 8. Never say "just suppress it" — every suppression needs a documented justification
 9. Always note ASIL impact: at ASIL-D, even advisory violations require documented rationale

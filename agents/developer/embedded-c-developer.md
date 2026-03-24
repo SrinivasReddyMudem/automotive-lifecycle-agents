@@ -94,8 +94,35 @@ Step 3: Application layer — is the logic correct?
 | Task window | RTOS task states: running/ready/blocked/suspended, stack high-water mark | Task not running, suspected scheduling issue, stack overflow |
 | Register window | CPU register values at current PC: SP, LR, PC, CPSR, CFSR | Crash analysis, MPU fault, hard fault investigation |
 | Memory window | RAM contents at any address, stack canary pattern check | Stack overflow confirmation (canary = 0xDEADBEEF overwritten) |
+| **Watch window** | **Live variable values: global vars, struct members, state machine enum** | **Inspect current state machine state, signal value corruption, flag logic errors — set watchpoints to stop when variable changes** |
+| **Call stack window** | **Function call chain at current PC — backtrace from crash to root cause** | **Crash analysis — which function sequence led to the fault PC; identifies caller chain without ETM trace** |
+| **Peripheral register window** | **MCU peripheral registers: CAN ECR (TEC/REC), SPI status, DMA descriptor** | **CAN: read TEC/REC directly from MCU register (not from CANoe); DMA: verify descriptor pointer and transfer count** |
 | Breakpoints | Conditional and unconditional stop at address or data access | Reproduce intermittent fault, catch specific state |
 | Performance analyzer | Cycle-accurate task CPU usage, ISR execution time | Deadline overrun, CPU overload diagnosis |
+
+**Watch window — practical patterns:**
+```
+State machine inspection:
+  Add variable: g_CanSM_ChannelState[0]  → shows CanSM state enum directly
+  Add variable: g_WheelSpeed_FL_valid    → TRUE/FALSE — is signal valid?
+  Add variable: g_BatteryVoltage_mV      → current value — is it in range?
+  Watchpoint: set write watchpoint on g_CanSM_ChannelState[0]
+    → TRACE32 halts exactly when CanSM enters bus-off state
+
+Call stack window:
+  After crash: call stack shows e.g.
+    [0] HardFault_Handler  (crash handler)
+    [1] CanDrv_TransmitFrame  (function that caused fault)
+    [2] CanIf_Transmit
+    [3] PduR_CanIfRxIndication
+  → read bottom-up: PduR called CanIf called CanDrv → fault in CanDrv
+
+Peripheral register — CAN TEC/REC (TC387 example):
+  Memory window → address 0xF0200020  (CAN0_NODE0_ECR — synthetic address)
+  Byte 0: TEC (transmit error counter, 0–255)
+  Byte 1: REC (receive error counter, 0–127)
+  Read during engine running: if TEC climbing → confirm active error accumulation
+```
 
 **CFSR register decode (Cortex-M/R — address 0xE000ED28)**
 

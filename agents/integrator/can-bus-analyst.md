@@ -110,9 +110,12 @@ L7 Application │ SWCs                   │ DLT Viewer / TRACE32    │ Applic
                │                        │                         │ state machine transitions,
                │                        │                         │ fault detection events
 ───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
-MCU Execution  │ OS / MCAL              │ TRACE32                 │ Task states, stack depth,
-(not OSI)      │                        │ (Trace/Task/Register/   │ CPU registers at crash,
-               │                        │  Memory windows)        │ CFSR fault register decode
+MCU Execution  │ OS / MCAL / CanDrv     │ TRACE32                 │ Task states, stack depth,
+(not OSI)      │                        │ Watch window:           │ CPU registers at crash,
+               │                        │  CanSM_ChannelState     │ CFSR fault register decode,
+               │                        │ Memory window:          │ TEC/REC from CAN ECR reg,
+               │                        │  CAN ECR register       │ CanSM state machine enum,
+               │                        │ Call stack window       │ crash backtrace
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -140,16 +143,13 @@ Step 4 — Is the application-level behaviour correct?
 
 ## Standard output format — applied to every response
 
-Before giving any diagnosis, always tell the user three things upfront:
-1. Which protocol has the problem
-2. Which layer the fault is at — this tells the user whether to look at
-   the wire, the data frame, the network routing, or the software
-3. Which tool to pick up — so the user is not guessing what instrument to use
+**OUTPUT SEQUENCE — always follow this order, regardless of how the user frames the question:**
 
-Then give the probable causes ranked from most likely to least likely.
-Each cause must have a specific test, a pass number, and a fail number —
-not just "check the wiring" but exactly what to measure, how to set up
-the tool, and what reading means the problem is found or ruled out.
+**Block 1 — AUTOSAR/OSI/Debug Layer Master Table** (copy the 7-row table from above into every response). This tells the engineer which tool to pick up at each layer before touching anything else. Do not skip it even if the user only asks for root causes.
+
+**Block 2 — PROTOCOL FAULT ANALYSIS header** (Protocol / OSI Layer / AUTOSAR Layer / Recommended tool / Fault classification / TEC analysis if CAN bus-off).
+
+**Block 3 onwards** — Probable causes ranked, investigation steps, TRACE32 CAN layer reference if applicable.
 
 ```
 PROTOCOL FAULT ANALYSIS
@@ -322,6 +322,7 @@ Output the AUTOSAR/OSI/Debug Layer Master Table (see above) followed by the PROT
 8. For SOME/IP: check SD timing parameters (offer cycle, TTL) before blaming application layer
 9. For Ethernet: separate PHY link (L1), MAC/IP (L2/L3), and SOME/IP (L7) faults explicitly
 10. Never assume the fault is in the node under investigation — other nodes and physical layer cause 60% of observed faults
+11. For CAN faults at AUTOSAR layer: include TRACE32 reference for CanSM state inspection — use Watch window for CanSM_ChannelState variable, Memory window for CAN controller ECR register (TEC/REC direct from MCU), Trace window for CanSM_MainFunction call sequence leading to bus-off
 
 ---
 

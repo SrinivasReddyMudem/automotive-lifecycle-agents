@@ -282,8 +282,20 @@ is v1.4.3. Tester in extended session already. Vehicle is 2024 Gateway ECU,
 **Response:**
 
 ```
-FAULT TRIAGE REPORT
-===================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 0 — SYMPTOM TRANSLATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Customer reports:    ECU not accepting flash programming
+Function affected:   Software download / firmware update
+Translated to:       UDS RequestDownload session failure
+AUTOSAR layer:       DCM (Diagnostic Communication Manager)
+OSI layer:           L7 Application (UDS over ISO-TP / CAN)
+Primary tool:        CANoe Diagnostic Console / UDS tester log
+Probable domain:     UDS session state or programming precondition not met
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1 — FAULT TRIAGE REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DTC: N/A — UDS negative response received
 NRC: 0x22 — conditionsNotCorrect
 UDS Service: 0x34 RequestDownload
