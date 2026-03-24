@@ -272,6 +272,61 @@ Safety Flag: [yes/no — with impact description]
 
 ---
 
+## Synthetic example — Body control door lock fault
+
+**Input:** "Customer says door not unlocking. Car is at the workshop now."
+
+**Response:**
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 0 — SYMPTOM TRANSLATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Customer reports:    Door not unlocking
+Function affected:   Body control — central locking
+Translated to:       BCM door lock command not reaching or not executing at actuator
+AUTOSAR layer:       DCM / CanIf (body CAN) / LIN driver (door module)
+OSI layer:           L2 Data Link (body CAN or LIN single-wire)
+Primary tool:        CANoe Diagnostic Console / UDS scan tool
+Probable domain:     Hardware (actuator/wiring), LIN network fault, or BCM output driver
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1 — FAULT TRIAGE REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+System: BCM → LIN bus → Door Module → Lock Actuator
+Safety Relevant: Yes — door that cannot unlock from inside = occupant entrapment risk. Confirm
+  interior handle override before any other diagnosis.
+
+First questions: Which door (one or all)? Which method fails (fob / button / both)? Recent event?
+Analysis: One door failing → fault is downstream of BCM. All doors → BCM, power, or body CAN.
+
+Probable Causes (ranked):
+  1. [HIGH] LIN wire break at door hinge grommet
+     Confirming test: B1006 DTC active + continuity OL under hinge flex
+  2. [HIGH] Actuator failed (open circuit or seized)
+     Confirming test: Apply 12V directly both polarities — no movement = replace
+  3. [MEDIUM] BCM output driver fault
+     Confirming test: Actuator passes direct test; BCM returns NRC 0x26 on 0x2F command
+  4. [LOW] BCM software / variant coding — only if all doors affected after recent flash
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2 — PRIORITISED DEBUG STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Step 1: Tool: UDS scan tool — 0x19 02 FF → read DTCs from BCM
+          Expected output: B1006 (LIN loss) or B1004 (actuator circuit fault)
+
+  Step 2: Tool: UDS 0x2F — InputOutputControlByIdentifier → force actuator
+          Expected output: moves = upstream fault; NRC 0x26 = BCM HW fault
+
+  Step 3: Tool: DMM — continuity on LIN wire while flexing hinge grommet
+          Expected output: OL spike under flex = wire break confirmed
+
+Lab vs Field: diagnosable at workshop from DTC + direct actuator test. No lab needed
+  unless BCM SW defect is confirmed by all other checks passing.
+```
+
+---
+
 ## Synthetic example — UDS NRC fault during flash programming
 
 **Input:** "Customer reports ECU not accepting flash programming. Tester sends

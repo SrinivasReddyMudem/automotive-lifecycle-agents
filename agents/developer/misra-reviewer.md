@@ -167,7 +167,84 @@ ASIL [X] note:
 
 ---
 
-## Synthetic example — Multi-violation analysis
+## Synthetic example — Two-violation analysis (Rule 21.3 + Rule 17.7)
+
+**Input:** "Polyspace found Rule 21.3 and Rule 17.7 in our wheel speed module, ASIL-B."
+
+**Response:**
+
+```
+MISRA REVIEW REPORT
+===================
+File: WheelSpeed.c (synthetic)
+ASIL Level: B
+Tool: Polyspace MISRA C:2012 checker
+Total violations: 2 | Mandatory: 1 (Rule 21.3) | Required: 1 (Rule 17.7) | Advisory: 0
+```
+
+**PRIORITY 1 — Mandatory (must fix — no deviation permitted)**
+
+**Rule 21.3 — Dynamic memory allocation (line TBD)**
+Category: **Mandatory** | ASIL relevance: CRITICAL — heap failure is non-deterministic
+
+Developer intent: used malloc for a data buffer — likely from a non-safety background where
+heap allocation is normal practice. Safety coding standard not yet internalised.
+
+```c
+/* VIOLATION */
+WheelSpeedBuffer_t *p_buf = malloc(sizeof(WheelSpeedBuffer_t));
+
+/* COMPLIANT */
+static WheelSpeedBuffer_t s_WheelSpeedBuf;
+WheelSpeedBuffer_t *p_buf = &s_WheelSpeedBuf;
+```
+
+No deviation permitted. Replace with static allocation.
+
+---
+
+**PRIORITY 2 — Required, safety-relevant**
+
+**Rule 17.7 — Return value of Rte_Read/Rte_Write not used (line TBD)**
+Category: **Required** | ASIL relevance: HIGH — silent fault propagation into safety path
+
+Developer intent: focused on the happy path — error handling not written yet. Common in
+early module development when the logic is prototyped before safety requirements are applied.
+
+```c
+/* VIOLATION */
+Rte_Read_WheelSpeed_FL(&raw_speed);
+
+/* COMPLIANT */
+Std_ReturnType ret = Rte_Read_WheelSpeed_FL(&raw_speed);
+if (ret != E_OK) {
+    Dem_ReportErrorStatus(DEM_EVENT_WSP_FL_READ_FAIL, DEM_EVENT_STATUS_FAILED);
+}
+```
+
+---
+
+**Root cause clusters:**
+
+| Cluster | Violations | Root cause | Fix approach |
+|---|---|---|---|
+| Safety training gap | Rule 21.3 | Developer from non-safety background; heap use not challenged in review | Replace with static; update team coding guidelines; add review checklist item |
+| Error handling | Rule 17.7 | Happy-path only; error paths not yet written | Add RTE return check + Dem reporting for all sensor read/write calls |
+
+**Recommended action plan:**
+
+| Priority | Action | Effort | Deadline |
+|---|---|---|---|
+| Immediate | Fix Rule 21.3 — mandatory, no deviation | 2h | Before next build |
+| This sprint | Fix Rule 17.7 — add return check + Dem for all RTE calls in module | 3h | Before unit test |
+| Before baseline | Verify Polyspace re-run shows zero violations for both rules | 1h | Before baseline tag |
+
+**ASIL-B note:** Both violations are blocking. No baseline until Rule 21.3 is removed and
+Rule 17.7 has a compliant fix or approved deviation record on file.
+
+---
+
+## Synthetic example — Multi-violation analysis (6 violations)
 
 **Input:** "Polyspace found 6 MISRA violations in our wheel speed module.
 ASIL-B. Violations: Rule 10.3 (line 45), Rule 15.5 (line 67), Rule 17.7 (line 82),

@@ -818,6 +818,66 @@ Investigation sequence (ordered by diagnostic yield, fastest first):
 
 ---
 
+## Synthetic example — CAN bus-off fault (engine-dependent)
+
+**Input:** "CAN node goes bus-off after 3 minutes, only when engine running. Other nodes fine."
+
+**Response:**
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUTOSAR/OSI/Debug Layer Master Table
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OSI Layer      │ AUTOSAR Layer          │ Debug Tool              │ What you see
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L1 Physical    │ MCAL (CanDrv)          │ Oscilloscope            │ VDIFF < 1.5 V, EMI spikes
+L2 Data Link   │ CanIf                  │ CANoe trace             │ Error frames, error type
+L3-L4          │ CanTp                  │ CANoe                   │ N/A for this fault
+L5 Session     │ DCM                    │ CANoe Diagnostic        │ N/A for this fault
+L6 Presentation│ COM / RTE              │ DLT Viewer              │ Signal timeout events
+L7 Application │ CanSM / SWCs           │ DLT Viewer              │ CANSM_BSM_S_BUS_OFF log
+MCU Execution  │ OS / CanDrv / CanSM    │ TRACE32 Watch/Memory    │ CanSM_ChannelState, ECR reg
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PROTOCOL FAULT ANALYSIS
+Protocol:        CAN 500 kbit/s
+OSI Layer:       L1 Physical — engine-dependent onset points to electrical, not software
+AUTOSAR Layer:   MCAL CanDrv → CanIf → CanSM
+Recommended tool:Oscilloscope (differential probe) + CANoe (TEC/REC log)
+
+Fault classification:
+  Engine-only + consistent 3-minute delay + single node affected = L1 Physical.
+  Ground potential shift or harness EMI is the most probable mechanism.
+
+TEC analysis:
+  Net climb rate: 256 TEC / 180 s = ~1.4 TEC/s
+  Symptom match: yes — consistent with periodic bit errors under engine EMC load
+
+Probable Causes (ranked):
+  1. [HIGH] Ground potential shift under alternator load
+     Test: DMM ECU GND pin → battery negative, engine at 2000 RPM
+     Pass: < 100 mV | Fail: > 200 mV → dedicated GND strap to battery negative
+
+  2. [HIGH] EMI from ignition/injector coupling into CAN harness
+     Test: Oscilloscope on CANH/CANL, correlate error frames with RPM
+     Pass: No glitches on dominant edges | Fail: periodic spikes at ignition frequency
+
+  3. [MEDIUM] Thermal-intermittent connector fretting
+     Test: Flex harness at ECU connector while monitoring CANoe TEC counter
+     Pass: No TEC response | Fail: TEC spikes under flex → re-pin connector
+
+Investigation steps:
+  Step 1 — CANoe: log TEC climb rate from engine start; confirm ~1.4 TEC/s net
+  Step 2 — DMM: measure GND at affected ECU vs battery negative under engine load
+  Step 3 — Scope: VDIFF on CANH/CANL at ECU connector; look for EMI-induced spikes
+
+TRACE32:
+  Watch: CanSM_ChannelState[0] — watchpoint → halts when bus-off state entered
+  Memory: CAN0_ECR register → byte 0 = TEC, byte 1 = REC (read every 1 s)
+```
+
+---
+
 ## Synthetic example — Intermittent I2C sensor fault on Engine ECU
 
 **Input:** "Engine ECU (TC387) reads temperature sensor over I2C at 400 kHz.
