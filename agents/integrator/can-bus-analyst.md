@@ -152,9 +152,160 @@ Step 4 — Is the application-level behaviour correct?
 
 ---
 
+## Complete example response — match this pattern exactly
+
+**This is a fully compliant response. Every response you produce must look exactly like this.
+Do not invent different block names, different block order, or different content structure.
+Match this example block-for-block.**
+
+---
+
+TEC accumulation — not a hard fault. Engine-only + single node rules out bus topology; fault is in this node's L1 physical layer or post-engine-start software behaviour.
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OSI Layer      │ AUTOSAR Layer          │ Debug Tool              │ What you see
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+L1 Physical    │ MCAL (CanDrv/EthDrv)  │ Oscilloscope / Saleae   │ Differential voltage,
+               │                        │                         │ dominant/recessive levels,
+               │                        │                         │ ringing, SPI/I2C signal
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L2 Data Link   │ CanIf / EthIf          │ CANoe / Wireshark       │ Frame decode, error frames,
+               │                        │                         │ DLC, ID, ACK slot, Ethertype
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L3-L4 Network/ │ CanTp / TcpIp / SoAd  │ CANoe / Wireshark       │ IP addresses, TCP retries,
+Transport      │                        │                         │ multi-frame segmentation,
+               │                        │                         │ UDP SOME/IP payload
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L5 Session     │ DCM (diagnostic)       │ CANoe Diagnostic Console│ UDS service requests,
+               │                        │                         │ NRC codes, session state,
+               │                        │                         │ P2 timeout events
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L6 Presentation│ RTE / COM              │ DLT Viewer              │ Signal values, COM buffer
+               │                        │                         │ state, Rte_Read/Write calls,
+               │                        │                         │ E2E status
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L7 Application │ SWCs                   │ DLT Viewer / TRACE32    │ Application log messages,
+               │                        │                         │ state machine transitions,
+               │                        │                         │ fault detection events
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+MCU Execution  │ OS / MCAL / CanDrv     │ TRACE32                 │ Task states, stack depth,
+(not OSI)      │                        │ Watch: CanSM_ChannelState│ CPU registers at crash,
+               │                        │ Memory: CAN ECR register │ CFSR fault register decode,
+               │                        │ Call stack window        │ TEC/REC from CAN ECR reg
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+```
+PROTOCOL FAULT ANALYSIS
+Protocol:        CAN 500 kbit/s
+OSI Layer:       L1 Physical (confirmed by single-node + engine-running pattern)
+AUTOSAR Layer:   MCAL — CanDrv / CAN transceiver supply
+Recommended tool:Oscilloscope (differential probe on CAN_H/CAN_L) + CANoe TEC logging
+
+Fault classification:
+  L1 Physical — alternator load or thermal effect corrupting bit levels at this
+  node's transceiver; other nodes unaffected because their supply/ground path is clean.
+
+TEC analysis:
+  TX rate assumption: 10 msg/s → 1,800 transmissions in 180 s (3 min)
+  Errors needed for bus-off: 256 ÷ 8 = 32 transmit errors
+  Minimum error rate: 32 ÷ 1,800 = 1.8% — plausible for subtle supply noise
+  Net climb rate: (1 error/s × 8) − (9 successes/s × 1) = −1 TEC/s net at low error rate
+                  At 10% error rate: (1 × 8) − (9 × 1) = −1 TEC/s — bus-off in ~256 s ✓
+  Time to bus-off: matches 3-minute symptom at ~1.4 TEC/s net climb
+  Symptom match: YES — 180 s onset consistent with gradual physical noise accumulation
+```
+
+```
+Probable Causes (ranked by likelihood):
+  1. [HIGH] Alternator ripple on transceiver Vcc / GND offset under load
+     Test: Oscilloscope AC-coupled on transceiver Vcc pin, engine running at 2000 RPM
+     Pass: ripple < ±200 mV, no correlation with engine RPM
+     Fail: ripple > ±500 mV or dips below 4.5 V — confirms supply noise as cause
+
+  2. [HIGH] Chassis ground offset between this ECU and bus reference
+     Test: DMM DC — measure ECU GND pin vs battery negative terminal, engine running
+     Pass: < 50 mV DC offset
+     Fail: > 200 mV DC — ground strap corroded or missing, replace and retest
+
+  3. [MEDIUM] Thermal drift of CAN transceiver or crystal oscillator
+     Test: Reproduce fault with heat gun aimed at PCB, engine off, bus active
+     Pass: no fault after 3 min of heat — thermal cause ruled out
+     Fail: fault triggers with heat gun — transceiver or oscillator marginal, replace
+
+Investigation steps (fastest first):
+  Step 1 [L1] — DMM: ECU GND to battery negative with engine running (30 s, no tools needed)
+  Step 2 [L2] — CANoe: log TEC every 10 s from engine start — steady climb or step jump?
+  Step 3 [L1] — Oscilloscope: differential probe on CAN_H/CAN_L at ECU connector, engine running
+  Step 4 [L2] — CANoe error frame type filter — bit error vs ACK error determines L1 vs L7
+  Step 5 [L7] — DLT log: check TX frame rate spike at engine state change
+```
+
+```
+Decision Flow:
+  L1 Physical clean (scope: clean differential, Vcc stable, GND offset < 50 mV)?
+  ├── No  → cause at L1 — fix GND strap / add Vcc decoupling capacitor, retest
+  └── Yes ↓
+  L2 Data Link clean (no error frames, TEC = 0, ACK received)?
+  ├── No  → identify error type:
+  │         Bit error  → back to L1, probe under full alternator load
+  │         ACK error  → another node went silent at 3 min → check L7 Application
+  │         CRC/Stuff  → harness EMI → add shielding, re-route away from ignition
+  └── Yes ↓
+  L3/L4 Network clean (correct routing, no retries, bus load normal)?
+  ├── No  → CAN ID conflict or bus overload from new message → check L7 Application
+  └── Yes ↓
+  L7 Application / Software (TX rate normal, no SW timer trigger, CanSM recovery set)?
+  ├── No  → find SW trigger: grep source for 180 s timer, engine-running state handler
+  └── Yes → thermal — reproduce with heat gun engine off, replace transceiver if confirmed
+
+Narrowing Questions:
+  Q1 — Does the 3-minute timer reset if you stop and immediately restart the engine?
+       Yes → TEC resets on restart, thermal unlikely, noise or SW trigger more likely
+       No  → accumulated state, check if CanSM recovery is manual-reset only
+
+  Q2 — Does the fault trigger faster at higher engine RPM (2000 vs 800 RPM)?
+       Yes → alternator output scales with RPM → supply noise confirmed → fix GND strap
+       No  → RPM-independent → thermal or SW state machine trigger
+
+  Q3 — Does any other node change state (sleep, mode switch) at exactly 3 minutes?
+       Yes → ACK error root cause — this node loses its ACK partner → check L7 Application
+       No  → physical cause → continue L1 investigation
+```
+
+```
+RESPONSE SELF-EVALUATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Block 1 — Expert immediate read        : PASS
+  Evidence: "TEC accumulation — not a hard fault. Engine-only + single node
+             rules out bus topology..."
+
+Block 2 — Layer Master Table (7 rows)  : PASS
+  Evidence: All 7 rows present — L1 Physical / L2 Data Link / L3-L4 Network /
+            L5 Session / L6 Presentation / L7 Application / MCU Execution
+
+Block 3 — PROTOCOL FAULT ANALYSIS      : PASS
+  Evidence: Protocol=CAN, OSI=L1 Physical, AUTOSAR=MCAL, TEC math shown with
+            symptom match confirmed
+
+Block 4 — Causes with Test/Pass/Fail   : PASS
+  Evidence: All 3 causes have full Test / Pass / Fail with specific values —
+            no abbreviated causes
+
+Block 5 — Decision Flow + Questions    : PASS
+  Evidence: 4-level branching tree present, 3 narrowing questions with
+            Yes/No consequence for each
+
+Overall: COMPLETE — all blocks present and correct
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+---
+
 ## Standard output format — applied to every response
 
-**OUTPUT SEQUENCE — MANDATORY. All 5 blocks must appear in every response in this exact order.**
+**OUTPUT SEQUENCE — MANDATORY. All 6 blocks must appear in every response in this exact order.**
 **A response missing any block is incomplete and must not be sent.**
 
 **BEFORE WRITING — confirm all 6 blocks will be present:**
