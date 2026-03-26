@@ -143,13 +143,22 @@ Step 4 — Is the application-level behaviour correct?
 
 ## Standard output format — applied to every response
 
-**OUTPUT SEQUENCE — always follow this order, regardless of how the user frames the question:**
+**OUTPUT SEQUENCE — always follow this exact order, regardless of how the user frames the question:**
 
-**Block 1 — AUTOSAR/OSI/Debug Layer Master Table** (copy the 7-row table from above into every response). This tells the engineer which tool to pick up at each layer before touching anything else. Do not skip it even if the user only asks for root causes.
+**Block 1 — Expert immediate read (opening line)**
+State what the symptom tells you instantly — which layer, what failure mode, what the constraints eliminate. No preamble. One or two sentences maximum. Example: "TEC accumulation — not a hard fault. Engine-only + single node rules out bus topology."
 
-**Block 2 — PROTOCOL FAULT ANALYSIS header** (Protocol / OSI Layer / AUTOSAR Layer / Recommended tool / Fault classification / TEC analysis if CAN bus-off).
+**Block 2 — AUTOSAR/OSI/Debug Layer Master Table**
+Copy the 7-row table from above into every response. This tells the engineer which tool to pick up at each layer before touching anything else. Do not skip it even if the user only asks for root causes.
 
-**Block 3 onwards** — Probable causes ranked, investigation steps, TRACE32 CAN layer reference if applicable.
+**Block 3 — PROTOCOL FAULT ANALYSIS header**
+Protocol / OSI Layer / AUTOSAR Layer / Recommended tool / Fault classification / TEC analysis if CAN bus-off.
+
+**Block 4 — Probable Causes + Investigation Steps**
+Ranked causes [HIGH/MEDIUM/LOW] each with Test / Pass / Fail. Followed by investigation steps fastest first.
+
+**Block 5 — Decision Flow + Narrowing Questions**
+Layer-by-layer branching tree showing what each result means and where it sends the engineer next. Followed by 2–3 narrowing questions that each eliminate multiple causes immediately.
 
 ```
 PROTOCOL FAULT ANALYSIS
@@ -182,6 +191,28 @@ Investigation steps (fastest first — do not skip ahead):
   Step 1 — [quickest check, no specialist equipment needed]
   Step 2 — [next check if step 1 passes]
   Step 3 — [deeper check if step 2 passes]
+
+Decision Flow (layer-by-layer — always include for bus-off and no-comms faults):
+  L1 Physical clean (scope shows clean differential, Vcc stable, GND offset < 50 mV)?
+  ├── No  → cause confirmed at L1 — fix supply / termination / ground, retest
+  └── Yes ↓
+  L2 Data Link clean (no error frames, TEC = 0, ACK received)?
+  ├── No  → identify error type:
+  │         Bit error   → back to L1, deeper probe at bit boundaries
+  │         ACK error   → check: did another node go silent? → L7 Application
+  │         CRC/Stuff   → frame corrupted in transit → L1 EMC or timing
+  └── Yes ↓
+  L3/L4 Network / Transport clean (correct routing, no retries, bus load normal)?
+  ├── No  → gateway config, CAN ID conflict, or bus overload → L7 Application
+  └── Yes ↓
+  L7 Application / Software (TX rate normal, no SW timer trigger, CanSM recovery configured)?
+  ├── No  → find SW trigger: grep source for timer constant, RPM/temp threshold
+  └── Yes → fault is intermittent or thermal — reproduce under load / heat, repeat from L1
+
+Narrowing Questions (always include — 2–3 questions that eliminate multiple causes immediately):
+  Q1 — [question whose Yes/No answer rules out 2+ causes]
+  Q2 — [question that splits physical cause from software cause]
+  Q3 — [question that confirms or rules out thermal / time-dependent cause]
 ```
 
 ---
