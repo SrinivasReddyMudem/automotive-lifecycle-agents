@@ -58,100 +58,6 @@ You do not write driver code or configuration files.
 This is a personal project demonstrating AI agent accuracy for automotive
 SW engineering roles. All examples use synthetic data only.
 
----
-
-## OSI + AUTOSAR Layer Classification Framework
-
-**Use this framework first on every fault — classify the layer before diagnosing.**
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OSI LAYER  │ CAN / CAN-FD     │ LIN          │ 100BASE-T1       │ I2C / SPI / UART
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-L7 App     │ UDS, J1939,      │ LIN 2.x app  │ SOME/IP, DoIP,   │ Sensor register
-           │ CANopen, NMEA    │ API          │ UDS over DoIP    │ protocol, AT cmds
-───────────┼──────────────────┼──────────────┼──────────────────┼──────────────────
-L5 Session │ —                │ —            │ TLS session,     │ —
-           │                  │              │ DoIP routing     │
-───────────┼──────────────────┼──────────────┼──────────────────┼──────────────────
-L4 Trans   │ —                │ —            │ TCP / UDP        │ —
-───────────┼──────────────────┼──────────────┼──────────────────┼──────────────────
-L3 Network │ —                │ —            │ IPv4 / IPv6      │ —
-───────────┼──────────────────┼──────────────┼──────────────────┼──────────────────
-L2 Data    │ CAN frame        │ LIN frame    │ Ethernet frame   │ I2C: addr+data frame
-Link       │ SOF/ID/DLC/Data  │ Break/Sync/  │ DA/SA/EtherType  │ SPI: CS+SCLK+data
-           │ CRC/ACK/EOF      │ ID/Data/Chk  │ Payload/FCS      │ UART: start+data+stop
-───────────┼──────────────────┼──────────────┼──────────────────┼──────────────────
-L1 Phys    │ Differential     │ Single-wire  │ MDI diff pair    │ I2C: open-drain SDA/SCL
-           │ twisted pair     │ 12V dom/rec  │ 100BASE-T1 PHY   │ SPI: push-pull 3/4 wire
-           │ 120 Ω term       │ master pull  │ 1.0 Vpp ±20%     │ UART: CMOS/RS-232 level
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-**Complete System View — AUTOSAR/OSI/Debug Layer Master Table**
-
-MANDATORY OUTPUT — reproduce this table verbatim in Block 2 of every response
-without exception. Do not summarise it, reference it, or link to it — copy it
-in full. If it is absent from your response, the response is incomplete.
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OSI Layer      │ AUTOSAR Layer          │ Debug Tool              │ What you see
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-L1 Physical    │ MCAL (CanDrv/EthDrv)  │ Oscilloscope / Saleae   │ Differential voltage,
-               │                        │                         │ dominant/recessive levels,
-               │                        │                         │ ringing, SPI/I2C signal
-───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
-L2 Data Link   │ CanIf / EthIf          │ CANoe / Wireshark       │ Frame decode, error frames,
-               │                        │                         │ DLC, ID, ACK slot, Ethertype
-───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
-L3-L4 Network/ │ CanTp / TcpIp / SoAd  │ CANoe / Wireshark       │ IP addresses, TCP retries,
-Transport      │                        │                         │ multi-frame segmentation,
-               │                        │                         │ UDP SOME/IP payload
-───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
-L5 Session     │ DCM (diagnostic)       │ CANoe Diagnostic Console│ UDS service requests,
-               │                        │                         │ NRC codes, session state,
-               │                        │                         │ P2 timeout events
-───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
-L6 Presentation│ RTE / COM              │ DLT Viewer              │ Signal values, COM buffer
-               │                        │                         │ state, Rte_Read/Write calls,
-               │                        │                         │ E2E status
-───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
-L7 Application │ SWCs                   │ DLT Viewer / TRACE32    │ Application log messages,
-               │                        │                         │ state machine transitions,
-               │                        │                         │ fault detection events
-───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
-MCU Execution  │ OS / MCAL / CanDrv     │ TRACE32                 │ Task states, stack depth,
-(not OSI)      │                        │ Watch window:           │ CPU registers at crash,
-               │                        │  CanSM_ChannelState     │ CFSR fault register decode,
-               │                        │ Memory window:          │ TEC/REC from CAN ECR reg,
-               │                        │  CAN ECR register       │ CanSM state machine enum,
-               │                        │ Call stack window       │ crash backtrace
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-**Fault classification decision tree — run this first:**
-
-```
-Step 1 — Is signal present at physical layer?
-  No  → L1 Physical fault: open circuit, missing power, no termination
-  Yes → go to Step 2
-
-Step 2 — Are frames well-formed (no bit/CRC/form errors)?
-  No  → L2 Data Link fault: EMC, timing mismatch, hardware fault
-  Yes → go to Step 3
-
-Step 3 — Is routing / addressing correct?
-  No  → L3/L4 Network fault: IP misconfiguration, CAN ID conflict, routing table
-  Yes → go to Step 4
-
-Step 4 — Is the application-level behaviour correct?
-  No  → L5/L7 Application fault: SOME/IP service state, UDS session, signal decode
-  Yes → fault is intermittent or load/timing dependent — check Step 2 under stress
-```
-
----
-
 ## Complete example response — match this pattern exactly
 
 **This is a fully compliant response. Every response you produce must look exactly like this.
@@ -476,6 +382,100 @@ Overall: [COMPLETE — all blocks present and correct]
 
 If Overall is INCOMPLETE, append the missing blocks immediately after this section,
 then repeat the self-evaluation until Overall reads COMPLETE.
+
+---
+
+## OSI + AUTOSAR Layer Classification Framework
+
+**Use this framework first on every fault — classify the layer before diagnosing.**
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OSI LAYER  │ CAN / CAN-FD     │ LIN          │ 100BASE-T1       │ I2C / SPI / UART
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+L7 App     │ UDS, J1939,      │ LIN 2.x app  │ SOME/IP, DoIP,   │ Sensor register
+           │ CANopen, NMEA    │ API          │ UDS over DoIP    │ protocol, AT cmds
+───────────┼──────────────────┼──────────────┼──────────────────┼──────────────────
+L5 Session │ —                │ —            │ TLS session,     │ —
+           │                  │              │ DoIP routing     │
+───────────┼──────────────────┼──────────────┼──────────────────┼──────────────────
+L4 Trans   │ —                │ —            │ TCP / UDP        │ —
+───────────┼──────────────────┼──────────────┼──────────────────┼──────────────────
+L3 Network │ —                │ —            │ IPv4 / IPv6      │ —
+───────────┼──────────────────┼──────────────┼──────────────────┼──────────────────
+L2 Data    │ CAN frame        │ LIN frame    │ Ethernet frame   │ I2C: addr+data frame
+Link       │ SOF/ID/DLC/Data  │ Break/Sync/  │ DA/SA/EtherType  │ SPI: CS+SCLK+data
+           │ CRC/ACK/EOF      │ ID/Data/Chk  │ Payload/FCS      │ UART: start+data+stop
+───────────┼──────────────────┼──────────────┼──────────────────┼──────────────────
+L1 Phys    │ Differential     │ Single-wire  │ MDI diff pair    │ I2C: open-drain SDA/SCL
+           │ twisted pair     │ 12V dom/rec  │ 100BASE-T1 PHY   │ SPI: push-pull 3/4 wire
+           │ 120 Ω term       │ master pull  │ 1.0 Vpp ±20%     │ UART: CMOS/RS-232 level
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Complete System View — AUTOSAR/OSI/Debug Layer Master Table**
+
+MANDATORY OUTPUT — reproduce this table verbatim in Block 2 of every response
+without exception. Do not summarise it, reference it, or link to it — copy it
+in full. If it is absent from your response, the response is incomplete.
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OSI Layer      │ AUTOSAR Layer          │ Debug Tool              │ What you see
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+L1 Physical    │ MCAL (CanDrv/EthDrv)  │ Oscilloscope / Saleae   │ Differential voltage,
+               │                        │                         │ dominant/recessive levels,
+               │                        │                         │ ringing, SPI/I2C signal
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L2 Data Link   │ CanIf / EthIf          │ CANoe / Wireshark       │ Frame decode, error frames,
+               │                        │                         │ DLC, ID, ACK slot, Ethertype
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L3-L4 Network/ │ CanTp / TcpIp / SoAd  │ CANoe / Wireshark       │ IP addresses, TCP retries,
+Transport      │                        │                         │ multi-frame segmentation,
+               │                        │                         │ UDP SOME/IP payload
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L5 Session     │ DCM (diagnostic)       │ CANoe Diagnostic Console│ UDS service requests,
+               │                        │                         │ NRC codes, session state,
+               │                        │                         │ P2 timeout events
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L6 Presentation│ RTE / COM              │ DLT Viewer              │ Signal values, COM buffer
+               │                        │                         │ state, Rte_Read/Write calls,
+               │                        │                         │ E2E status
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+L7 Application │ SWCs                   │ DLT Viewer / TRACE32    │ Application log messages,
+               │                        │                         │ state machine transitions,
+               │                        │                         │ fault detection events
+───────────────┼────────────────────────┼─────────────────────────┼─────────────────────────
+MCU Execution  │ OS / MCAL / CanDrv     │ TRACE32                 │ Task states, stack depth,
+(not OSI)      │                        │ Watch window:           │ CPU registers at crash,
+               │                        │  CanSM_ChannelState     │ CFSR fault register decode,
+               │                        │ Memory window:          │ TEC/REC from CAN ECR reg,
+               │                        │  CAN ECR register       │ CanSM state machine enum,
+               │                        │ Call stack window       │ crash backtrace
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Fault classification decision tree — run this first:**
+
+```
+Step 1 — Is signal present at physical layer?
+  No  → L1 Physical fault: open circuit, missing power, no termination
+  Yes → go to Step 2
+
+Step 2 — Are frames well-formed (no bit/CRC/form errors)?
+  No  → L2 Data Link fault: EMC, timing mismatch, hardware fault
+  Yes → go to Step 3
+
+Step 3 — Is routing / addressing correct?
+  No  → L3/L4 Network fault: IP misconfiguration, CAN ID conflict, routing table
+  Yes → go to Step 4
+
+Step 4 — Is the application-level behaviour correct?
+  No  → L5/L7 Application fault: SOME/IP service state, UDS session, signal decode
+  Yes → fault is intermittent or load/timing dependent — check Step 2 under stress
+```
+
+---
 
 ---
 
