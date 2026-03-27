@@ -3,10 +3,14 @@ Streamlit web UI for sdk_agents.
 Run with: streamlit run sdk_agents/app.py
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parents[1]))
+
 import streamlit as st
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).parent / ".env")
 
 from sdk_agents.core.registry import get_agent, AGENT_NAMES, AGENT_DISPLAY_NAMES
 from sdk_agents.core.base_agent import AgentError

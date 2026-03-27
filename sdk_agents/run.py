@@ -10,9 +10,11 @@ Usage:
 import argparse
 import json
 import sys
-from dotenv import load_dotenv
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parents[1]))
 
-load_dotenv()
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent / ".env")
 
 from sdk_agents.core.registry import get_agent, AGENT_NAMES
 from sdk_agents.core.base_agent import AgentError
@@ -77,7 +79,10 @@ def _print_result(result, agent_name: str):
     from rich.panel import Panel
     from rich.table import Table
 
-    console = Console()
+    console = Console(highlight=False, emoji=False)
+    # Force ASCII-safe output on Windows terminals that don't support UTF-8
+    if sys.stdout.encoding and sys.stdout.encoding.lower() in ("cp1252", "cp850", "ascii"):
+        console = Console(highlight=False, emoji=False, force_terminal=True, legacy_windows=False)
 
     if agent_name in ("can-bus-analyst", "can_bus_analyst", "can-bus"):
         console.print(Panel(result.expert_diagnosis, title="Expert Diagnosis", style="bold blue"))
@@ -100,8 +105,8 @@ def _print_result(result, agent_name: str):
         console.print("\n[bold]Narrowing Questions:[/bold]")
         for i, q in enumerate(result.narrowing_questions, 1):
             console.print(f"\n  Q{i}: {q.question}")
-            console.print(f"    Yes → {q.yes_consequence}")
-            console.print(f"    No  → {q.no_consequence}")
+            console.print(f"    Yes: {q.yes_consequence}")
+            console.print(f"    No : {q.no_consequence}")
     else:
         # Fallback — dump JSON for agents without a dedicated formatter yet
         console.print_json(json.dumps(result.model_dump(), indent=2))
