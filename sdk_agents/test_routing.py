@@ -57,12 +57,13 @@ AGENT_SCORES = {
     "field-debug-fae": {
         "nrc":4,"negative response code":4,"conditionsnotcorrect":4,"securityaccessdenied":4,
         "requestoutofrange":4,"freeze frame":4,"dtc status byte":4,"seed key":4,
-        "service 0x27":4,"service 0x22":4,"service 0x10":3,"service 0x19":3,
-        "security access":3,"programming session":3,"extended session":3,
-        "flash programming":3,"uds session":3,"ecu not responding":3,
-        "negative response":3,"tester present":2,"dtc":2,"fault code":2,
-        "diagnostic session":2,"field issue":2,"customer complaint":2,
-        "0x22":2,"0x31":2,"diagnostic":1,
+        "service 0x27":4,"service 0x22":4,"customer says":4,"customer reports":4,
+        "service 0x10":3,"service 0x19":3,"security access":3,"programming session":3,
+        "extended session":3,"flash programming":3,"uds session":3,"ecu not responding":3,
+        "negative response":3,"workshop":3,"vehicle complaint":3,"field return":3,
+        "field failure":3,"won't start":3,"warning light":2,
+        "tester present":2,"dtc":2,"fault code":2,"diagnostic session":2,
+        "field issue":2,"customer complaint":2,"0x22":2,"0x31":2,"diagnostic":1,
     },
     "sw-integrator": {
         "port not connected":4,"rte generation fail":4,"rte generation error":4,
@@ -240,6 +241,10 @@ CASES = [
     ("RTE_Read RTE_Write ARXML port interface BSW configuration",         "autosar-bsw-developer"),
     ("pass rate dropped after merge flaky test in test report",           "regression-analyst"),
     ("fault injection test dSPACE plant model HIL environment",          "sil-hil-test-planner"),
+    # Customer complaint language — plain English, no engineering terms
+    ("Customer says door not unlocking. Car is at the workshop now.",    "field-debug-fae"),
+    ("Customer reports warning light on dashboard, vehicle at workshop", "field-debug-fae"),
+    ("customer says car won't start, field return from customer site",   "field-debug-fae"),
 ]
 
 # ── Multi-agent test cases ──────────────────────────────────────────────────────
