@@ -1,19 +1,20 @@
 """
 Base agent — Gemini-backed implementation.
-Uses response_schema in GenerationConfig to enforce structured JSON output.
+Uses response_schema in GenerateContentConfig to enforce structured JSON output.
 No prompt-based format instructions needed — schema enforcement is at API level.
 
-Free tier: Gemini 1.5 Flash — 15 RPM, 1500 RPD, 1M TPM.
+Free tier: Gemini 2.0 Flash — 15 RPM, 1500 RPD, 1M TPM.
 Get a free API key at: aistudio.google.com
 """
 
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from pydantic import BaseModel, ValidationError
 from typing import Literal
 from .logger import get_logger
 
-MODEL = "gemini-1.5-flash"
+MODEL = "gemini-2.0-flash"
 MAX_RETRIES = 1  # retry once on validation failure — no infinite loop
 
 
@@ -41,7 +42,7 @@ class BaseAgent:
                 "Get a free key at aistudio.google.com\n"
                 "Then add it to sdk_agents/.env as: GOOGLE_API_KEY=your-key"
             )
-        genai.configure(api_key=api_key)
+        self.client = genai.Client(api_key=api_key)
         self.logger = get_logger(self.AGENT_NAME)
 
     def run(self, user_message: str) -> BaseModel | AgentError:
@@ -89,13 +90,11 @@ class BaseAgent:
         Call Gemini API with response_schema enforcement.
         The model must return JSON matching the schema — cannot return free text.
         """
-        model = genai.GenerativeModel(
-            model_name=MODEL,
-            system_instruction=self.get_prompt(),
-        )
-        response = model.generate_content(
-            user_message,
-            generation_config=genai.GenerationConfig(
+        response = self.client.models.generate_content(
+            model=MODEL,
+            contents=user_message,
+            config=types.GenerateContentConfig(
+                system_instruction=self.get_prompt(),
                 response_mime_type="application/json",
                 response_schema=self.get_schema(),
             ),
