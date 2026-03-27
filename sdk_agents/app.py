@@ -49,101 +49,107 @@ with st.sidebar:
 # ── About page ─────────────────────────────────────────────────────────────────
 if page == "About":
     st.title("Automotive Lifecycle Agents")
-    st.subheader("AI agents purpose-built for automotive software engineering")
+    st.subheader("AI agents grounded in practical automotive embedded engineering")
     st.markdown("---")
 
     col1, col2 = st.columns([2, 1])
 
     with col1:
         st.markdown("""
-**The problem this solves**
+**What this is**
 
-Generic AI assistants know *about* automotive standards.
-These agents work *within* them — they apply ISO 26262, ASPICE, MISRA C,
-AUTOSAR, and CAN/Ethernet protocol knowledge to produce structured,
-actionable engineering output that a real engineer can act on directly.
+A personal project exploring how AI can support day-to-day automotive software
+engineering work — not by replacing engineering judgement, but by providing a
+structured starting point based on domain knowledge that takes years to build.
 
-**What makes the output different**
+The agents are built from hands-on experience working across development,
+testing, integration, and project roles in automotive ECU projects. The domain
+knowledge comes from that practical background, not from reading documentation.
 
-Ask a generic AI: *"CAN node goes bus-off after 3 minutes, only when engine running"*
+**Why the output looks different from a generic AI**
 
-You get: *"Check your CAN bus wiring and termination. Verify baud rate settings..."*
+Generic AI gives broad suggestions. These agents classify the problem first —
+by OSI layer, AUTOSAR layer, or process area — then apply the right standard
+or method to produce output an engineer can directly act on.
 
-Ask this agent, and you get:
+Example — same question, different output:
+
+*Question: "CAN node goes bus-off after 3 minutes, only when engine running"*
 """)
 
-        st.code("""OSI Layer:     L1 Physical
-AUTOSAR Layer: MCAL (CanDrv)
-Tool:          Oscilloscope
+        st.code("""Generic AI:
+  "Check your CAN bus wiring and termination.
+   Verify the baud rate settings are consistent across all nodes..."
 
-TEC Math:
-  Required net climb = 256 / 180s = 1.41 TEC/s
-  Solving: error_rate = 2.4/9 = 26.7%
-  At 1 msg/s: net TEC = 1.41 TEC/s => 181s to bus-off ~ 3 min
+This agent:
+  OSI Layer:     L1 Physical
+  AUTOSAR Layer: MCAL (CanDrv)
+  Tool:          Oscilloscope
 
-Probable Causes (ranked):
-  [HIGH]   Alternator ripple on transceiver Vcc
-           Test: Oscilloscope AC-coupled on Vcc pin at ECU connector
-           Pass: Ripple < 200 mV | Fail: Ripple > 500 mV
+  TEC Math:
+    Net climb needed = 256 / 180s = 1.41 TEC/s
+    Error rate required = 26.7% at 1 msg/s => 181s to bus-off ~ 3 min
 
-  [MEDIUM] Chassis GND offset under engine load
-           Test: DMM DC between ECU GND pin and battery negative
-           Pass: Offset < 50 mV | Fail: Offset > 200 mV
+  Probable Causes:
+    [HIGH]   Alternator ripple on transceiver Vcc
+             Test: Oscilloscope AC-coupled on Vcc pin at ECU connector
+             Pass: Ripple < 200 mV | Fail: Ripple > 500 mV
 
-Decision Flow:
-  L1 Physical: Vcc ripple and GND offset OK?
-  +-- No  --> Fix supply / GND, retest
-  +-- Yes --> L2 Data Link: Error frames in CANoe?
-      +-- No  --> Check thermal drift with heat gun
-      +-- Yes --> Bit error = L1; ACK error = check L7""", language="text")
+    [MEDIUM] Chassis GND offset under engine load
+             Test: DMM DC between ECU GND pin and battery negative
+             Pass: Offset < 50 mV | Fail: Offset > 200 mV
+
+  Decision Flow:
+    L1 Physical: Vcc ripple and GND offset OK?
+    +-- No  --> Fix supply / GND, retest
+    +-- Yes --> L2 Data Link: Error frames in CANoe?
+        +-- No  --> Check thermal drift with heat gun
+        +-- Yes --> Bit error = L1; ACK error = check L7""", language="text")
 
         st.markdown("""
-**Architecture**
+**How the output is enforced**
 
-The output structure is enforced at the API level using **JSON Schema via
-structured output** — the model cannot return free text, skip required fields,
-or invent a different format. Every response is then validated by domain-specific
-checks (TEC math has numbers, AUTOSAR layer is known, test descriptions are specific).
+The response structure is enforced at the API level using JSON Schema — the
+model cannot return free text or skip any required field. A second layer of
+domain checks validates that the content is specific: TEC math must contain
+numbers, AUTOSAR layer must be a known value, test descriptions must name a
+tool and probe point. This is what separates structured output from a
+well-formatted guess.
 
-**Standards covered**
+**Standards the agents work within**
 
 ISO 26262 · ASPICE v3.1 · MISRA C:2012 · AUTOSAR Classic ·
 ISO 21434 · ISO 14229 (UDS) · ISO 11898 (CAN) · IEEE 802.3bw (100BASE-T1)
 
-**Built from**
-
-11 years of hands-on automotive ECU development — developer, tester,
-integrator, and SW project lead roles. All examples use synthetic data only.
+*All examples in this project use synthetic data only.*
 """)
 
     with col2:
-        st.markdown("**Author**")
+        st.markdown("**Built by**")
         st.markdown("Srinivas Reddy Mudem")
-        st.markdown("SW Project Lead | Integration Engineer")
-        st.markdown("11 years automotive ECU development")
+        st.markdown("Automotive embedded engineer with hands-on experience across ECU development, integration, and testing.")
         st.markdown("---")
 
-        st.markdown("**Agents implemented**")
+        st.markdown("**Agents**")
         st.markdown("""
-- CAN Bus Analyst
-- *(11 more expanding)*
+- CAN Bus Analyst *(live)*
+- 11 more in progress
         """)
 
-        st.markdown("**Domain knowledge**")
+        st.markdown("**Domain knowledge loaded**")
         st.markdown("""
-8 skill files loaded automatically:
-- CAN bus analysis
-- ISO 26262 / HARA
-- ASPICE process
+- CAN bus / error counters
+- ISO 26262 / HARA / ASIL
+- ASPICE SWE.1 – SWE.6
 - MISRA C:2012
 - AUTOSAR Classic
-- UDS diagnostics
+- UDS / diagnostics
 - ISO 21434 / TARA
 - Embedded patterns
         """)
 
         st.markdown("---")
-        st.info("Use the **Try the Agent** page to run a live query.")
+        st.info("Use **Try the Agent** in the sidebar to run a live query.")
 
 # ── Agent chat page ────────────────────────────────────────────────────────────
 elif page == "Try the Agent":
