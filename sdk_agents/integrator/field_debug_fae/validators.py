@@ -20,6 +20,7 @@ def validate(output: FieldDebugFaeOutput) -> None:
     _check_self_evaluation_has_evidence(output)
 
 
+
 def _check_status_byte_decoded(output: FieldDebugFaeOutput) -> None:
     decoded = output.fault_details.status_byte_decoded
     # Must contain bit reference OR explicit N/A

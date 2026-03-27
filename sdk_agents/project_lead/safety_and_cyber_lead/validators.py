@@ -22,7 +22,9 @@ def validate(output: SafetyAndCyberLeadOutput) -> None:
 
 def _check_safety_goals_have_asil(output: SafetyAndCyberLeadOutput) -> None:
     for i, goal in enumerate(output.safety_goals):
-        if not any(valid in goal.asil for valid in VALID_ASIL):
+        # Normalize 'ASIL D' → 'ASIL-D' before checking
+        normalized = goal.asil.replace(" ", "-").upper()
+        if not any(valid in normalized for valid in VALID_ASIL):
             raise DomainCheckError(
                 f"safety_goals[{i}].asil '{goal.asil}' is not a valid ASIL level. "
                 f"Expected one of: {VALID_ASIL}"

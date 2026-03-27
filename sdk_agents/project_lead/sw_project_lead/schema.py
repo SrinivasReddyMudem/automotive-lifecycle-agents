@@ -53,15 +53,14 @@ class SwProjectLeadOutput(BaseModel):
     recommendation: str = Field(
         description="Specific recommendation with one-sentence justification"
     )
+    self_evaluation: list[SelfEvaluationLine] = Field(
+        description="PASS/FAIL for quantified impacts, risk scores, recommendation with evidence"
+    )
     decision_required_by: str = Field(
         description="Date by which decision is needed to protect schedule, or N/A"
     )
     immediate_actions: str = Field(description="Actions this week — named owner per action")
-    short_term_actions: str = Field(description="Actions this sprint/2 weeks")
-    long_term_actions: str = Field(description="Actions this milestone")
+    short_term_actions: str = Field(description="Actions next 2 weeks")
     aspice_reference: str = Field(
         description="ASPICE process area and work product affected e.g. SWE.1 — SRS (17-08)"
-    )
-    self_evaluation: list[SelfEvaluationLine] = Field(
-        description="PASS/FAIL for quantified impacts, risk scores, recommendation with evidence"
     )

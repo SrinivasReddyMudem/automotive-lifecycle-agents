@@ -15,9 +15,6 @@ class UnitTestCase(BaseModel):
     input_values: str = Field(description="Exact input values with variable names and types")
     expected_result: str = Field(description="Exact expected output or return value")
     pass_criteria: str = Field(description="Explicit condition: return value == X AND output == Y")
-    coverage_target: str = Field(
-        description="Coverage element: statement / branch-true / branch-false / MC/DC pair A"
-    )
 
 
 class MCDCPair(BaseModel):

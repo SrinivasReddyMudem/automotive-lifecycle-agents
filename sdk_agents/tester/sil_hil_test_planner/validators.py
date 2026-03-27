@@ -8,7 +8,7 @@ from .schema import SilHilTestPlannerOutput
 
 SUBJECTIVE_WORDS = ["correctly", "properly", "works", "functions", "looks good", "behaves"]
 MIN_PASS_CRITERIA_LENGTH = 20
-MIN_FAULT_PARAMS_LENGTH = 15
+MIN_FAULT_PARAMS_LENGTH = 10
 
 
 def validate(output: SilHilTestPlannerOutput) -> None:

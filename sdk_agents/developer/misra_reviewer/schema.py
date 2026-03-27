@@ -10,9 +10,6 @@ from sdk_agents.core.shared_schema import SelfEvaluationLine
 
 class MisraViolation(BaseModel):
     rule: str = Field(description="MISRA C:2012 rule number e.g. Rule 11.3")
-    title: str = Field(description="Rule title from MISRA C:2012 document")
-    category: Literal["Mandatory", "Required", "Advisory"]
-    asil_relevance: Literal["High", "Medium", "Low"]
     violation_pattern: str = Field(
         description="Synthetic C code showing the violation with comment marking the problem line"
     )
@@ -21,10 +18,6 @@ class MisraViolation(BaseModel):
     )
     compliant_rewrite: str = Field(
         description="The compliant C code rewrite with comment per change"
-    )
-    deviation_possible: Literal["YES", "NO"]
-    deviation_justification: str = Field(
-        description="Deviation justification text if possible, or 'N/A — Mandatory rule, no deviation permitted'"
     )
 
 

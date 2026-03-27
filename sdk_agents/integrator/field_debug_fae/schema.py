@@ -6,7 +6,7 @@ Covers DTC triage, UDS session analysis, CAN fault correlation, and debug steps.
 from pydantic import BaseModel, Field
 from typing import Literal
 from sdk_agents.core.shared_schema import (
-    ProbableCause, NarrowingQuestion, SelfEvaluationLine, DebugStep
+    ProbableCause, SelfEvaluationLine, DebugStep
 )
 
 
@@ -16,8 +16,6 @@ class SymptomTranslation(BaseModel):
     translated_to: str = Field(description="Engineering domain this maps to")
     autosar_layer: str = Field(description="SWC / RTE / COM / DCM / CanIf / MCAL / DEM")
     osi_layer: str = Field(description="L1 / L2 / L3-L4 / L5 / L7")
-    primary_tool: str = Field(description="CANoe / DLT Viewer / TRACE32 / Saleae / Wireshark")
-    probable_domain: str = Field(description="CAN bus / UDS session / AUTOSAR SWC / HW power")
 
 
 class FaultDetails(BaseModel):
@@ -33,9 +31,6 @@ class FaultDetails(BaseModel):
 
 
 class UdsSessionAnalysis(BaseModel):
-    session_type: str = Field(
-        description="Session type involved: default / extended / programming / N/A"
-    )
     nrc_code: str = Field(description="NRC hex e.g. 0x22 or N/A if no NRC reported")
     nrc_name: str = Field(description="Full NRC name e.g. conditionsNotCorrect or N/A")
     nrc_root_causes: list[str] = Field(
@@ -53,21 +48,15 @@ class FieldDebugFaeOutput(BaseModel):
         description="STEP 0: translate customer complaint to engineering layer before any diagnosis"
     )
     fault_details: FaultDetails = Field(
-        description="STEP 1 header: DTC code, status byte decoded bit-by-bit, safety relevance"
+        description="STEP 1: DTC code, status byte decoded bit-by-bit, safety relevance"
     )
-    analysis: str = Field(
-        description=(
-            "What the data tells us about fault timing, pattern, and conditions. "
-            "Relate status byte bits, freeze frame values, and symptom correlation."
-        )
+    uds_session_analysis: UdsSessionAnalysis = Field(
+        description="UDS NRC analysis and session sequence reconstruction"
     )
     probable_causes: list[ProbableCause] = Field(
         min_length=3,
         max_length=3,
         description="Exactly 3 ranked causes. Each test must name tool + probe point + action.",
-    )
-    uds_session_analysis: UdsSessionAnalysis = Field(
-        description="UDS NRC analysis and session sequence reconstruction"
     )
     tec_math: str = Field(
         description=(
@@ -76,24 +65,17 @@ class FieldDebugFaeOutput(BaseModel):
             "Use 'N/A — no CAN trace involved' if not applicable."
         )
     )
-    decision_flow: str = Field(
+    analysis: str = Field(
         description=(
-            "ASCII branching diagnostic tree starting at symptom classification. "
-            "Each branch has Yes/No leading to next layer or conclusion."
+            "What the data tells us about fault timing, pattern, and conditions. "
+            "Relate status byte bits, freeze frame values, symptom correlation, "
+            "and whether lab reproduction is needed."
         )
     )
     debug_steps: list[DebugStep] = Field(
         min_length=3,
         max_length=3,
         description="Exactly 3 prioritised debug steps with tool, action, expected output",
-    )
-    lab_vs_field: str = Field(
-        description="State whether field data only is enough or lab reproduction is required and why"
-    )
-    narrowing_questions: list[NarrowingQuestion] = Field(
-        min_length=3,
-        max_length=3,
-        description="Exactly 3 yes/no questions to narrow the fault, each with consequence",
     )
     self_evaluation: list[SelfEvaluationLine] = Field(
         description="PASS/FAIL check for each major section with quoted evidence from this response"
