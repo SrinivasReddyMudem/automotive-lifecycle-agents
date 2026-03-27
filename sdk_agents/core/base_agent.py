@@ -1,20 +1,20 @@
 """
-Base agent — Gemini-backed implementation.
-Uses response_schema in GenerateContentConfig to enforce structured JSON output.
+Base agent — Groq-backed implementation.
+Uses json_schema response_format to enforce structured JSON output.
 No prompt-based format instructions needed — schema enforcement is at API level.
 
-Free tier: Gemini 2.0 Flash — 15 RPM, 1500 RPD, 1M TPM.
-Get a free API key at: aistudio.google.com
+Free tier: Groq — 14,400 requests/day, 6000 tokens/min on llama-3.3-70b.
+Get a free API key (no credit card) at: console.groq.com
 """
 
 import os
-from google import genai
-from google.genai import types
+import json
+from groq import Groq
 from pydantic import BaseModel, ValidationError
 from typing import Literal
 from .logger import get_logger
 
-MODEL = "gemini-2.0-flash"
+MODEL = "llama-3.3-70b-versatile"
 MAX_RETRIES = 1  # retry once on validation failure — no infinite loop
 
 
@@ -35,14 +35,14 @@ class BaseAgent:
     AGENT_NAME = "base"
 
     def __init__(self):
-        api_key = os.getenv("GOOGLE_API_KEY")
+        api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
             raise EnvironmentError(
-                "GOOGLE_API_KEY not set.\n"
-                "Get a free key at aistudio.google.com\n"
-                "Then add it to sdk_agents/.env as: GOOGLE_API_KEY=your-key"
+                "GROQ_API_KEY not set.\n"
+                "Get a free key (no credit card) at console.groq.com\n"
+                "Then add it to sdk_agents/.env as: GROQ_API_KEY=your-key"
             )
-        self.client = genai.Client(api_key=api_key)
+        self.client = Groq(api_key=api_key)
         self.logger = get_logger(self.AGENT_NAME)
 
     def run(self, user_message: str) -> BaseModel | AgentError:
@@ -87,20 +87,28 @@ class BaseAgent:
 
     def _call_api(self, user_message: str) -> str:
         """
-        Call Gemini API with response_schema enforcement.
+        Call Groq API with json_schema response_format enforcement.
         The model must return JSON matching the schema — cannot return free text.
         """
-        response = self.client.models.generate_content(
+        schema = self.get_schema().model_json_schema()
+        response = self.client.chat.completions.create(
             model=MODEL,
-            contents=user_message,
-            config=types.GenerateContentConfig(
-                system_instruction=self.get_prompt(),
-                response_mime_type="application/json",
-                response_schema=self.get_schema(),
-            ),
+            messages=[
+                {"role": "system", "content": self.get_prompt()},
+                {"role": "user", "content": user_message},
+            ],
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": self.AGENT_NAME.replace("-", "_"),
+                    "schema": schema,
+                    "strict": True,
+                },
+            },
         )
-        self.logger.debug(f"Raw response preview: {response.text[:300]}")
-        return response.text
+        raw = response.choices[0].message.content
+        self.logger.debug(f"Raw response preview: {raw[:300]}")
+        return raw
 
     def _parse(self, raw: str) -> BaseModel:
         return self.get_schema().model_validate_json(raw)

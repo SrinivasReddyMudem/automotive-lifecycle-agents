@@ -191,44 +191,44 @@ class TestSkillLoader:
 
 class TestAgentInstantiation:
     def test_agent_instantiates(self):
-        with patch("sdk_agents.core.base_agent.genai.Client"), \
-             patch.dict("os.environ", {"GOOGLE_API_KEY": "test-key"}):
+        with patch("sdk_agents.core.base_agent.Groq"), \
+             patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}):
             agent = CanBusAnalystAgent()
             assert agent.AGENT_NAME == "can-bus-analyst"
 
     def test_get_schema_returns_correct_type(self):
-        with patch("sdk_agents.core.base_agent.genai.Client"), \
-             patch.dict("os.environ", {"GOOGLE_API_KEY": "test-key"}):
+        with patch("sdk_agents.core.base_agent.Groq"), \
+             patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}):
             agent = CanBusAnalystAgent()
             assert agent.get_schema() is CanBusAnalystOutput
 
     def test_get_prompt_returns_string(self):
-        with patch("sdk_agents.core.base_agent.genai.Client"), \
-             patch.dict("os.environ", {"GOOGLE_API_KEY": "test-key"}):
+        with patch("sdk_agents.core.base_agent.Groq"), \
+             patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}):
             agent = CanBusAnalystAgent()
             prompt = agent.get_prompt()
             assert isinstance(prompt, str)
             assert len(prompt) > 200
 
     def test_api_error_returns_agent_error(self):
-        with patch("sdk_agents.core.base_agent.genai.Client") as mock_client_cls, \
-             patch.dict("os.environ", {"GOOGLE_API_KEY": "test-key"}):
+        with patch("sdk_agents.core.base_agent.Groq") as mock_groq_cls, \
+             patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}):
             mock_client = MagicMock()
-            mock_client_cls.return_value = mock_client
-            mock_client.models.generate_content.side_effect = Exception("API connection failed")
+            mock_groq_cls.return_value = mock_client
+            mock_client.chat.completions.create.side_effect = Exception("API connection failed")
             agent = CanBusAnalystAgent()
             result = agent.run("test prompt")
             assert isinstance(result, AgentError)
             assert result.error_type == "api_error"
 
     def test_validation_error_returns_agent_error(self):
-        with patch("sdk_agents.core.base_agent.genai.Client") as mock_client_cls, \
-             patch.dict("os.environ", {"GOOGLE_API_KEY": "test-key"}):
+        with patch("sdk_agents.core.base_agent.Groq") as mock_groq_cls, \
+             patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}):
             mock_client = MagicMock()
-            mock_client_cls.return_value = mock_client
+            mock_groq_cls.return_value = mock_client
             mock_response = MagicMock()
-            mock_response.text = '{"invalid": "response"}'
-            mock_client.models.generate_content.return_value = mock_response
+            mock_response.choices[0].message.content = '{"invalid": "response"}'
+            mock_client.chat.completions.create.return_value = mock_response
             agent = CanBusAnalystAgent()
             result = agent.run("test prompt")
             assert isinstance(result, AgentError)
@@ -236,5 +236,5 @@ class TestAgentInstantiation:
 
     def test_missing_api_key_raises(self):
         with patch.dict("os.environ", {}, clear=True):
-            with pytest.raises(EnvironmentError, match="GOOGLE_API_KEY not set"):
+            with pytest.raises(EnvironmentError, match="GROQ_API_KEY not set"):
                 CanBusAnalystAgent()

@@ -23,10 +23,10 @@ accurate, structured, actionable output for automotive SW engineering roles.
 
 | | `md_agents` | `sdk_agents` |
 |---|---|---|
-| Technology | Claude Code `.md` agent files | Python SDK + Streamlit (Google Gemini) |
+| Technology | Claude Code `.md` agent files | Python SDK + Streamlit (Groq / Llama 3.3) |
 | Output enforcement | Prompt instructions (best effort) | JSON Schema via `response_schema` (guaranteed) |
 | Interface | Claude Code chat tab | Browser app — `streamlit run sdk_agents/app.py` |
-| API cost | Covered by Claude subscription | Free — Google Gemini free tier |
+| API cost | Covered by Claude subscription | Free — Groq free tier (no credit card) |
 | Agents | 12 roles, fully built | 1 built (expanding), same domain knowledge |
 | Lesson learned | Prompt enforcement is unreliable at scale | Schema enforcement is the right architectural choice |
 
@@ -224,14 +224,14 @@ Update anytime:
 git -C ~/.claude pull
 ```
 
-### sdk_agents — Streamlit browser app (free, Gemini API)
+### sdk_agents — Streamlit browser app (free, Groq API)
 ```bash
 cd sdk_agents
 pip install -r requirements.txt
 
-# Get a free API key at aistudio.google.com
+# Get a free API key (no credit card) at console.groq.com
 cp .env.example .env
-# Edit .env and add your GOOGLE_API_KEY
+# Edit .env and add your GROQ_API_KEY
 
 streamlit run app.py
 # Opens http://localhost:8501 in browser

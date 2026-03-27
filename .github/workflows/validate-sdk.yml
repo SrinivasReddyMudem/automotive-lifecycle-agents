@@ -30,7 +30,7 @@ jobs:
           from sdk_agents.core.registry import get_agent, AGENT_NAMES
           from sdk_agents.integrator.can_bus_analyst import CanBusAnalystAgent
           from sdk_agents.integrator.can_bus_analyst.schema import CanBusAnalystOutput
-          from google import genai
+          from groq import Groq
           print('All imports OK')
           "
 
