@@ -219,7 +219,6 @@ _NORMALIZATIONS: list[tuple[str, str]] = [
     (r"\bsafety[\s_]goal\b",        "safety goal"),
     (r"\bhazardous[\s_]event\b",    "hazardous event"),
     # ASPICE
-    (r"\baspice\b",                 "aspice"),
     (r"\bgap[\s_]analysis\b",       "gap analysis"),
     (r"\bprocess[\s_]area\b",       "process area"),
     (r"\bwork[\s_]product\b",       "work product"),

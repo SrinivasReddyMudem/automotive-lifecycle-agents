@@ -10,13 +10,24 @@ on:
         type: choice
         options:
           - can-bus-analyst
+          - field-debug-fae
+          - sw-integrator
+          - autosar-bsw-developer
+          - embedded-c-developer
+          - misra-reviewer
+          - aspice-process-coach
+          - safety-and-cyber-lead
+          - sw-project-lead
+          - regression-analyst
+          - sil-hil-test-planner
+          - sw-unit-tester
       prompt:
         description: "Test prompt"
         required: true
         default: "CAN node goes bus-off after 3 minutes, only when engine running. Other nodes fine."
 
 # This workflow makes real API calls — only run manually.
-# Requires GOOGLE_API_KEY stored in GitHub repository secrets (free key from aistudio.google.com).
+# Requires GROQ_API_KEY stored in GitHub repository secrets (free key from console.groq.com).
 # Go to: Settings → Secrets and variables → Actions → New repository secret
 
 jobs:
@@ -37,7 +48,7 @@ jobs:
 
       - name: Run integration test
         env:
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           python -c "
           import json, sys
