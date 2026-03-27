@@ -14,7 +14,7 @@ from pydantic import BaseModel, ValidationError
 from typing import Literal
 from .logger import get_logger
 
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 MAX_RETRIES = 1  # retry once on validation failure — no infinite loop
 
 
@@ -85,12 +85,41 @@ class BaseAgent:
                     message=str(e),
                 )
 
+    @staticmethod
+    def _inline_schema(schema: dict) -> dict:
+        """
+        Inline $defs/$ref references so the schema is flat.
+        Groq's json_schema enforcement requires no $ref — all types must be inline.
+        Also strips minItems/maxItems and title fields not supported by the API.
+        """
+        defs = schema.get("$defs", {})
+
+        def resolve(obj):
+            if isinstance(obj, dict):
+                if "$ref" in obj:
+                    ref_name = obj["$ref"].split("/")[-1]
+                    return resolve(dict(defs[ref_name]))
+                result = {}
+                for k, v in obj.items():
+                    if k in ("$defs", "title", "minItems", "maxItems"):
+                        continue
+                    result[k] = resolve(v)
+                # Groq strict mode requires additionalProperties: false on every object
+                if result.get("type") == "object" and "additionalProperties" not in result:
+                    result["additionalProperties"] = False
+                return result
+            if isinstance(obj, list):
+                return [resolve(item) for item in obj]
+            return obj
+
+        return resolve(schema)
+
     def _call_api(self, user_message: str) -> str:
         """
         Call Groq API with json_schema response_format enforcement.
         The model must return JSON matching the schema — cannot return free text.
         """
-        schema = self.get_schema().model_json_schema()
+        schema = self._inline_schema(self.get_schema().model_json_schema())
         response = self.client.chat.completions.create(
             model=MODEL,
             messages=[

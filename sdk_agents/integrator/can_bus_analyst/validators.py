@@ -12,7 +12,8 @@ KNOWN_AUTOSAR_LAYERS = [
     "EthIf", "TcpIp", "SoAd", "CanTp", "OS", "CanDrv", "EthDrv",
 ]
 
-MIN_TEST_FIELD_LENGTH = 25  # "check the supply" (16) is too vague; "Oscilloscope AC-coupled on Vcc pin" is fine
+MIN_TEST_LENGTH = 25       # test must describe an action + tool: "check ground" (12) is too vague
+MIN_CRITERIA_LENGTH = 12  # pass/fail criteria can be a short threshold: "Ripple < 200 mV" is fine
 
 
 def validate(output: CanBusAnalystOutput) -> None:
@@ -45,15 +46,15 @@ def _check_autosar_layer_known(output: CanBusAnalystOutput) -> None:
 
 def _check_probable_causes_specific(output: CanBusAnalystOutput) -> None:
     for i, cause in enumerate(output.probable_causes):
-        for field_name, field_value in [
-            ("test", cause.test),
-            ("pass_criteria", cause.pass_criteria),
-            ("fail_criteria", cause.fail_criteria),
+        for field_name, field_value, minimum in [
+            ("test", cause.test, MIN_TEST_LENGTH),
+            ("pass_criteria", cause.pass_criteria, MIN_CRITERIA_LENGTH),
+            ("fail_criteria", cause.fail_criteria, MIN_CRITERIA_LENGTH),
         ]:
-            if len(field_value.strip()) < MIN_TEST_FIELD_LENGTH:
+            if len(field_value.strip()) < minimum:
                 raise DomainCheckError(
                     f"probable_causes[{i}].{field_name} is too vague "
-                    f"({len(field_value)} chars, minimum {MIN_TEST_FIELD_LENGTH}). "
+                    f"({len(field_value)} chars, minimum {minimum}). "
                     f"Got: '{field_value}'"
                 )
 
