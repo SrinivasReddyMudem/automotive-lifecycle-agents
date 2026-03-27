@@ -2,29 +2,51 @@
 
 [![Tests](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/tests.yml/badge.svg)](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/tests.yml)
 [![Agents](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate-agents.yml/badge.svg)](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate-agents.yml)
+[![SDK](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate-sdk.yml/badge.svg)](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate-sdk.yml)
 [![Skills](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate-skills.yml/badge.svg)](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate-skills.yml)
 [![Lint](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/lint.yml/badge.svg)](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/lint.yml)
-[![Built for Claude Code](https://img.shields.io/badge/Built%20for-Claude%20Code-7C3AED)](https://claude.ai/claude-code)
-[![Agents](https://img.shields.io/badge/Agents-12-green)]()
+[![Agents](https://img.shields.io/badge/md__agents-12-7C3AED)]()
+[![SDK](https://img.shields.io/badge/sdk__agents-1%20(expanding)-blue)]()
 [![Skills](https://img.shields.io/badge/Skills-8-orange)]()
-[![Standards](https://img.shields.io/badge/Standards-ISO%2026262%20%7C%20ASPICE%20%7C%20MISRA%20%7C%20ISO%2021434-blue)]()
+[![Standards](https://img.shields.io/badge/Standards-ISO%2026262%20%7C%20ASPICE%20%7C%20MISRA%20%7C%20ISO%2021434-green)]()
 
-> **12 AI agents purpose-built for automotive software engineering.**
-> Each agent thinks, responds, and formats output the way a domain expert would —
-> not as a general-purpose assistant answering from memory.
+> **12 AI agents purpose-built for automotive software engineering — in two implementations.**
+> `md_agents`: prompt-engineered Claude Code agents.
+> `sdk_agents`: schema-enforced Python SDK agents with guaranteed structured output.
+
+---
+
+## Two implementations — one engineering purpose
+
+This project explores two approaches to the same problem: getting an LLM to produce
+accurate, structured, actionable output for automotive SW engineering roles.
+
+| | `md_agents` | `sdk_agents` |
+|---|---|---|
+| Technology | Claude Code `.md` agent files | Python SDK + Streamlit (Google Gemini) |
+| Output enforcement | Prompt instructions (best effort) | JSON Schema via `response_schema` (guaranteed) |
+| Interface | Claude Code chat tab | Browser app — `streamlit run sdk_agents/app.py` |
+| API cost | Covered by Claude subscription | Free — Google Gemini free tier |
+| Agents | 12 roles, fully built | 1 built (expanding), same domain knowledge |
+| Lesson learned | Prompt enforcement is unreliable at scale | Schema enforcement is the right architectural choice |
+
+**Shared foundation:** both implementations load from the same `skills/` folder —
+8 domain knowledge bases covering CAN bus, MISRA C, ASPICE, ISO 26262, AUTOSAR,
+UDS diagnostics, ISO 21434, and embedded patterns.
 
 ---
 
 ## CI quality checks
 
-Every push to this repository runs 4 automated checks:
+Every push to this repository runs 5 automated checks:
 
 | Badge | What it validates |
 |---|---|
-| **Tests** | 78 pytest cases verify all 4 Python tools produce correct outputs — ASIL levels, ASPICE gap reports, CAL ratings, gate review RAG scores |
-| **Agents** | All 12 agent files are structurally valid — correct frontmatter fields, description long enough for Claude Code auto-routing, safety constraints enforced |
-| **Skills** | All 8 skill files are present and correctly formatted so they load automatically when trigger keywords appear |
-| **Lint** | Python code passes flake8 style checks — no unused imports, consistent style across all tools |
+| **Tests** | 78 pytest cases verify all 4 Python tools produce correct outputs |
+| **Agents** | All 12 `md_agents` files are structurally valid with correct frontmatter |
+| **SDK** | `sdk_agents` schema validation, imports, skill loader, 15+ unit tests — no API key needed |
+| **Skills** | All 8 skill files present and correctly formatted |
+| **Lint** | Python code passes flake8 across tools and sdk_agents |
 
 If any check fails, the corresponding badge turns red and the cause is visible in the Actions tab.
 
@@ -186,8 +208,9 @@ a specific measurement, a tool, and a pass/fail threshold. No guessing.
 
 ---
 
-## Quick install
+## Quick start
 
+### md_agents — Claude Code (no cost, 12 agents)
 ```bash
 # Global install — agents available in all your Claude Code projects
 git clone https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents ~/.claude
@@ -199,6 +222,19 @@ git clone https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents ~/.c
 Update anytime:
 ```bash
 git -C ~/.claude pull
+```
+
+### sdk_agents — Streamlit browser app (free, Gemini API)
+```bash
+cd sdk_agents
+pip install -r requirements.txt
+
+# Get a free API key at aistudio.google.com
+cp .env.example .env
+# Edit .env and add your GOOGLE_API_KEY
+
+streamlit run app.py
+# Opens http://localhost:8501 in browser
 ```
 
 ---

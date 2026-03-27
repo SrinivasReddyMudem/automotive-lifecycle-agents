@@ -1,9 +1,11 @@
 """
 Unit tests for can_bus_analyst — no API calls required.
 Tests: schema structure, validator logic, skill loader, agent instantiation.
+All API calls are mocked — runs without a GOOGLE_API_KEY.
 """
 
 import pytest
+import json
 from unittest.mock import patch, MagicMock
 from sdk_agents.integrator.can_bus_analyst.schema import (
     CanBusAnalystOutput, ProbableCause, NarrowingQuestion, SelfEvaluationLine
@@ -145,7 +147,7 @@ class TestValidators:
         cause = ProbableCause(
             rank="HIGH",
             description="Ground offset",
-            test="check ground",        # too vague — under 25 chars
+            test="check ground",  # too vague — under 25 chars
             pass_criteria="Offset < 50 mV — ground path is clean",
             fail_criteria="Offset > 200 mV — corroded ground strap",
         )
@@ -184,31 +186,52 @@ class TestSkillLoader:
 
 class TestAgentInstantiation:
     def test_agent_instantiates(self):
-        with patch("anthropic.Anthropic"):
+        with patch("google.generativeai.configure"), \
+             patch.dict("os.environ", {"GOOGLE_API_KEY": "test-key"}):
             agent = CanBusAnalystAgent()
             assert agent.AGENT_NAME == "can-bus-analyst"
 
     def test_get_schema_returns_correct_type(self):
-        with patch("anthropic.Anthropic"):
+        with patch("google.generativeai.configure"), \
+             patch.dict("os.environ", {"GOOGLE_API_KEY": "test-key"}):
             agent = CanBusAnalystAgent()
             assert agent.get_schema() is CanBusAnalystOutput
 
     def test_get_prompt_returns_string(self):
-        with patch("anthropic.Anthropic"):
+        with patch("google.generativeai.configure"), \
+             patch.dict("os.environ", {"GOOGLE_API_KEY": "test-key"}):
             agent = CanBusAnalystAgent()
             prompt = agent.get_prompt()
             assert isinstance(prompt, str)
             assert len(prompt) > 200
 
     def test_api_error_returns_agent_error(self):
-        import anthropic
-        with patch("anthropic.Anthropic") as mock_client:
-            mock_instance = MagicMock()
-            mock_client.return_value = mock_instance
-            mock_instance.messages.create.side_effect = anthropic.APIError(
-                message="Connection error", request=MagicMock(), body=None
-            )
+        with patch("google.generativeai.configure"), \
+             patch.dict("os.environ", {"GOOGLE_API_KEY": "test-key"}), \
+             patch("google.generativeai.GenerativeModel") as mock_model_cls:
+            mock_model = MagicMock()
+            mock_model_cls.return_value = mock_model
+            mock_model.generate_content.side_effect = Exception("API connection failed")
             agent = CanBusAnalystAgent()
             result = agent.run("test prompt")
             assert isinstance(result, AgentError)
             assert result.error_type == "api_error"
+
+    def test_validation_error_returns_agent_error(self):
+        with patch("google.generativeai.configure"), \
+             patch.dict("os.environ", {"GOOGLE_API_KEY": "test-key"}), \
+             patch("google.generativeai.GenerativeModel") as mock_model_cls:
+            mock_model = MagicMock()
+            mock_model_cls.return_value = mock_model
+            mock_response = MagicMock()
+            mock_response.text = '{"invalid": "response"}'
+            mock_model.generate_content.return_value = mock_response
+            agent = CanBusAnalystAgent()
+            result = agent.run("test prompt")
+            assert isinstance(result, AgentError)
+            assert result.error_type == "validation_error"
+
+    def test_missing_api_key_raises(self):
+        with patch.dict("os.environ", {}, clear=True):
+            with pytest.raises(EnvironmentError, match="GOOGLE_API_KEY not set"):
+                CanBusAnalystAgent()

@@ -1,14 +1,19 @@
 """
-Base agent — handles API call, tool_choice enforcement, schema parsing,
-retry logic, and structured error return. Never raises to the caller.
+Base agent — Gemini-backed implementation.
+Uses response_schema in GenerationConfig to enforce structured JSON output.
+No prompt-based format instructions needed — schema enforcement is at API level.
+
+Free tier: Gemini 1.5 Flash — 15 RPM, 1500 RPD, 1M TPM.
+Get a free API key at: aistudio.google.com
 """
 
-import anthropic
+import os
+import google.generativeai as genai
 from pydantic import BaseModel, ValidationError
 from typing import Literal
 from .logger import get_logger
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "gemini-1.5-flash"
 MAX_RETRIES = 1  # retry once on validation failure — no infinite loop
 
 
@@ -29,13 +34,21 @@ class BaseAgent:
     AGENT_NAME = "base"
 
     def __init__(self):
-        self.client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise EnvironmentError(
+                "GOOGLE_API_KEY not set.\n"
+                "Get a free key at aistudio.google.com\n"
+                "Then add it to sdk_agents/.env as: GOOGLE_API_KEY=your-key"
+            )
+        genai.configure(api_key=api_key)
         self.logger = get_logger(self.AGENT_NAME)
 
     def run(self, user_message: str) -> BaseModel | AgentError:
         """
         Run the agent. Always returns a Pydantic model or AgentError — never raises.
         """
+        raw = None
         for attempt in range(MAX_RETRIES + 1):
             try:
                 raw = self._call_api(user_message)
@@ -45,15 +58,14 @@ class BaseAgent:
 
             except ValidationError as e:
                 self.logger.error(
-                    f"Schema validation failed (attempt {attempt + 1})",
-                    extra={"error": str(e), "raw": str(raw) if "raw" in dir() else None},
+                    f"Schema validation failed (attempt {attempt + 1}): {e}"
                 )
                 if attempt == MAX_RETRIES:
                     return AgentError(
                         agent=self.AGENT_NAME,
                         error_type="validation_error",
                         message=str(e),
-                        raw_response=str(raw) if "raw" in dir() else None,
+                        raw_response=raw,
                     )
 
             except DomainCheckError as e:
@@ -64,7 +76,7 @@ class BaseAgent:
                     message=str(e),
                 )
 
-            except anthropic.APIError as e:
+            except Exception as e:
                 self.logger.error(f"API error: {e}")
                 return AgentError(
                     agent=self.AGENT_NAME,
@@ -72,30 +84,27 @@ class BaseAgent:
                     message=str(e),
                 )
 
-    def _call_api(self, user_message: str) -> dict:
-        schema = self.get_schema()
-        tool_def = {
-            "name": "structured_response",
-            "description": "Return your complete analysis using this exact structure.",
-            "input_schema": schema.model_json_schema(),
-        }
-
-        response = self.client.messages.create(
-            model=MODEL,
-            max_tokens=4096,
-            system=self.get_prompt(),
-            tools=[tool_def],
-            tool_choice={"type": "tool", "name": "structured_response"},
-            messages=[{"role": "user", "content": user_message}],
+    def _call_api(self, user_message: str) -> str:
+        """
+        Call Gemini API with response_schema enforcement.
+        The model must return JSON matching the schema — cannot return free text.
+        """
+        model = genai.GenerativeModel(
+            model_name=MODEL,
+            system_instruction=self.get_prompt(),
         )
+        response = model.generate_content(
+            user_message,
+            generation_config=genai.GenerationConfig(
+                response_mime_type="application/json",
+                response_schema=self.get_schema(),
+            ),
+        )
+        self.logger.debug(f"Raw response preview: {response.text[:300]}")
+        return response.text
 
-        self.logger.debug(f"API response stop_reason: {response.stop_reason}")
-        tool_input = response.content[0].input
-        self.logger.debug(f"Tool input keys: {list(tool_input.keys())}")
-        return tool_input
-
-    def _parse(self, tool_input: dict) -> BaseModel:
-        return self.get_schema().model_validate(tool_input)
+    def _parse(self, raw: str) -> BaseModel:
+        return self.get_schema().model_validate_json(raw)
 
     def _validate_domain(self, parsed: BaseModel) -> None:
         """Override in subclass for domain-specific semantic checks."""

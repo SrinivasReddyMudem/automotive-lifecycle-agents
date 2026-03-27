@@ -16,7 +16,7 @@ on:
         default: "CAN node goes bus-off after 3 minutes, only when engine running. Other nodes fine."
 
 # This workflow makes real API calls — only run manually.
-# Requires ANTHROPIC_API_KEY stored in GitHub repository secrets.
+# Requires GOOGLE_API_KEY stored in GitHub repository secrets (free key from aistudio.google.com).
 # Go to: Settings → Secrets and variables → Actions → New repository secret
 
 jobs:
@@ -37,7 +37,7 @@ jobs:
 
       - name: Run integration test
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           python -c "
           import json, sys
