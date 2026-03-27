@@ -14,11 +14,38 @@ load_dotenv(Path(__file__).parent / ".env")
 
 from sdk_agents.core.registry import get_agent, AGENT_NAMES, AGENT_DISPLAY_NAMES
 from sdk_agents.core.base_agent import AgentError
-from sdk_agents.core.renderer import render_can_bus_analyst, render_agent_error
+from sdk_agents.core.renderer import (
+    render_can_bus_analyst,
+    render_field_debug_fae,
+    render_sw_integrator,
+    render_autosar_bsw_developer,
+    render_embedded_c_developer,
+    render_misra_reviewer,
+    render_aspice_process_coach,
+    render_gate_review_approver,
+    render_safety_and_cyber_lead,
+    render_sw_project_lead,
+    render_regression_analyst,
+    render_sil_hil_test_planner,
+    render_sw_unit_tester,
+    render_agent_error,
+)
 
-# Render function map — extend as new agents are added
+# Render function map — one entry per agent
 RENDER_MAP = {
-    "can-bus-analyst": render_can_bus_analyst,
+    "can-bus-analyst":       render_can_bus_analyst,
+    "field-debug-fae":       render_field_debug_fae,
+    "sw-integrator":         render_sw_integrator,
+    "autosar-bsw-developer": render_autosar_bsw_developer,
+    "embedded-c-developer":  render_embedded_c_developer,
+    "misra-reviewer":        render_misra_reviewer,
+    "aspice-process-coach":  render_aspice_process_coach,
+    "gate-review-approver":  render_gate_review_approver,
+    "safety-and-cyber-lead": render_safety_and_cyber_lead,
+    "sw-project-lead":       render_sw_project_lead,
+    "regression-analyst":    render_regression_analyst,
+    "sil-hil-test-planner":  render_sil_hil_test_planner,
+    "sw-unit-tester":        render_sw_unit_tester,
 }
 
 st.set_page_config(
@@ -130,10 +157,28 @@ ISO 21434 · ISO 14229 (UDS) · ISO 11898 (CAN) · IEEE 802.3bw (100BASE-T1)
         st.markdown("Automotive embedded engineer with hands-on experience across ECU development, integration, and testing.")
         st.markdown("---")
 
-        st.markdown("**Agents**")
+        st.markdown("**Agents — all live**")
         st.markdown("""
-- CAN Bus Analyst *(live)*
-- 11 more in progress
+**Integrator**
+- CAN Bus Analyst
+- Field Debug FAE
+- SW Integrator
+
+**Developer**
+- AUTOSAR BSW Developer
+- Embedded C Developer
+- MISRA Reviewer
+
+**Project Lead**
+- ASPICE Process Coach
+- Gate Review Approver
+- Safety & Cyber Lead
+- SW Project Lead
+
+**Tester**
+- Regression Analyst
+- SIL/HIL Test Planner
+- SW Unit Tester
         """)
 
         st.markdown("**Domain knowledge loaded**")
@@ -159,8 +204,24 @@ elif page == "Try the Agent":
     if history_key not in st.session_state:
         st.session_state[history_key] = []
 
-    # Example prompts
-    st.caption("Example: *CAN node goes bus-off after 3 minutes, only when engine running. Other nodes are fine.*")
+    # Per-agent example prompts
+    EXAMPLE_PROMPTS = {
+        "can-bus-analyst":       "CAN node goes bus-off after 3 minutes, only when engine running. Other nodes are fine.",
+        "field-debug-fae":       "ECU returns NRC 0x22 on service 0x27 seed request in extended session only. Programming session works fine.",
+        "sw-integrator":         "RTE generation fails with 'port not connected' error after adding a new sender-receiver interface for vehicle speed.",
+        "autosar-bsw-developer": "Design a sender-receiver SWC for brake pedal position, ASIL-B, 10 ms cyclic, uint16 data element.",
+        "embedded-c-developer":  "Hard fault on Cortex-M4, CFSR = 0x00000400, occurs only after 2 hours runtime. Stack usage looks normal.",
+        "misra-reviewer":        "Polyspace flagged Rule 11.3 (cast from pointer to integer) in our CAN driver receive handler. How do I write a deviation?",
+        "aspice-process-coach":  "Assessment in 3 weeks, SWE.4 unit test specs are not formally reviewed, and SWE.2 traceability is partial.",
+        "gate-review-approver":  "Use /gate-review command to trigger this agent.",
+        "safety-and-cyber-lead": "Perform HARA for autonomous emergency braking — loss of braking function at highway speed.",
+        "sw-project-lead":       "Customer added OTA update requirement at Milestone 3. Assess schedule impact and change request options.",
+        "regression-analyst":    "After SW baseline 2.4, 14 tests failed that passed in 2.3. Three are ASIL-D brake functions. Should we proceed?",
+        "sil-hil-test-planner":  "Plan SIL and HIL tests for the new ASIL-B torque limiter function. We use dSPACE SCALEXIO and CANoe.",
+        "sw-unit-tester":        "Write unit tests for a saturating uint16 adder, ASIL-B function. Need branch coverage and boundary value tests.",
+    }
+    example = EXAMPLE_PROMPTS.get(selected_agent, "Describe your engineering problem...")
+    st.caption(f"Example: *{example}*")
 
     # Display chat history
     for entry in st.session_state[history_key]:
