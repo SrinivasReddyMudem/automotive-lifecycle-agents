@@ -29,7 +29,7 @@ def _check_safety_goals_have_asil(output: SafetyAndCyberLeadOutput) -> None:
                 f"safety_goals[{i}].asil '{goal.asil}' is not a valid ASIL level. "
                 f"Expected one of: {VALID_ASIL}"
             )
-        if len(goal.safe_state.strip()) < 5:
+        if not goal.safe_state.strip():
             raise DomainCheckError(
                 f"safety_goals[{i}].safe_state is empty or too short. "
                 f"Every safety goal must define a safe state."

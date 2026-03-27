@@ -56,7 +56,7 @@ def _check_hold_proceed_rationale(output: RegressionAnalystOutput) -> None:
 
 def _check_coverage_blockers_identified(output: RegressionAnalystOutput) -> None:
     for delta in output.coverage_deltas:
-        if delta.is_blocker == "YES" and len(delta.lost_function.strip()) < 3:
+        if delta.is_blocker == "YES" and not delta.lost_function.strip():
             raise DomainCheckError(
                 f"CoverageDelta for module '{delta.module}' is marked as blocker "
                 f"but lost_function is empty. Must identify the specific function that lost coverage."

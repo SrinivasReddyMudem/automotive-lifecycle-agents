@@ -294,13 +294,11 @@ def render_misra_reviewer(output) -> None:
 
     with st.expander("Violations", expanded=True):
         for v in output.violations:
-            asil_icon = {"High": "🔴", "Medium": "🟡", "Low": "🟢"}.get(v.asil_relevance, "⚪")
-            st.markdown(f"**{v.rule}** — {v.title} | {v.category} | {asil_icon} ASIL relevance: {v.asil_relevance}")
+            st.markdown(f"**{v.rule}**")
             st.code(v.violation_pattern, language="c")
             st.markdown(f"*Why:* {v.explanation}")
+            st.markdown("**Compliant rewrite:**")
             st.code(v.compliant_rewrite, language="c")
-            if v.deviation_possible == "YES":
-                st.info(f"Deviation: {v.deviation_justification}")
             st.markdown("---")
 
     with st.expander("Root Cause Clusters"):

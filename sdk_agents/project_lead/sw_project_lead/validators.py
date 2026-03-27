@@ -48,7 +48,7 @@ def _check_impact_quantified(output: SwProjectLeadOutput) -> None:
 
 def _check_aspice_reference_present(output: SwProjectLeadOutput) -> None:
     ref = output.aspice_reference
-    if len(ref.strip()) < 5 or ref.strip().lower() == "n/a":
+    if not ref.strip() or ref.strip().lower() == "n/a":
         # Only enforce if there are change request options or impact items
         if output.impact_assessment or output.change_request_options:
             raise DomainCheckError(

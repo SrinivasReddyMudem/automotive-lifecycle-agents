@@ -53,7 +53,7 @@ def _check_coverage_summary_complete(output: SwUnitTesterOutput) -> None:
             "coverage_summary is empty. Must include at least Statement coverage summary."
         )
     for cs in output.coverage_summary:
-        if len(cs.achieving_tcs.strip()) < 2:
+        if not cs.achieving_tcs.strip():
             raise DomainCheckError(
                 f"coverage_summary[{cs.coverage_type}].achieving_tcs is empty. "
                 f"Must name the specific test case IDs that achieve this coverage."

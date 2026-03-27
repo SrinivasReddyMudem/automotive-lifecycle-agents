@@ -15,7 +15,7 @@ from typing import Literal
 from .logger import get_logger
 
 MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-MAX_RETRIES = 1  # retry once on validation failure — no infinite loop
+MAX_RETRIES = 2  # retry twice: once for transient validation, once with domain-check feedback
 
 
 class AgentError(BaseModel):
@@ -48,11 +48,15 @@ class BaseAgent:
     def run(self, user_message: str) -> BaseModel | AgentError:
         """
         Run the agent. Always returns a Pydantic model or AgentError — never raises.
+        On DomainCheckError the agent retries once with the failure reason fed back
+        to the model so it can self-correct the specific field.
         """
         raw = None
+        domain_feedback: str | None = None
+
         for attempt in range(MAX_RETRIES + 1):
             try:
-                raw = self._call_api(user_message)
+                raw = self._call_api(user_message, domain_feedback=domain_feedback)
                 parsed = self._parse(raw)
                 self._validate_domain(parsed)
                 return parsed
@@ -70,11 +74,19 @@ class BaseAgent:
                     )
 
             except DomainCheckError as e:
-                self.logger.error(f"Domain check failed: {e}")
-                return AgentError(
-                    agent=self.AGENT_NAME,
-                    error_type="domain_check_failed",
-                    message=str(e),
+                self.logger.warning(
+                    f"Domain check failed (attempt {attempt + 1}): {e}"
+                )
+                if attempt == MAX_RETRIES:
+                    return AgentError(
+                        agent=self.AGENT_NAME,
+                        error_type="domain_check_failed",
+                        message=str(e),
+                    )
+                # Feed the failure reason back so the model can fix the specific field
+                domain_feedback = (
+                    f"Your previous response failed a quality check: {e} "
+                    f"Please fix this specific issue and return the complete corrected response."
                 )
 
             except Exception as e:
@@ -114,18 +126,23 @@ class BaseAgent:
 
         return resolve(schema)
 
-    def _call_api(self, user_message: str) -> str:
+    def _call_api(self, user_message: str, domain_feedback: str | None = None) -> str:
         """
         Call Groq API with json_schema response_format enforcement.
         The model must return JSON matching the schema — cannot return free text.
+        If domain_feedback is set (retry after DomainCheckError), it is appended
+        as a follow-up user message so the model knows exactly what to fix.
         """
         schema = self._inline_schema(self.get_schema().model_json_schema())
+        messages: list[dict] = [
+            {"role": "system", "content": self.get_prompt()},
+            {"role": "user", "content": user_message},
+        ]
+        if domain_feedback:
+            messages.append({"role": "user", "content": domain_feedback})
         response = self.client.chat.completions.create(
             model=MODEL,
-            messages=[
-                {"role": "system", "content": self.get_prompt()},
-                {"role": "user", "content": user_message},
-            ],
+            messages=messages,
             response_format={
                 "type": "json_schema",
                 "json_schema": {
