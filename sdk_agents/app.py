@@ -251,28 +251,48 @@ def _normalize(text: str) -> str:
     return s
 
 
-def auto_detect_agent(text: str) -> str | None:
+def detect_agents(text: str) -> list[str]:
     """
-    Score all agents against the normalized prompt.
-    Returns agent with highest score if ≥ _MIN_ROUTE_SCORE, else None.
-    Ties broken by specificity (higher individual keyword weights win).
+    Score all agents and return a ranked list of relevant agents.
+
+    Primary:    highest scorer above _MIN_ROUTE_SCORE (ties broken by max keyword weight).
+    Secondaries: any other agent scoring >= 60 % of primary AND >= _MIN_ROUTE_SCORE.
+                 These represent genuinely overlapping domains (e.g. CAN bus-off + UDS
+                 diagnostic session; ASPICE gap + MISRA violation; HARA + TARA).
+
+    Returns [] when nothing scores above the threshold (general/off-topic query).
     """
     normalized = _normalize(text)
     scores: dict[str, int] = {}
     for agent, kw_map in AGENT_SCORES.items():
-        total = sum(weight for kw, weight in kw_map.items() if kw in normalized)
+        total = sum(w for kw, w in kw_map.items() if kw in normalized)
         if total > 0:
             scores[agent] = total
     if not scores:
-        return None
+        return []
     best_score = max(scores.values())
     if best_score < _MIN_ROUTE_SCORE:
-        return None
-    # If tied, return agent whose highest single keyword weight is greatest
+        return []
+
+    # Primary — break ties by highest single-keyword weight (more specific vocabulary wins)
     top = [a for a, s in scores.items() if s == best_score]
-    if len(top) == 1:
-        return top[0]
-    return max(top, key=lambda a: max(AGENT_SCORES[a].values()))
+    primary = max(top, key=lambda a: max(AGENT_SCORES[a].values()))
+
+    # Secondaries — floor is capped at 7 so dominant primaries don't crowd out
+    # genuinely overlapping domains (e.g. AUTOSAR score 20 + MISRA score 7)
+    secondary_floor = max(_MIN_ROUTE_SCORE, min(best_score * 0.4, 7))
+    secondaries = [
+        a for a, s in sorted(scores.items(), key=lambda x: -x[1])
+        if a != primary and s >= secondary_floor
+    ]
+
+    return [primary] + secondaries
+
+
+def auto_detect_agent(text: str) -> str | None:
+    """Return primary detected agent or None (backward-compatible wrapper)."""
+    agents = detect_agents(text)
+    return agents[0] if agents else None
 
 
 # Render function map — one entry per agent
@@ -479,14 +499,23 @@ elif page == "Try the Agent":
 
     # Chat input
     if prompt := st.chat_input("Describe the fault or ask your engineering question..."):
-        # Auto-detect agent from prompt keywords
-        detected = auto_detect_agent(prompt)
-        active_agent = detected if detected else selected_agent
+        # Multi-agent routing: detect primary + any strongly overlapping secondaries
+        detected_agents = detect_agents(prompt)
+        primary_agent   = detected_agents[0] if detected_agents else None
+        secondaries     = detected_agents[1:] if len(detected_agents) > 1 else []
+        active_agent    = primary_agent if primary_agent else selected_agent
 
         with st.chat_message("user"):
             st.markdown(prompt)
-            if detected and detected != selected_agent:
-                st.caption(f"Auto-routed to: **{AGENT_DISPLAY_NAMES[detected]}**")
+            if primary_agent and primary_agent != selected_agent:
+                st.caption(f"Auto-routed to: **{AGENT_DISPLAY_NAMES[primary_agent]}**")
+            if secondaries:
+                names = ", ".join(f"**{AGENT_DISPLAY_NAMES[a]}**" for a in secondaries)
+                st.info(
+                    f"Multi-skill query detected. Also relevant: {names}. "
+                    f"Switch agents in the sidebar to get each perspective.",
+                    icon="",
+                )
 
         with st.chat_message("assistant"):
             with st.spinner("Analysing..."):

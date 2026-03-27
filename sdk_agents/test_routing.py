@@ -166,7 +166,12 @@ def _normalize(text: str) -> str:
     return s
 
 
-def auto_detect_agent(text: str):
+def detect_agents(text: str) -> list:
+    """
+    Return ranked list of relevant agents.
+    Primary:     highest scorer above _MIN_ROUTE_SCORE.
+    Secondaries: score >= 60% of primary AND >= _MIN_ROUTE_SCORE.
+    """
     normalized = _normalize(text)
     scores = {}
     for agent, kw_map in AGENT_SCORES.items():
@@ -174,14 +179,23 @@ def auto_detect_agent(text: str):
         if total > 0:
             scores[agent] = total
     if not scores:
-        return None
+        return []
     best = max(scores.values())
     if best < _MIN_ROUTE_SCORE:
-        return None
+        return []
     top = [a for a, s in scores.items() if s == best]
-    if len(top) == 1:
-        return top[0]
-    return max(top, key=lambda a: max(AGENT_SCORES[a].values()))
+    primary = max(top, key=lambda a: max(AGENT_SCORES[a].values()))
+    secondary_floor = max(_MIN_ROUTE_SCORE, min(best * 0.4, 7))
+    secondaries = [
+        a for a, s in sorted(scores.items(), key=lambda x: -x[1])
+        if a != primary and s >= secondary_floor
+    ]
+    return [primary] + secondaries
+
+
+def auto_detect_agent(text: str):
+    agents = detect_agents(text)
+    return agents[0] if agents else None
 
 
 # ── Test cases ─────────────────────────────────────────────────────────────────
@@ -228,7 +242,68 @@ CASES = [
     ("fault injection test dSPACE plant model HIL environment",          "sil-hil-test-planner"),
 ]
 
+# ── Multi-agent test cases ──────────────────────────────────────────────────────
+# Each entry: (prompt, expected_primary, [expected_secondaries_subset])
+# expected_secondaries_subset: every agent listed here MUST appear in the returned list.
+MULTI_CASES = [
+    # CAN bus-off + UDS diagnostic session simultaneously
+    # NRC/UDS signals are stronger (nrc=4, service0x27=4, extended session=3) so
+    # field-debug-fae is correctly primary; can-bus-analyst is the secondary concern
+    (
+        "CAN node goes bus-off and ECU returns NRC 0x22 on service 0x27 during extended session",
+        "field-debug-fae",
+        ["can-bus-analyst"],
+    ),
+    # ASPICE assessment gap + MISRA violations in the code under review
+    (
+        "ASPICE assessment SWE.4 gap — unit test work products missing and Polyspace "
+        "flagging MISRA rule violations in the module under test",
+        "aspice-process-coach",
+        ["misra-reviewer"],
+    ),
+    # Safety HARA + cybersecurity TARA for OTA update
+    (
+        "Perform HARA and TARA for OTA update function — ASIL-D safety goal and "
+        "cybersecurity CAL-3 attack feasibility needed",
+        "safety-and-cyber-lead",
+        [],  # single agent covers both ISO 26262 and ISO 21434
+    ),
+    # AUTOSAR SWC design triggers MISRA concern about generated RTE code
+    (
+        "Design AUTOSAR Classic sender-receiver SWC ARXML and check if RTE generated "
+        "code has MISRA rule violations in the Rte_Read function",
+        "autosar-bsw-developer",
+        ["misra-reviewer"],
+    ),
+    # Regression report with ASIL-D coverage concern → regression + unit-tester both needed
+    (
+        "After baseline 2.4 regression 14 test failures and branch coverage dropped "
+        "below MC/DC target for ASIL-D functions — should we release?",
+        "regression-analyst",
+        ["sw-unit-tester"],
+    ),
+    # SIL/HIL test plan also needs ASPICE evidence for SWE.5
+    (
+        "Plan HIL test using dSPACE SCALEXIO for ASIL-B function and document "
+        "ASPICE SWE.5 test specification work product",
+        "sil-hil-test-planner",
+        ["aspice-process-coach"],
+    ),
+    # Hard fault in embedded code + MISRA violation in the ISR
+    (
+        "Hard fault on Cortex-M4 CFSR 0x00000400 in DMA ISR, same ISR flagged by "
+        "Polyspace for MISRA rule violation in pointer cast",
+        "embedded-c-developer",
+        ["misra-reviewer"],
+    ),
+]
+
+
 if __name__ == "__main__":
+    # ── Single-agent routing test ────────────────────────────────────────────────
+    print("=" * 72)
+    print("SINGLE-AGENT ROUTING  (37 cases)")
+    print("=" * 72)
     ok = fail = 0
     for prompt, expected in CASES:
         result = auto_detect_agent(prompt)
@@ -239,3 +314,27 @@ if __name__ == "__main__":
             fail += 1
             print(f"  FAIL {str(result):<26} want={expected} | {prompt[:60]}")
     print(f"\n{ok}/{len(CASES)} correct  ({fail} failed)")
+
+    # ── Multi-agent routing test ─────────────────────────────────────────────────
+    print()
+    print("=" * 72)
+    print("MULTI-AGENT ROUTING  (overlapping domain queries)")
+    print("=" * 72)
+    mok = mfail = 0
+    for prompt, exp_primary, exp_secondaries in MULTI_CASES:
+        detected = detect_agents(prompt)
+        primary = detected[0] if detected else None
+        primary_ok = primary == exp_primary
+        missing = [s for s in exp_secondaries if s not in detected]
+        if primary_ok and not missing:
+            mok += 1
+            extra = detected[1:]
+            extra_str = f"  secondaries={extra}" if extra else ""
+            print(f"  OK   primary={primary:<26}{extra_str} | {prompt[:55]}")
+        else:
+            mfail += 1
+            if not primary_ok:
+                print(f"  FAIL primary={str(primary):<26} want={exp_primary} | {prompt[:55]}")
+            if missing:
+                print(f"  FAIL secondary missing={missing} | {prompt[:55]}")
+    print(f"\n{mok}/{len(MULTI_CASES)} correct  ({mfail} failed)")

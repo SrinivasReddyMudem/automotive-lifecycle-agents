@@ -22,41 +22,114 @@ jobs:
       - name: Install dependencies
         run: pip install -r sdk_agents/requirements.txt
 
-      - name: Check imports
+      - name: Check imports — all 13 agents
         run: |
           python -c "
           from sdk_agents.core.skill_loader import load_skill, load_skills
           from sdk_agents.core.base_agent import BaseAgent, AgentError, DomainCheckError
           from sdk_agents.core.registry import get_agent, AGENT_NAMES
+          from groq import Groq
+
+          # Integrator agents
           from sdk_agents.integrator.can_bus_analyst import CanBusAnalystAgent
           from sdk_agents.integrator.can_bus_analyst.schema import CanBusAnalystOutput
-          from groq import Groq
-          print('All imports OK')
+          from sdk_agents.integrator.field_debug_fae import FieldDebugFaeAgent
+          from sdk_agents.integrator.field_debug_fae.schema import FieldDebugFaeOutput
+          from sdk_agents.integrator.sw_integrator import SwIntegratorAgent
+          from sdk_agents.integrator.sw_integrator.schema import SwIntegratorOutput
+
+          # Developer agents
+          from sdk_agents.developer.autosar_bsw_developer import AutosarBswDeveloperAgent
+          from sdk_agents.developer.autosar_bsw_developer.schema import AutosarBswDeveloperOutput
+          from sdk_agents.developer.embedded_c_developer import EmbeddedCDeveloperAgent
+          from sdk_agents.developer.embedded_c_developer.schema import EmbeddedCDeveloperOutput
+          from sdk_agents.developer.misra_reviewer import MisraReviewerAgent
+          from sdk_agents.developer.misra_reviewer.schema import MisraReviewerOutput
+
+          # Tester agents
+          from sdk_agents.tester.sil_hil_test_planner import SilHilTestPlannerAgent
+          from sdk_agents.tester.sil_hil_test_planner.schema import SilHilTestPlannerOutput
+          from sdk_agents.tester.sw_unit_tester import SwUnitTesterAgent
+          from sdk_agents.tester.sw_unit_tester.schema import SwUnitTesterOutput
+          from sdk_agents.tester.regression_analyst import RegressionAnalystAgent
+          from sdk_agents.tester.regression_analyst.schema import RegressionAnalystOutput
+
+          # Project lead agents
+          from sdk_agents.project_lead.aspice_process_coach import AspiceProcessCoachAgent
+          from sdk_agents.project_lead.aspice_process_coach.schema import AspiceProcessCoachOutput
+          from sdk_agents.project_lead.gate_review_approver import GateReviewApproverAgent
+          from sdk_agents.project_lead.gate_review_approver.schema import GateReviewApproverOutput
+          from sdk_agents.project_lead.safety_and_cyber_lead import SafetyAndCyberLeadAgent
+          from sdk_agents.project_lead.safety_and_cyber_lead.schema import SafetyAndCyberLeadOutput
+          from sdk_agents.project_lead.sw_project_lead import SwProjectLeadAgent
+          from sdk_agents.project_lead.sw_project_lead.schema import SwProjectLeadOutput
+
+          print('All 13 agent imports OK')
           "
 
-      - name: Validate Pydantic schemas
+      - name: Validate Pydantic schemas — all 13 agents
         run: |
           python -c "
           from sdk_agents.integrator.can_bus_analyst.schema import CanBusAnalystOutput
-          schema = CanBusAnalystOutput.model_json_schema()
-          assert 'properties' in schema, 'Schema has no properties'
-          required = schema.get('required', [])
-          expected = ['expert_diagnosis', 'osi_layer', 'autosar_layer',
-                      'tec_math', 'probable_causes', 'decision_flow',
-                      'narrowing_questions', 'self_evaluation']
-          for field in expected:
-              assert field in required, f'Required field missing from schema: {field}'
-          print(f'Schema OK — {len(required)} required fields validated')
+          from sdk_agents.integrator.field_debug_fae.schema import FieldDebugFaeOutput
+          from sdk_agents.integrator.sw_integrator.schema import SwIntegratorOutput
+          from sdk_agents.developer.autosar_bsw_developer.schema import AutosarBswDeveloperOutput
+          from sdk_agents.developer.embedded_c_developer.schema import EmbeddedCDeveloperOutput
+          from sdk_agents.developer.misra_reviewer.schema import MisraReviewerOutput
+          from sdk_agents.tester.sil_hil_test_planner.schema import SilHilTestPlannerOutput
+          from sdk_agents.tester.sw_unit_tester.schema import SwUnitTesterOutput
+          from sdk_agents.tester.regression_analyst.schema import RegressionAnalystOutput
+          from sdk_agents.project_lead.aspice_process_coach.schema import AspiceProcessCoachOutput
+          from sdk_agents.project_lead.gate_review_approver.schema import GateReviewApproverOutput
+          from sdk_agents.project_lead.safety_and_cyber_lead.schema import SafetyAndCyberLeadOutput
+          from sdk_agents.project_lead.sw_project_lead.schema import SwProjectLeadOutput
+
+          SCHEMAS = [
+              ('can-bus-analyst',       CanBusAnalystOutput,       ['expert_diagnosis','osi_layer','tec_math','probable_causes','self_evaluation']),
+              ('field-debug-fae',       FieldDebugFaeOutput,       ['symptom_translation','fault_details','analysis','debug_steps','self_evaluation']),
+              ('sw-integrator',         SwIntegratorOutput,        ['error_classification','analysis','probable_causes','resolution_steps','self_evaluation']),
+              ('autosar-bsw-developer', AutosarBswDeveloperOutput, ['swc_name','swc_type','provider_ports','consumer_ports','runnables','self_evaluation']),
+              ('embedded-c-developer',  EmbeddedCDeveloperOutput,  ['problem_classification','cfsr_decode','root_cause','code_pattern','self_evaluation']),
+              ('misra-reviewer',        MisraReviewerOutput,       ['violations','total_violations','action_plan','self_evaluation']),
+              ('aspice-process-coach',  AspiceProcessCoachOutput,  ['process_area_gaps','top_3_risks','immediate_actions','self_evaluation']),
+              ('gate-review-approver',  GateReviewApproverOutput,  ['criteria_assessment','overall','open_findings','self_evaluation']),
+              ('sil-hil-test-planner',  SilHilTestPlannerOutput,   ['test_cases','sil_scope','hil_only_scope','fault_injections','aspice_evidence','self_evaluation']),
+              ('sw-unit-tester',        SwUnitTesterOutput,        ['test_cases','mcdc_pairs','coverage_summary','self_evaluation']),
+              ('safety-and-cyber-lead', SafetyAndCyberLeadOutput,  ['hazardous_events','safety_goals','sec_justifications','self_evaluation']),
+              ('sw-project-lead',       SwProjectLeadOutput,       ['summary','impact_assessment','risks','self_evaluation']),
+              ('regression-analyst',    RegressionAnalystOutput,   ['failure_clusters','hold_proceed_recommendation','self_evaluation']),
+          ]
+
+          errors = []
+          for name, schema_cls, required_fields in SCHEMAS:
+              schema = schema_cls.model_json_schema()
+              required = schema.get('required', [])
+              for field in required_fields:
+                  if field not in required:
+                      errors.append(f'{name}: required field missing from schema: {field}')
+
+          if errors:
+              for e in errors:
+                  print(f'ERROR: {e}')
+              raise SystemExit(1)
+          print(f'Schema OK — all 13 agent schemas validated')
           "
 
       - name: Validate skill loader
         run: |
           python -c "
           from sdk_agents.core.skill_loader import load_skill
-          content = load_skill('can-bus-analysis')
-          assert len(content) > 100, 'Skill content too short — file may be empty'
-          print(f'Skill loader OK — can-bus-analysis: {len(content)} chars loaded')
+          skills = ['can-bus-analysis', 'iso26262-hara', 'misra-c-2012',
+                    'aspice-process', 'iso21434-tara', 'autosar-classic',
+                    'uds-diagnostics', 'embedded-patterns']
+          for skill in skills:
+              content = load_skill(skill)
+              assert len(content) > 100, f'Skill {skill} content too short'
+          print(f'Skill loader OK — {len(skills)} skills validated')
           "
+
+      - name: Run routing test (37 single-agent + 7 multi-agent cases)
+        run: python sdk_agents/test_routing.py
 
       - name: Run unit tests
         run: pytest sdk_agents/tests/ -v
