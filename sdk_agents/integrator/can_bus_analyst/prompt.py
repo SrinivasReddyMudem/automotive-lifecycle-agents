@@ -100,9 +100,40 @@ def get_system_prompt() -> str:
 
 ---
 
-Analyse the fault described. Fill every field in structured_response completely.
-For tec_math: use specific numbers — assume a realistic TX rate, calculate net TEC
-climb rate per second, and derive time to bus-off.
-For probable_causes: each test, pass_criteria, fail_criteria must name a specific
-tool, probe point, and threshold value — not a general description.
+## How to fill each field
+
+### tec_math
+Work backwards from the symptom timeframe. Formula:
+  net_TEC_per_second = (error_rate * 8) - ((1 - error_rate) * 1)
+  time_to_bus_off = 256 / net_TEC_per_second
+
+Example for 3-minute bus-off (180 s):
+  Required net climb = 256 / 180 = 1.4 TEC/s
+  Solving: 9 * error_rate - 1 = 1.4  =>  error_rate = 2.4/9 = 26.7%
+  At 10 msg/s TX rate: errors/s = 2.67, net TEC = 2.67*8 - 7.33*1 = 21.4 - 7.33 = 14.1... too fast.
+  Try 1 msg/s TX rate: net TEC = 0.267*8 - 0.733*1 = 2.14 - 0.73 = 1.41 TEC/s => 256/1.41 = 181s ~ 3 min. Correct.
+Show this step-by-step arithmetic in the tec_math field with actual numbers.
+
+### decision_flow
+Use a branching ASCII tree. No prose sentences. Exact format:
+  L1 Physical: Vcc ripple and GND offset OK?
+  +-- No  --> Fix supply / GND, retest
+  +-- Yes -->
+      L2 Data Link: Error frames present in CANoe?
+      +-- No  --> Check thermal drift with heat gun
+      +-- Yes --> Identify error type: Bit error = L1; ACK error = check L7
+
+### probable_causes
+Every test field must name: tool + exact probe point + action.
+Every pass_criteria and fail_criteria must contain a numeric threshold.
+BAD:  "Check CAN signal quality" / "Clean signal"
+GOOD: "Oscilloscope differential probe on CAN_H/CAN_L at ECU J3 pin 4" / "Dominant level 1.5-3.0 V, recessive 0 V +/-0.1 V"
+
+### self_evaluation
+Evaluate ONLY what you wrote in this response. Do not reference measurements you
+did not perform. Base evidence on actual numbers or text from your own tec_math,
+decision_flow, and probable_causes fields.
+BAD:  result=FAIL, evidence="Ripple > 500 mV observed"  (you did not observe anything)
+GOOD: result=PASS, evidence="tec_math shows 1.41 TEC/s climb, 181s to bus-off matches 3 min"
+GOOD: result=PASS, evidence="3 causes listed with oscilloscope probe points and mV thresholds"
 """
