@@ -122,9 +122,14 @@ class TestSchema:
                       "narrowing_questions", "self_evaluation"]:
             assert field in required, f"Field '{field}' missing from schema required list"
 
-    def test_schema_version_in_config(self):
-        schema = CanBusAnalystOutput.model_json_schema()
-        assert schema.get("schema_version") == "v1"
+    def test_schema_extra_is_ignore(self):
+        from pydantic import BaseModel
+        # extra="ignore" means unknown fields are silently dropped, not rejected
+        output = CanBusAnalystOutput.model_validate(
+            {**CanBusAnalystOutput.model_json_schema(), **{"unexpected_field": "x"},
+             **{k: v for k, v in make_valid_output().model_dump().items()}}
+        )
+        assert output.osi_layer == "L1 Physical"
 
 
 # ── Validator tests ───────────────────────────────────────────────────────────

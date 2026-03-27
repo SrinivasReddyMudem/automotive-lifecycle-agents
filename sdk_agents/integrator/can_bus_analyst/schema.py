@@ -6,9 +6,6 @@ Enforced at API level via tool_choice — model cannot deviate from this structu
 from pydantic import BaseModel, Field
 from typing import Literal
 
-SCHEMA_VERSION = "v1"
-
-
 class ProbableCause(BaseModel):
     rank: Literal["HIGH", "MEDIUM", "LOW"]
     description: str = Field(description="What is causing the fault and why")
@@ -30,7 +27,7 @@ class SelfEvaluationLine(BaseModel):
 
 
 class CanBusAnalystOutput(BaseModel):
-    model_config = {"json_schema_extra": {"schema_version": SCHEMA_VERSION}}
+    model_config = {"extra": "ignore"}
 
     expert_diagnosis: str = Field(
         description=(
