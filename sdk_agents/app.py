@@ -327,15 +327,23 @@ with st.sidebar:
 
     st.markdown("---")
     if page == "Try the Agent":
+        _AUTO_LABEL = "Auto — detect from input"
         selected_display = st.selectbox(
-            "Agent (auto-selected from your input, or choose manually)",
-            options=[AGENT_DISPLAY_NAMES[n] for n in AGENT_NAMES],
+            "Agent",
+            options=[_AUTO_LABEL] + [AGENT_DISPLAY_NAMES[n] for n in AGENT_NAMES],
+            index=0,
             key="agent_selector",
         )
-        selected_agent = next(
-            k for k, v in AGENT_DISPLAY_NAMES.items() if v == selected_display
-        )
-        st.caption("Type your problem — the agent auto-selects based on keywords, or pick one above.")
+        if selected_display == _AUTO_LABEL:
+            selected_agent = None   # resolved per query from user input keywords
+        else:
+            selected_agent = next(
+                k for k, v in AGENT_DISPLAY_NAMES.items() if v == selected_display
+            )
+        if selected_agent is None:
+            st.caption("Describe your problem — the agent is selected automatically from your words.")
+        else:
+            st.caption(f"Fixed to **{selected_display}**. Clear the dropdown to return to Auto.")
 
 # ── About page ─────────────────────────────────────────────────────────────────
 if page == "About":
@@ -464,7 +472,7 @@ ISO 21434 · ISO 14229 (UDS) · ISO 11898 (CAN) · IEEE 802.3bw (100BASE-T1)
 elif page == "Try the Agent":
     st.header(selected_display)
 
-    history_key = f"history_{selected_agent}"
+    history_key = f"history_{selected_agent or 'auto'}"
     if history_key not in st.session_state:
         st.session_state[history_key] = []
 
@@ -484,7 +492,10 @@ elif page == "Try the Agent":
         "sil-hil-test-planner":  "Plan SIL and HIL tests for the new ASIL-B torque limiter function. We use dSPACE SCALEXIO and CANoe.",
         "sw-unit-tester":        "Write unit tests for a saturating uint16 adder, ASIL-B function. Need branch coverage and boundary value tests.",
     }
-    example = EXAMPLE_PROMPTS.get(selected_agent, "Describe your engineering problem...")
+    if selected_agent is None:
+        example = "CAN node goes bus-off after 3 minutes only when engine running — or any other engineering problem"
+    else:
+        example = EXAMPLE_PROMPTS.get(selected_agent, "Describe your engineering problem...")
     st.caption(f"Example: *{example}*")
 
     # Display chat history
@@ -492,6 +503,9 @@ elif page == "Try the Agent":
         with st.chat_message("user"):
             st.markdown(entry["prompt"])
         with st.chat_message("assistant"):
+            if entry.get("result") is None:
+                st.warning("No agent matched for this input.")
+                continue
             entry_agent = entry.get("agent", selected_agent)
             _render = RENDER_MAP.get(entry_agent, render_agent_error)
             _render(entry["result"])
@@ -502,7 +516,8 @@ elif page == "Try the Agent":
         detected_agents = detect_agents(prompt)
         primary_agent   = detected_agents[0] if detected_agents else None
         secondaries     = detected_agents[1:] if len(detected_agents) > 1 else []
-        active_agent    = primary_agent if primary_agent else selected_agent
+        # active_agent: use auto-detected primary, fall back to manual selection
+        active_agent = primary_agent if primary_agent else selected_agent
 
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -515,6 +530,19 @@ elif page == "Try the Agent":
                     f"Switch agents in the sidebar to get each perspective.",
                     icon="",
                 )
+
+        # If Auto mode and no agent could be detected, prompt the user
+        if active_agent is None:
+            with st.chat_message("assistant"):
+                st.warning(
+                    "No agent matched for this input. Try adding domain terms like "
+                    "*bus-off, NRC 0x22, ASIL-B, ASPICE SWE.4, hard fault, MISRA rule* — "
+                    "or pick an agent manually from the sidebar."
+                )
+            st.session_state[history_key].append({
+                "prompt": prompt, "result": None, "agent": None,
+            })
+            st.stop()
 
         with st.chat_message("assistant"):
             with st.spinner("Analysing..."):
