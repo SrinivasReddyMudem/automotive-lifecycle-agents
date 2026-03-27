@@ -1,0 +1,63 @@
+name: SDK Integration Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent:
+        description: "Agent to test"
+        required: true
+        default: "can-bus-analyst"
+        type: choice
+        options:
+          - can-bus-analyst
+      prompt:
+        description: "Test prompt"
+        required: true
+        default: "CAN node goes bus-off after 3 minutes, only when engine running. Other nodes fine."
+
+# This workflow makes real API calls — only run manually.
+# Requires ANTHROPIC_API_KEY stored in GitHub repository secrets.
+# Go to: Settings → Secrets and variables → Actions → New repository secret
+
+jobs:
+  integration-test:
+    name: Real API call — ${{ inputs.agent }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r sdk_agents/requirements.txt
+
+      - name: Run integration test
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python -c "
+          import json, sys
+          from sdk_agents.core.registry import get_agent
+          from sdk_agents.core.base_agent import AgentError
+
+          agent_name = '${{ inputs.agent }}'
+          prompt = '${{ inputs.prompt }}'
+
+          print(f'Agent: {agent_name}')
+          print(f'Prompt: {prompt}')
+          print('Calling API...')
+
+          agent = get_agent(agent_name)
+          result = agent.run(prompt)
+
+          if isinstance(result, AgentError):
+              print(f'FAILED: {result.error_type} — {result.message}')
+              sys.exit(1)
+
+          print('SUCCESS — structured output received')
+          print(json.dumps(result.model_dump(), indent=2))
+          "

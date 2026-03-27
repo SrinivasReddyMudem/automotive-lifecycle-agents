@@ -1,0 +1,67 @@
+name: SDK Agents
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-sdk:
+    name: Validate sdk_agents (no API key required)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r sdk_agents/requirements.txt
+
+      - name: Check imports
+        run: |
+          python -c "
+          from sdk_agents.core.skill_loader import load_skill, load_skills
+          from sdk_agents.core.base_agent import BaseAgent, AgentError, DomainCheckError
+          from sdk_agents.core.registry import get_agent, AGENT_NAMES
+          from sdk_agents.integrator.can_bus_analyst import CanBusAnalystAgent
+          from sdk_agents.integrator.can_bus_analyst.schema import CanBusAnalystOutput
+          print('All imports OK')
+          "
+
+      - name: Validate Pydantic schemas
+        run: |
+          python -c "
+          from sdk_agents.integrator.can_bus_analyst.schema import CanBusAnalystOutput
+          schema = CanBusAnalystOutput.model_json_schema()
+          assert 'properties' in schema, 'Schema has no properties'
+          required = schema.get('required', [])
+          expected = ['expert_diagnosis', 'osi_layer', 'autosar_layer',
+                      'tec_math', 'probable_causes', 'decision_flow',
+                      'narrowing_questions', 'self_evaluation']
+          for field in expected:
+              assert field in required, f'Required field missing from schema: {field}'
+          print(f'Schema OK — {len(required)} required fields validated')
+          "
+
+      - name: Validate skill loader
+        run: |
+          python -c "
+          from sdk_agents.core.skill_loader import load_skill
+          content = load_skill('can-bus-analysis')
+          assert len(content) > 100, 'Skill content too short — file may be empty'
+          print(f'Skill loader OK — can-bus-analysis: {len(content)} chars loaded')
+          "
+
+      - name: Run unit tests
+        run: pytest sdk_agents/tests/ -v
+
+      - name: Lint sdk_agents
+        run: |
+          pip install flake8
+          flake8 sdk_agents/ --max-line-length 100 --extend-ignore=E501 \
+            --exclude=sdk_agents/logs,sdk_agents/.venv
