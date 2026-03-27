@@ -31,6 +31,42 @@ from sdk_agents.core.renderer import (
     render_agent_error,
 )
 
+# ── Auto-routing: keyword → agent ──────────────────────────────────────────────
+# Ordered by specificity — first match wins
+AUTO_ROUTE_RULES: list[tuple[list[str], str]] = [
+    # Project Lead — checked early so aspice/assessment don't get stolen by tester swe.x keywords
+    (["hara", "safety goal", "hazard", "iso 26262", "tara", "cybersecurity goal", "attack feasibility", "cal-", "threat scenario"], "safety-and-cyber-lead"),
+    (["gate review", "go/no-go", "gate criteria", "release gate", "sop readiness"], "gate-review-approver"),
+    (["aspice", "assessment", "swe.1", "swe.2", "swe.3", "swe.4 gap", "swe.5 gap", "gap analysis", "work product", "process area", "capability level"], "aspice-process-coach"),
+    (["schedule impact", "change request", "milestone", "resource plan", "risk register", "ota update requirement", "cr impact"], "sw-project-lead"),
+    # Integrator — sw-integrator before autosar-bsw-developer to catch rte/build failures
+    (["rte generation fail", "rte error", "port not connected", "linker error", "build error", "integration issue", "bsw wiring", "memory map conflict"], "sw-integrator"),
+    (["bus-off", "can node", "error frame", "tec math", "rec counter", "can trace", "bit timing", "babbling", "candump", "error counter"], "can-bus-analyst"),
+    (["nrc", "uds session", "security access", "service 0x", "flash programming", "programming session", "negative response"], "field-debug-fae"),
+    # Developer
+    (["misra", "rule violation", "polyspace", "qac", "pc-lint", "deviation", "static analysis", "compliant rewrite"], "misra-reviewer"),
+    (["hard fault", "cfsr", "cortex", "rtos task", "watchdog", "isr", "embedded c", "stack overflow", "memory fault", "bare metal"], "embedded-c-developer"),
+    (["swc design", "arxml", "bsw configuration", "autosar classic", "sender-receiver", "client-server", "p-port", "r-port", "runnable", "autosar"], "autosar-bsw-developer"),
+    # Tester
+    (["unit test", "unit tester", "boundary value", "equivalence partition", "mc/dc", "mcdc"], "sw-unit-tester"),
+    (["sil test", "hil test", "hardware in the loop", "software in the loop", "dspace", "scalexio", "test bench"], "sil-hil-test-planner"),
+    (["regression", "test delta", "baseline comparison", "new failures", "pass rate", "flaky test"], "regression-analyst"),
+    # Fallback — generic field/CAN/diagnostic signals
+    (["asil", "safety"], "safety-and-cyber-lead"),
+    (["dtc", "diagnostic trouble code", "field issue", "ecu not responding"], "field-debug-fae"),
+    (["can", "bus-off"], "can-bus-analyst"),
+]
+
+
+def auto_detect_agent(text: str) -> str | None:
+    """Return agent name if keywords match, else None."""
+    lower = text.lower()
+    for keywords, agent in AUTO_ROUTE_RULES:
+        if any(kw in lower for kw in keywords):
+            return agent
+    return None
+
+
 # Render function map — one entry per agent
 RENDER_MAP = {
     "can-bus-analyst":       render_can_bus_analyst,
@@ -65,13 +101,14 @@ with st.sidebar:
     st.markdown("---")
     if page == "Try the Agent":
         selected_display = st.selectbox(
-            "Select Agent",
+            "Agent (auto-selected from your input, or choose manually)",
             options=[AGENT_DISPLAY_NAMES[n] for n in AGENT_NAMES],
+            key="agent_selector",
         )
         selected_agent = next(
             k for k, v in AGENT_DISPLAY_NAMES.items() if v == selected_display
         )
-        st.caption("Output structure is enforced by JSON Schema — the model cannot return free text or skip any field.")
+        st.caption("Type your problem — the agent auto-selects based on keywords, or pick one above.")
 
 # ── About page ─────────────────────────────────────────────────────────────────
 if page == "About":
@@ -228,20 +265,27 @@ elif page == "Try the Agent":
         with st.chat_message("user"):
             st.markdown(entry["prompt"])
         with st.chat_message("assistant"):
-            _render = RENDER_MAP.get(selected_agent, render_agent_error)
+            entry_agent = entry.get("agent", selected_agent)
+            _render = RENDER_MAP.get(entry_agent, render_agent_error)
             _render(entry["result"])
 
     # Chat input
     if prompt := st.chat_input("Describe the fault or ask your engineering question..."):
+        # Auto-detect agent from prompt keywords
+        detected = auto_detect_agent(prompt)
+        active_agent = detected if detected else selected_agent
+
         with st.chat_message("user"):
             st.markdown(prompt)
+            if detected and detected != selected_agent:
+                st.caption(f"Auto-routed to: **{AGENT_DISPLAY_NAMES[detected]}**")
 
         with st.chat_message("assistant"):
             with st.spinner("Analysing..."):
-                agent = get_agent(selected_agent)
+                agent = get_agent(active_agent)
                 result = agent.run(prompt)
 
-            render_fn = RENDER_MAP.get(selected_agent)
+            render_fn = RENDER_MAP.get(active_agent)
             if render_fn:
                 render_fn(result)
             elif isinstance(result, AgentError):
@@ -249,4 +293,8 @@ elif page == "Try the Agent":
             else:
                 st.json(result.model_dump())
 
-        st.session_state[history_key].append({"prompt": prompt, "result": result})
+        st.session_state[history_key].append({
+            "prompt": prompt,
+            "result": result,
+            "agent": active_agent,
+        })
