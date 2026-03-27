@@ -124,9 +124,9 @@ pytest tests/ -v
 ## Folder structure
 
 ```
-automotive-lifecycle-agents/
+automotive-lifecycle-md_agents/
 ├── CLAUDE.md               — global rules loaded by Claude Code
-├── agents/                 — 12 agent definitions (4 roles)
+├── md_agents/                 — 12 agent definitions (4 roles)
 │   ├── developer/          — autosar-bsw-developer, embedded-c-developer, misra-reviewer
 │   ├── tester/             — sw-unit-tester, sil-hil-test-planner, regression-analyst
 │   ├── integrator/         — field-debug-fae, sw-integrator, can-bus-analyst

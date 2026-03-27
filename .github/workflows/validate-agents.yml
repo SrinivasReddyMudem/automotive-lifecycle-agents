@@ -25,7 +25,7 @@ jobs:
           import sys
           import re
 
-          AGENTS_DIR = "agents"
+          AGENTS_DIR = "md_agents"
           errors = []
 
           for root, dirs, files in os.walk(AGENTS_DIR):

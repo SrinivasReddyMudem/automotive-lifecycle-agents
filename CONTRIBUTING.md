@@ -27,7 +27,7 @@ from automotive engineers, safety experts, and AI practitioners are welcome.
 
 ## How to add a new agent
 
-1. Create the file in the appropriate `agents/<role>/` folder
+1. Create the file in the appropriate `md_agents/<role>/` folder
 2. Use YAML frontmatter with these required fields:
    - `name:` — unique identifier, lowercase with hyphens
    - `description:` — rich keyword list for auto-routing (80+ words)

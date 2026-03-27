@@ -51,7 +51,7 @@ Everything routes automatically from keywords in the prompt.**
 ## 2. Layer map
 
 ```
-automotive-lifecycle-agents/
+automotive-lifecycle-md_agents/
 │
 ├── CLAUDE.md                    ← LAYER 1: Global rules (always loaded)
 │
@@ -67,7 +67,7 @@ automotive-lifecycle-agents/
 │   ├── can-bus-analysis/
 │   └── embedded-patterns/
 │
-├── agents/                      ← LAYER 3: Role behaviour
+├── md_agents/                      ← LAYER 3: Role behaviour
 │   ├── developer/               ← 3 agents
 │   ├── tester/                  ← 3 agents
 │   ├── integrator/              ← 3 agents
@@ -247,7 +247,7 @@ maxTurns: 15                 ← Max conversation turns before agent stops
 ### Agent folder structure
 
 ```
-agents/
+md_agents/
 ├── developer/          ← Software construction role
 │   ├── autosar-bsw-developer.md     maxTurns: 15 (complex design tasks)
 │   ├── embedded-c-developer.md      maxTurns: 15
@@ -295,7 +295,7 @@ skills:               → loads →      name: iso26262-hara
 | Agent needs a new skill | Add skill name to `skills:` list |
 | Agent writes files it shouldn't | Remove `Write` and `Edit` from `tools:` |
 | Add a new agent | Create new `.md` in the appropriate role folder |
-| New engineering role | Create new subfolder in `agents/` |
+| New engineering role | Create new subfolder in `md_agents/` |
 
 ---
 
@@ -443,7 +443,7 @@ It runs 4 jobs on every push and pull request to `main`:
 ```
 Push to GitHub
      ↓
-validate-agents → reads agents/**/*.md → checks Layer 3
+validate-agents → reads md_agents/**/*.md → checks Layer 3
 validate-skills → reads skills/*/SKILL.md → checks Layer 2
 test            → imports tools/*.py → runs Layer 5 against Layer 4
 lint            → checks tools/ and tests/ code style
@@ -473,7 +473,7 @@ LAYER 2: skills/<name>/SKILL.md
   │  description: keywords → auto-routing trigger
   │  references/ → deep content loaded when skill is active
   ↓
-LAYER 3: agents/<role>/<name>.md
+LAYER 3: md_agents/<role>/<name>.md
   │  description: keywords → agent auto-routing trigger
   │  skills: list → pulls in Layer 2 content
   │  tools: list → grants Claude Code tool permissions
@@ -507,7 +507,7 @@ tools/asil_calculator.py  ASIL_TABLE dict  (machine-executable table)
 
 **Flow 3 — Agent description drives CI validation:**
 ```
-agents/developer/autosar-bsw-developer.md
+md_agents/developer/autosar-bsw-developer.md
   → description: field
   → CI validate-agents job checks word count ≥ 80
   → If too short → CI fails → push blocked
@@ -520,7 +520,7 @@ agents/developer/autosar-bsw-developer.md
 ### Add a new agent
 
 1. Decide the role folder: `developer/`, `tester/`, `integrator/`, or `project-lead/`
-2. Create `agents/<role>/<new-agent-name>.md`
+2. Create `md_agents/<role>/<new-agent-name>.md`
 3. Write YAML frontmatter:
    - `name:` unique, lowercase-hyphen
    - `description:` 80+ words with all trigger keywords
