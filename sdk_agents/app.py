@@ -313,7 +313,7 @@ RENDER_MAP = {
 
 st.set_page_config(
     page_title="Automotive Lifecycle Agents",
-    page_icon="",
+    page_icon=":car:",
     layout="wide",
 )
 
@@ -528,7 +528,6 @@ elif page == "Try the Agent":
                 st.info(
                     f"Multi-skill query detected. Also relevant: {names}. "
                     f"Switch agents in the sidebar to get each perspective.",
-                    icon="",
                 )
 
         # If Auto mode and no agent could be detected, prompt the user

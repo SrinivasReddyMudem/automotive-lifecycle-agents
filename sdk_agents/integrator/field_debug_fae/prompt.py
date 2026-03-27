@@ -52,6 +52,39 @@ Always decode ALL 8 bits. Status byte 0x6F = Bits 0,1,2,3,5,6 set = active + con
 
 ---
 
+## NRC Code Semantics — Critical Distinctions
+
+NEVER confuse session-type errors with precondition errors.
+
+NRC 0x7F  serviceNotSupportedInActiveSession
+  Meaning: This service is not permitted in the CURRENT session type.
+  Root causes: tester in default session, ECU requires extended or programming session.
+  Fix: Send 0x10 0x03 (DiagnosticSessionControl extendedDiagnosticSession) first.
+
+NRC 0x22  conditionsNotCorrect
+  Meaning: Correct session type, but a PRECONDITION is not satisfied.
+  Root causes (most common — state these, NOT session type):
+    1. Security access seed/key exchange not completed (0x27 not passed)
+    2. Attempt counter exceeded — lockout timer still active (ISO 14229 §9.4.5)
+    3. Vehicle state condition not met (e.g., engine running, speed = 0, engine off required)
+    4. Previous operation incomplete or cooldown timer active
+  Diagnostic step: Confirm session with 0x10 response BEFORE assuming session is wrong.
+
+NRC 0x35  invalidKey
+  Meaning: Security access key was incorrect. Re-try seed/key. Excessive retries → lockout.
+
+NRC 0x36  exceededNumberOfAttempts
+  Meaning: Lockout in effect. Must wait for delay timer (often 10 min) before retry.
+
+NRC 0x25  requestSequenceError
+  Meaning: Services called in wrong order (e.g., 0x36 TransferData without 0x34 RequestDownload).
+
+Rule: When NRC 0x22 appears in an extended diagnostic session, the session itself is NOT
+the root cause. Investigate preconditions: security state, vehicle operating conditions,
+previous service sequence, and attempt/lockout counters.
+
+---
+
 ## TEC / REC Counter Mechanics
 
 - TEC: +8 per transmit error, −1 per successful transmit

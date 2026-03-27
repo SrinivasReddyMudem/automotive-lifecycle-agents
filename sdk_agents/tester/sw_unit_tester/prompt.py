@@ -63,13 +63,35 @@ Example for uint8_t speed input [0, 200]:
 
 ## MC/DC — How to Build Independence Pairs
 
-For decision: (A AND B AND C)
+### Case 1: Boolean conditions  (A AND B AND C)
   Build truth table (8 rows for 3 conditions).
   Find pairs where changing ONE condition changes the decision:
     A-pair: rows where B=T, C=T: A=T→Decision=T, A=F→Decision=F (TC-A1, TC-A2)
     B-pair: rows where A=T, C=T: B=T→Decision=T, B=F→Decision=F (TC-B1, TC-B2)
     C-pair: rows where A=T, B=T: C=T→Decision=T, C=F→Decision=F (TC-C1, TC-C2)
   Minimum MC/DC set: one pair per condition (can share rows across pairs)
+
+### Case 2: Arithmetic comparisons  (e.g. saturation, clamping, thresholds)
+  For a function with comparison `if (input >= UPPER_LIMIT)`, the "condition" is
+  the comparison itself. Independence pairs use NUMERIC values, NOT boolean flags.
+
+  Example — saturating uint16 adder (result = min(a + b, UINT16_MAX)):
+    Condition C1: (a + b) > UINT16_MAX
+      C1-pair-TRUE:  a=0xFFFF, b=0x0001  → sum overflows → result = 0xFFFF (saturated)
+      C1-pair-FALSE: a=0xFFFE, b=0x0001  → sum = 0xFFFF  → result = 0xFFFF (no saturation)
+      These are independence pairs for C1 — only the overflow condition changes.
+
+    Condition C2: sum == UINT16_MAX (exact boundary — saturation edge)
+      C2-pair-TRUE:  a=0xFFFE, b=0x0001  → result = 0xFFFF (boundary, no saturation)
+      C2-pair-FALSE: a=0xFFFD, b=0x0001  → result = 0xFFFE (below boundary)
+
+  NEVER write MC/DC pairs for arithmetic functions as boolean A=T/A=F.
+  ALWAYS use actual numeric input values that cross the decision boundary.
+
+  Rule: For each comparison `(expr OP threshold)`:
+    - Pair-TRUE:  smallest input crossing the threshold (e.g. MAX, MAX-1+1)
+    - Pair-FALSE: largest input staying below threshold (e.g. MAX-1, MAX-2+1)
+    - Both test cases differ by the minimum step across the decision boundary.
 
 ---
 
@@ -118,9 +140,14 @@ For AUTOSAR runnable functions (RTE API callers):
 
 1. State which ASIL level drives the coverage requirement and cite ISO 26262-6 table
 2. Every test case: ID, objective, precondition, inputs, expected result, pass criteria, coverage target
-3. Boundary values: test [min-1], [min], [min+1], [max-1], [max], [max+1]
+3. Boundary values: test [min-1], [min], [min+1], [max-1], [max], [max+1].
+   For saturation functions: max-1 (one below saturation point) MUST appear as an
+   explicit test case — it is the most common missed boundary in coverage reviews.
 4. Equivalence partitioning: identify class boundary, test one value per class
-5. MC/DC: build truth table, identify independence pairs, map each pair to TC-ID
+5. MC/DC: identify whether conditions are boolean or arithmetic comparisons first.
+   For arithmetic comparisons: independence pairs MUST use actual numeric boundary values —
+   NEVER use boolean A=T/A=F notation for arithmetic functions.
+   For boolean logic: build truth table, find independence pairs, map to TC-IDs.
 6. Negative tests mandatory for all ASIL-B and above functions
 7. For AUTOSAR runnables: include test for invalid RTE return status handling
 8. Note when a stub is required for each dependency
