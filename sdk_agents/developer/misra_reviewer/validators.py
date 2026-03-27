@@ -49,10 +49,10 @@ def _check_clusters_present(output: MisraReviewerOutput) -> None:
 
 def _check_action_plan_has_effort(output: MisraReviewerOutput) -> None:
     for i, row in enumerate(output.action_plan):
-        if len(row.effort_days.strip()) < 2:
+        if not row.effort_days.strip():
             raise DomainCheckError(
-                f"action_plan[{i}].effort_days is empty or too vague: '{row.effort_days}'. "
-                f"Must state specific effort in person-days."
+                f"action_plan[{i}].effort_days is empty. "
+                f"Must state specific effort in person-days (e.g. '1', '0.5', '2-3')."
             )
 
 
