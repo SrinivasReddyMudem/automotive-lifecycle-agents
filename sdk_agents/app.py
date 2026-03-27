@@ -16,6 +16,11 @@ from sdk_agents.core.registry import get_agent, AGENT_NAMES, AGENT_DISPLAY_NAMES
 from sdk_agents.core.base_agent import AgentError
 from sdk_agents.core.renderer import render_can_bus_analyst, render_agent_error
 
+# Render function map — extend as new agents are added
+RENDER_MAP = {
+    "can-bus-analyst": render_can_bus_analyst,
+}
+
 st.set_page_config(
     page_title="Automotive Lifecycle Agents",
     page_icon="🚗",
@@ -76,9 +81,3 @@ if prompt := st.chat_input("Describe the fault or ask your engineering question.
             st.json(result.model_dump())
 
     st.session_state[history_key].append({"prompt": prompt, "result": result})
-
-
-# Render function map — extend as new agents are added
-RENDER_MAP = {
-    "can-bus-analyst": render_can_bus_analyst,
-}
