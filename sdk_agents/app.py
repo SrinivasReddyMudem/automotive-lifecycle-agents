@@ -387,8 +387,8 @@ if page == "About":
     st.markdown("---")
 
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-    col_m1.metric("Tests Passing", "✅ 78")
-    col_m2.metric("Agents", "✅ 13")
+    col_m1.metric("Tests Passing", "✅ 31")
+    col_m2.metric("Agents Live", "✅ 7")
     col_m3.metric("Skills", "✅ 8")
     col_m4.metric("CI Checks", "✅ 5")
 
@@ -487,25 +487,25 @@ ISO 21434 · ISO 14229 (UDS) · ISO 11898 (CAN) · IEEE 802.3bw
         )
         st.markdown("---")
 
-        st.markdown("**Agents — all live**")
+        st.markdown("**Agents**")
         st.markdown("""
-**Integrator**
+**Integrator** ✅ Live
 - CAN Bus Analyst
 - Field Debug FAE
 - SW Integrator
 
-**Developer**
+**Developer** ✅ Live
 - AUTOSAR BSW Developer
 - Embedded C Developer
 - MISRA Reviewer
 
 **Project Lead**
-- ASPICE Process Coach
-- Gate Review Approver
-- Safety & Cyber Lead
-- SW Project Lead
+- ASPICE Process Coach ✅ Live
+- Gate Review Approver *(use /gate-review)*
+- Safety & Cyber Lead 🔧 In progress
+- SW Project Lead 🔧 In progress
 
-**Tester**
+**Tester** 🔧 In progress
 - Regression Analyst
 - SIL/HIL Test Planner
 - SW Unit Tester
