@@ -355,6 +355,14 @@ if page == "About":
     st.subheader("Structured, actionable AI for automotive ECU development, integration, and diagnostics")
     st.markdown("---")
 
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    col_m1.metric("Tests Passing", "✅ 78")
+    col_m2.metric("Agents", "✅ 13")
+    col_m3.metric("Skills", "✅ 8")
+    col_m4.metric("CI Checks", "✅ 5")
+
+    st.markdown("---")
+
     col1, col2 = st.columns([2, 1])
 
     with col1:
@@ -375,34 +383,42 @@ to produce output an engineer can directly act on.
 *Question: "CAN node goes bus-off after 3 minutes, only when engine running"*
 """)
 
-        st.code("""Generic AI:
-  "Check your CAN bus wiring and termination.
-   Verify the baud rate settings are consistent across all nodes..."
+        ex_col1, ex_col2 = st.columns(2)
+        with ex_col1:
+            st.caption("Generic AI")
+            st.code('''"Check your CAN bus wiring
+ and termination. Verify
+ baud rate settings are
+ consistent across all
+ nodes..."''', language="text")
+        with ex_col2:
+            st.caption("This agent")
+            st.code("""OSI Layer:     L1 Physical
+AUTOSAR Layer: MCAL (CanDrv)
+Tool:          Oscilloscope
 
-This agent:
-  OSI Layer:     L1 Physical
-  AUTOSAR Layer: MCAL (CanDrv)
-  Tool:          Oscilloscope
+TEC Math:
+  Net climb = 256 / 180s
+              = 1.41 TEC/s
+  Bus-off: ~181s — 3 min ✓
 
-  TEC Math:
-    Net climb = 256 / 180s = 1.41 TEC/s
-    Time to bus-off: ~181s — matches 3 min ✓
+Causes:
+  [HIGH]   Alternator ripple
+           Vcc AC-coupled
+           Pass < 200mV
+           Fail > 500mV
 
-  Probable Causes:
-    [HIGH]   Alternator ripple on transceiver Vcc
-             Test: Oscilloscope AC-coupled on Vcc pin
-             Pass: < 200 mV  |  Fail: > 500 mV
+  [MEDIUM] GND offset
+           ECU GND vs bat-
+           Pass < 50mV
+           Fail > 200mV
 
-    [MEDIUM] Chassis GND offset under engine load
-             Test: DMM between ECU GND and battery negative
-             Pass: < 50 mV  |  Fail: > 200 mV
-
-  Decision Flow:
-    L1 Physical: Vcc ripple and GND offset OK?
-    +-- No  --> Fix supply / GND, retest
-    +-- Yes --> L2 Data Link: Error frames in CANoe?
-        +-- No  --> Check thermal drift with heat gun
-        +-- Yes --> Bit error = L1; ACK error = check L7""", language="text")
+Decision Flow:
+  Vcc + GND OK?
+  +-- No  --> Fix supply
+  +-- Yes --> Error frames?
+      +-- No  --> Heat gun
+      +-- Yes --> L1/L7""", language="text")
 
         st.markdown("""
 **What engineers get**
