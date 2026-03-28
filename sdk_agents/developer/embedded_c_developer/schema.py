@@ -72,6 +72,22 @@ class EmbeddedCDeveloperOutput(BaseModel):
             "deepest call chain depth, and whether ISR preemption applies.']"
         )
     )
+    cpu_load_calc: list[str] = Field(
+        description=(
+            "CPU load calculation as a list of strings — one string per line. "
+            "ONLY populate when symptom indicates CPU resource pressure: "
+            "task deadline missed, random WDT reset, CPU overload reported, or "
+            "performance degradation after adding new task/ISR. "
+            "Otherwise: ['N/A — symptom does not indicate CPU load as the cause']. "
+            "First element: header 'CPU Load — per-task utilisation analysis'. "
+            "Middle elements: WCET × frequency per task, one line each. "
+            "Last element: plain-English confirmation starting with → stating whether "
+            "total load is within safe limits (< 70% sustained, < 90% peak). "
+            "If WCET or task rates not provided: "
+            "['N/A — task WCET and execution frequency not stated. "
+            "Provide TRACE32 Performance window output or measured WCET per task.']"
+        )
+    )
     narrowing_questions: list[NarrowingQuestion] = Field(
         min_length=3,
         max_length=3,

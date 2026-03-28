@@ -64,6 +64,22 @@ class SwIntegratorOutput(BaseModel):
             "Headroom < 10% = warning; < 5% = blocker."
         )
     )
+    resource_budget_calc: list[str] = Field(
+        description=(
+            "Resource budget calculations as a list of strings — one string per line. "
+            "ONLY populate when the symptom explicitly indicates a resource constraint: "
+            "random resets, task deadline missed, NvM write failure, after adding new SWC/feature, "
+            "CPU overload reported, or flash/RAM overflow. "
+            "Otherwise: ['N/A — symptom does not indicate a resource constraint']. "
+            "Cover whichever metrics are relevant: "
+            "(1) CPU load: 'load% = WCET_ms × frequency_hz / 1000 × 100' per task, "
+            "(2) NvM endurance: 'remaining = rated_endurance − current_write_count', "
+            "(3) EEPROM write rate vs lifetime. "
+            "First element: header naming the metric being calculated. "
+            "Middle elements: one arithmetic step per line with actual numbers. "
+            "Last element: plain-English confirmation starting with →."
+        )
+    )
     resolution_steps: list[DebugStep] = Field(
         min_length=3,
         max_length=3,

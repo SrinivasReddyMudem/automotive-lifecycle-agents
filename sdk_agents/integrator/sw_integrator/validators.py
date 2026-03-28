@@ -19,6 +19,7 @@ def validate(output: SwIntegratorOutput) -> None:
     _check_autosar_layer_known(output)
     _check_analysis_specific(output)
     _check_resolution_steps_specific(output)
+    _check_resource_budget_calc(output)
     _check_self_evaluation_has_evidence(output)
 
 
@@ -47,6 +48,20 @@ def _check_resolution_steps_specific(output: SwIntegratorOutput) -> None:
                 f"({len(step.action)} chars, minimum {MIN_ACTION_LENGTH}). "
                 f"Got: '{step.action}'"
             )
+
+
+def _check_resource_budget_calc(output: SwIntegratorOutput) -> None:
+    calc = output.resource_budget_calc
+    text = "\n".join(calc) if isinstance(calc, list) else str(calc)
+    if "N/A" in text:
+        return  # fallback path is valid — symptom did not indicate resource constraint
+    digits = sum(c.isdigit() for c in text)
+    if digits < 3:
+        raise DomainCheckError(
+            f"resource_budget_calc contains fewer than 3 numeric characters but N/A was not declared. "
+            f"Either show step-by-step arithmetic or write 'N/A — [reason]'. "
+            f"Got: '{text[:80]}'"
+        )
 
 
 def _check_self_evaluation_has_evidence(output: SwIntegratorOutput) -> None:

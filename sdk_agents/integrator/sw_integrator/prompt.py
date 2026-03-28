@@ -114,6 +114,48 @@ Memory budget MUST show per-section calculation with actual numbers from the map
   End each section with a confirmation line:
   "→ .text at X% utilisation with Xkb headroom. [Safe / WARNING: headroom below 10% / BLOCKER: headroom below 5%]."
 
+### resource_budget_calc
+Only calculate when the symptom explicitly indicates a resource constraint.
+
+Trigger conditions — calculate if symptom mentions:
+  - Random ECU reset / watchdog reset → CPU overload or stack overflow
+  - Task deadline missed / response time violation → CPU load per task
+  - NvM write error / data lost on reset / EEPROM fault → NvM endurance
+  - After adding new SWC, feature, or library → CPU + memory budget impact
+  - "Out of memory" / linker overflow → RAM/Flash utilisation
+
+All other issues (port wiring, interface mismatch, BSW config) → set:
+  ["N/A — symptom does not indicate a resource constraint"]
+
+When relevant, provide as a JSON list of strings — one string per line.
+Calculate whichever metrics the symptom points to:
+
+CPU load per task example:
+[
+  "CPU Load — per-task utilisation analysis",
+  "Formula: load% = WCET_ms × frequency_hz / 1000 × 100",
+  "Task: CAN_RxTask — WCET = 0.8 ms, frequency = 10 Hz",
+  "load% = 0.8 × 10 / 1000 × 100 = 8 / 1000 × 100 = 0.8%",
+  "Task: AppStateTask — WCET = 2.1 ms, frequency = 100 Hz",
+  "load% = 2.1 × 100 / 1000 × 100 = 210 / 1000 × 100 = 21%",
+  "Total measured CPU load (TRACE32 Performance): 73%",
+  "→ CPU load at 73% is above the 70% sustained limit — CPU overload is a contributing factor. Reduce AppStateTask frequency or optimise WCET."
+]
+
+NvM endurance example (append or standalone):
+[
+  "NvM Endurance — write cycle analysis",
+  "Rated endurance: 100,000 write cycles (datasheet)",
+  "Current write counter (NvM_ReadAll counter): 87,450",
+  "Remaining cycles: 100,000 − 87,450 = 12,550",
+  "Write rate: 15 writes/hour × 8 h/day × 250 days/year = 30,000 writes/year",
+  "Remaining lifetime: 12,550 / (30,000 / 365) = 152 days",
+  "→ NvM will reach endurance limit in approximately 152 days at current write rate — reduce write frequency or replace NvM block."
+]
+
+N/A if numbers not provided:
+["N/A — CPU WCET and task frequency not stated. Provide TRACE32 Performance window output or task execution time and call rate to calculate CPU load."]
+
 ### resolution_steps
 Every action must name: specific tool + exact menu path or command + expected result.
 BAD:  action = "Fix the port connection"

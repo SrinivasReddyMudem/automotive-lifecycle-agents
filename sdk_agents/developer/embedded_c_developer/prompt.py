@@ -162,6 +162,32 @@ GOOD: "volatile uint32_t g_CanBusOffCount = 0U;  /* Rule 8.4: volatile for ISR-s
 Rule must be specific: "Rule 14.4" not "MISRA says..."
 Show synthetic violation and compliant rewrite for each rule.
 
+### cpu_load_calc
+Only calculate when symptom indicates CPU resource pressure:
+  - Task deadline missed / response time exceeded
+  - Random WDT reset with no stack overflow (stack clean but reset occurs)
+  - "CPU overload" reported in DLT or performance monitor
+  - Performance degradation after adding new task or ISR
+
+All other issues (stack overflow, wrong logic, signal value) → set:
+  ["N/A — symptom does not indicate CPU load as the cause"]
+
+When relevant, provide as a JSON list of strings — one string per line:
+
+[
+  "CPU Load — per-task utilisation analysis",
+  "Formula: load% = WCET_ms × frequency_hz / 1000 × 100",
+  "Task: CAN_TxTask  — WCET = 0.5 ms, frequency = 100 Hz → load = 0.5 × 100 / 1000 × 100 = 5%",
+  "Task: AppLogicTask — WCET = 3.2 ms, frequency = 50 Hz → load = 3.2 × 50 / 1000 × 100 = 16%",
+  "ISR:  CAN_RxISR   — WCET = 0.1 ms, frequency = 500 Hz → load = 0.1 × 500 / 1000 × 100 = 5%",
+  "Total CPU load = 5 + 16 + 5 = 26% (tasks shown; idle and OS overhead ~10%)",
+  "→ Estimated CPU load: 36% including OS overhead. This is within the 70% sustained limit — CPU overload is not the root cause."
+]
+
+If TRACE32 Performance window value is directly available, use it and state the source:
+  "TRACE32 Performance window: total CPU load = 73% (measured)"
+  "→ CPU load at 73% exceeds the 70% sustained limit — CPU overload is a contributing factor."
+
 ### rtos_calc
 Provide as a JSON list of strings — one string per line.
 If RTOS is involved, show stack sizing and/or watchdog window arithmetic:

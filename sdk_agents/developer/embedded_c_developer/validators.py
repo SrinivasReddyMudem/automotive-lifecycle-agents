@@ -17,6 +17,7 @@ def validate(output: EmbeddedCDeveloperOutput) -> None:
     _check_code_pattern_specific(output)
     _check_root_cause_specific(output)
     _check_rtos_calc_structure(output)
+    _check_cpu_load_calc(output)
     _check_self_evaluation_has_evidence(output)
 
 
@@ -73,6 +74,20 @@ def _check_rtos_calc_structure(output: EmbeddedCDeveloperOutput) -> None:
         raise DomainCheckError(
             f"rtos_calc contains fewer than 3 numeric characters but N/A was not declared. "
             f"Either show step-by-step arithmetic or write 'N/A — [reason]'. "
+            f"Got: '{text[:80]}'"
+        )
+
+
+def _check_cpu_load_calc(output: EmbeddedCDeveloperOutput) -> None:
+    calc = output.cpu_load_calc
+    text = "\n".join(calc) if isinstance(calc, list) else str(calc)
+    if "N/A" in text:
+        return  # symptom did not indicate CPU load — fallback is valid
+    digits = sum(c.isdigit() for c in text)
+    if digits < 3:
+        raise DomainCheckError(
+            f"cpu_load_calc contains fewer than 3 numeric characters but N/A was not declared. "
+            f"Either show per-task WCET × frequency arithmetic or write 'N/A — [reason]'. "
             f"Got: '{text[:80]}'"
         )
 

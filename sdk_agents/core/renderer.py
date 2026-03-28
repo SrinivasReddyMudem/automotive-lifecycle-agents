@@ -185,6 +185,12 @@ def render_sw_integrator(output) -> None:
 
     _render_probable_causes(output.probable_causes)
 
+    res = output.resource_budget_calc
+    res_text = "\n".join(res) if isinstance(res, list) else str(res)
+    if "N/A" not in res_text:
+        with st.expander("Resource Budget — CPU / NvM", expanded=True):
+            st.code(res_text)
+
     with st.expander("Memory Budget"):
         for sec in output.memory_budget:
             ok_icon = "✅" if sec.headroom_ok == "YES" else ("⚠️" if sec.headroom_ok == "UNKNOWN" else "❌")
@@ -293,6 +299,12 @@ def render_embedded_c_developer(output) -> None:
             for note in output.misra_notes:
                 st.markdown(f"**{note.rule}** ({note.category}) — {note.violation_pattern}")
                 st.code(note.compliant_fix, language="c")
+
+    cpu = output.cpu_load_calc
+    cpu_text = "\n".join(cpu) if isinstance(cpu, list) else str(cpu)
+    if "N/A" not in cpu_text:
+        with st.expander("CPU Load Calculation", expanded=True):
+            st.code(cpu_text)
 
     rtos = output.rtos_calc
     rtos_text = "\n".join(rtos) if isinstance(rtos, list) else str(rtos)
