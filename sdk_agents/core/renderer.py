@@ -87,11 +87,9 @@ def render_field_debug_fae(output) -> None:
             st.markdown(f"**Customer complaint:** {st_tr.customer_complaint}")
             st.markdown(f"**Function affected:** {st_tr.function_affected}")
             st.markdown(f"**Translated to:** {st_tr.translated_to}")
-            st.markdown(f"**Probable domain:** {st_tr.probable_domain}")
         with col2:
             st.metric("AUTOSAR Layer", st_tr.autosar_layer)
             st.metric("OSI Layer", st_tr.osi_layer)
-            st.metric("Primary Tool", st_tr.primary_tool)
 
     fd = output.fault_details
     safety_icon = "🔴" if fd.safety_relevant == "YES" else "🟢"
@@ -113,21 +111,19 @@ def render_field_debug_fae(output) -> None:
 
     _render_probable_causes(output.probable_causes)
 
-    with st.expander("UDS Session Analysis"):
-        uds = output.uds_session_analysis
-        st.markdown(f"**Session type:** {uds.session_type}")
-        st.markdown(f"**NRC:** `{uds.nrc_code}` — {uds.nrc_name}")
-        st.markdown("**Root causes:**")
-        for rc in uds.nrc_root_causes:
-            st.markdown(f"- {rc}")
-        st.markdown(f"**Session sequence issue:** {uds.session_sequence_issue}")
+    uds = output.uds_session_analysis
+    if uds.nrc_code != "N/A":
+        with st.expander("UDS Session Analysis"):
+            st.markdown(f"**NRC:** `{uds.nrc_code}` — {uds.nrc_name}")
+            st.markdown("**Root causes:**")
+            for rc in uds.nrc_root_causes:
+                st.markdown(f"- {rc}")
+            if uds.session_sequence_issue != "N/A":
+                st.markdown(f"**Session sequence issue:** {uds.session_sequence_issue}")
 
     if "N/A" not in output.tec_math:
         with st.expander("TEC Math"):
             st.code(output.tec_math)
-
-    with st.expander("Decision Flow"):
-        st.code(output.decision_flow)
 
     with st.expander("Debug Steps", expanded=True):
         for step in output.debug_steps:
@@ -135,8 +131,6 @@ def render_field_debug_fae(output) -> None:
             st.markdown(f"- Action: {step.action}")
             st.markdown(f"- Expected: {step.expected_output}")
 
-    st.info(f"**Lab vs Field:** {output.lab_vs_field}")
-    _render_narrowing_questions(output.narrowing_questions)
     _render_self_evaluation(output.self_evaluation)
 
 
@@ -597,7 +591,7 @@ def render_sw_unit_tester(output) -> None:
         for tc in output.test_cases:
             st.markdown(f"**{tc.tc_id}** — {tc.objective}")
             st.markdown(f"  Input: `{tc.input_values}` → Expected: `{tc.expected_result}`")
-            st.caption(f"Pass: {tc.pass_criteria} | Coverage: {tc.coverage_target}")
+            st.caption(f"Pass: {tc.pass_criteria}")
 
     if output.mcdc_pairs:
         with st.expander("MC/DC Independence Pairs"):
@@ -610,9 +604,10 @@ def render_sw_unit_tester(output) -> None:
 
     with st.expander("Coverage Summary"):
         for cs in output.coverage_summary:
-            achieved = cs.achieved_pct
-            target = cs.target_pct
-            icon = "✅" if achieved >= target else "⚠️"
-            st.markdown(f"{icon} **{cs.coverage_type}** — {achieved} / {target} target | TCs: {cs.achieving_tcs}")
+            try:
+                icon = "✅" if float(cs.achieved_pct.rstrip('%')) >= float(cs.target_pct.rstrip('%')) else "⚠️"
+            except (ValueError, AttributeError):
+                icon = "📊"
+            st.markdown(f"{icon} **{cs.coverage_type}** — {cs.achieved_pct} / {cs.target_pct} target | TCs: {cs.achieving_tcs}")
 
     _render_self_evaluation(output.self_evaluation)
