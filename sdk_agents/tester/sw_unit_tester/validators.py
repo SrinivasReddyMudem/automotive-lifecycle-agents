@@ -20,9 +20,10 @@ def validate(output: SwUnitTesterOutput) -> None:
 
 
 def _check_test_code_present(output: SwUnitTesterOutput) -> None:
-    if len(output.test_code.strip()) < MIN_TEST_CODE_LENGTH:
+    joined = "\n".join(output.test_code)
+    if len(joined.strip()) < MIN_TEST_CODE_LENGTH:
         raise DomainCheckError(
-            f"test_code is too short ({len(output.test_code)} chars). "
+            f"test_code is too short ({len(joined)} chars). "
             f"Must show actual test code in framework syntax (minimum {MIN_TEST_CODE_LENGTH} chars). "
             f"Not just a comment or table."
         )
