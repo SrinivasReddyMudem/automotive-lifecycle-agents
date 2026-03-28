@@ -437,6 +437,7 @@ domain correctness, and content completeness. Calculations are verified, domain
 rules enforced, and decision flows cross-checked against automotive standards.
 
 The result: consistent, reproducible outputs that hold up under engineering scrutiny.
+Agents self-correct on failure — responses are validated and retried before the engineer sees them.
 
 **Standards**
 
