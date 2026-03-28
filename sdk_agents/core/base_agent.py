@@ -143,6 +143,12 @@ class BaseAgent:
                 # Groq strict mode requires additionalProperties: false on every object
                 if result.get("type") == "object" and "additionalProperties" not in result:
                     result["additionalProperties"] = False
+                # Groq strict mode requires ALL properties listed in required.
+                # Pydantic omits fields with defaults from required — add them back.
+                if result.get("type") == "object" and "properties" in result:
+                    all_props = list(result["properties"].keys())
+                    existing = result.get("required", [])
+                    result["required"] = list(dict.fromkeys(existing + all_props))
                 return result
             if isinstance(obj, list):
                 return [resolve(item) for item in obj]
