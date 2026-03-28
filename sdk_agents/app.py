@@ -46,22 +46,34 @@ AGENT_SCORES: dict[str, dict[str, int]] = {
         "tec counter": 4, "rec counter": 4, "bit stuffing": 4, "error passive": 4,
         "error active": 4, "oscilloscope can": 4, "can-fd": 3, "error frame": 3,
         "bit timing": 3, "can trace": 3, "120 ohm": 3, "can matrix": 3,
-        "dbc file": 3, "canalyzer": 3, "canoe": 2, "can node": 2, "baud rate": 2,
-        "termination": 2, "transceiver": 2, "can bus": 2, "bus load": 2,
-        "can high": 2, "can low": 2, "tec": 1, "rec": 1, "can": 1,
+        "dbc file": 3, "canalyzer": 3,
+        # LIN bus
+        "lin slave": 4, "lin master": 4, "lin error": 4, "lin checksum": 4,
+        "lin schedule": 3, "lin frame": 3, "lin no-response": 3,
+        # FlexRay
+        "flexray": 3, "flex ray": 3,
+        # Lower-weight shared keywords
+        "canoe": 2, "can node": 2, "baud rate": 2, "termination": 2,
+        "transceiver": 2, "can bus": 2, "bus load": 2, "can high": 2,
+        "can low": 2, "lin": 2,
+        "tec": 1, "rec": 1, "can": 1,
     },
     "field-debug-fae": {
         "nrc": 4, "negative response code": 4, "conditionsnotcorrect": 4,
         "securityaccessdenied": 4, "requestoutofrange": 4, "freeze frame": 4,
         "dtc status byte": 4, "seed key": 4, "service 0x27": 4, "service 0x22": 4,
         "customer says": 4, "customer reports": 4,
+        "obd fault code": 3, "network dtc": 3,  # matched by normalization below
+        "active dtc": 3, "confirmed dtc": 3, "pending dtc": 3,
         "service 0x10": 3, "service 0x19": 3, "security access": 3,
         "programming session": 3, "extended session": 3, "flash programming": 3,
         "uds session": 3, "ecu not responding": 3, "negative response": 3,
         "workshop": 3, "vehicle complaint": 3, "field return": 3, "field failure": 3,
-        "won't start": 3, "warning light": 2,
-        "tester present": 2, "dtc": 2, "fault code": 2, "diagnostic session": 2,
+        "won't start": 3, "mil light": 3, "check engine": 3,
+        "warning light": 2, "tester present": 2,
+        "dtc": 3, "fault code": 2, "diagnostic session": 2,  # dtc bumped 2→3
         "field issue": 2, "customer complaint": 2, "0x22": 2, "0x31": 2,
+        "obd": 2, "mil": 2,
         "diagnostic": 1,
     },
     "sw-integrator": {
@@ -238,6 +250,26 @@ _NORMALIZATIONS: list[tuple[str, str]] = [
     (r"\bdiagnostic[\s_]trouble[\s_]code\b", "dtc"),
     (r"\bnegative[\s_]response\b",  "negative response"),
     (r"\bfreeze[\s_]frame\b",       "freeze frame"),
+    # LIN bus variants
+    (r"\blin[\s_-]slave\b",         "lin slave"),
+    (r"\blin[\s_-]master\b",        "lin master"),
+    (r"\blin[\s_-]error\b",         "lin error"),
+    (r"\blin[\s_-]frame\b",         "lin frame"),
+    (r"\blin[\s_-]schedule\b",      "lin schedule"),
+    (r"\blin[\s_-]check\w*\b",      "lin checksum"),
+    (r"\bno[\s_-]response\b",       "lin no-response"),
+    # FlexRay variants
+    (r"\bflex[\s_-]ray\b",          "flexray"),
+    # OBD-II / DTC code patterns: P0571, U0100, B1234, C0035
+    (r"\b[pb]\d{4}\b",              "obd fault code"),
+    (r"\bu0\d{3}\b",                "network dtc"),
+    # Active/confirmed/pending DTC phrases
+    (r"\bactive[\s_]dtc\b",         "active dtc"),
+    (r"\bconfirmed[\s_]dtc\b",      "confirmed dtc"),
+    (r"\bpending[\s_]dtc\b",        "pending dtc"),
+    # MIL (Malfunction Indicator Lamp)
+    (r"\bcheck[\s_]engine\b",       "check engine"),
+    (r"\bwarning[\s_]lamp\b",       "warning light"),
     # Simple plural/suffix stripping for key terms
     (r"\bfailures\b",               "failure"),
     (r"\btests\b",                  "test"),
@@ -539,7 +571,12 @@ elif page == "Try the Agent":
                 )
         with st.chat_message("assistant"):
             if entry.get("result") is None:
-                st.warning("No agent matched for this input.")
+                st.warning(
+                    "**No agent matched** — input did not contain enough domain keywords to "
+                    "auto-route. Try adding technical detail such as: protocol (CAN / LIN / UDS), "
+                    "fault type (bus-off / DTC / hard fault / CFSR), standard (ASPICE / MISRA / ISO 26262), "
+                    "or select an agent manually from the sidebar dropdown."
+                )
                 continue
             entry_agent = entry.get("agent", selected_agent)
             _render = RENDER_MAP.get(entry_agent, render_agent_error)
