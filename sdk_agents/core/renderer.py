@@ -3,11 +3,35 @@ Renders structured agent output as Streamlit UI components.
 Each agent type gets a dedicated render function.
 """
 
+import json
 import streamlit as st
 from sdk_agents.core.base_agent import AgentError
 
 
 # ── Shared helpers ──────────────────────────────────────────────────────────────
+
+def safe_render(render_fn, output) -> None:
+    """
+    Wraps any render function with a fallback raw-JSON view.
+    If the render function raises AttributeError (stale field reference or
+    unexpected LLM field name), the full structured output is still shown
+    as formatted JSON so the user always gets the agent's answer.
+    """
+    try:
+        render_fn(output)
+    except AttributeError as e:
+        st.warning(
+            f"Display layout error: `{e}`. "
+            f"Showing raw structured output below — all agent content is present."
+        )
+        if isinstance(output, AgentError):
+            st.json(output.model_dump())
+        else:
+            try:
+                st.json(json.loads(output.model_dump_json()))
+            except Exception:
+                st.code(str(output))
+
 
 def render_agent_error(error: AgentError) -> None:
     st.error(f"**{error.error_type.replace('_', ' ').title()}**")
@@ -83,13 +107,11 @@ def render_field_debug_fae(output) -> None:
     st_tr = output.symptom_translation
     with st.expander("STEP 0 — Symptom Translation", expanded=True):
         col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"**Customer complaint:** {st_tr.customer_complaint}")
-            st.markdown(f"**Function affected:** {st_tr.function_affected}")
-            st.markdown(f"**Translated to:** {st_tr.translated_to}")
-        with col2:
-            st.metric("AUTOSAR Layer", st_tr.autosar_layer)
-            st.metric("OSI Layer", st_tr.osi_layer)
+        col1.markdown(f"**Customer complaint:** {st_tr.customer_complaint}")
+        col1.markdown(f"**Function affected:** {st_tr.function_affected}")
+        col1.markdown(f"**Translated to:** {st_tr.translated_to}")
+        col2.metric("AUTOSAR Layer", st_tr.autosar_layer)
+        col2.metric("OSI Layer", st_tr.osi_layer)
 
     fd = output.fault_details
     safety_icon = "🔴" if fd.safety_relevant == "YES" else "🟢"

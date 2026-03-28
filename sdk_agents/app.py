@@ -15,6 +15,7 @@ load_dotenv(Path(__file__).parent / ".env")
 from sdk_agents.core.registry import get_agent, AGENT_NAMES, AGENT_DISPLAY_NAMES
 from sdk_agents.core.base_agent import AgentError
 from sdk_agents.core.renderer import (
+    safe_render,
     render_can_bus_analyst,
     render_field_debug_fae,
     render_sw_integrator,
@@ -553,7 +554,7 @@ elif page == "Try the Agent":
 
             render_fn = RENDER_MAP.get(active_agent)
             if render_fn:
-                render_fn(result)
+                safe_render(render_fn, result)
             elif isinstance(result, AgentError):
                 render_agent_error(result)
             else:
