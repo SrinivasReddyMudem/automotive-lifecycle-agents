@@ -10,6 +10,13 @@ from typing import Literal
 class ProbableCause(BaseModel):
     rank: Literal["HIGH", "MEDIUM", "LOW"]
     description: str = Field(description="What is causing the fault and why")
+    is_hypothesis: bool = Field(
+        default=False,
+        description=(
+            "True if this cause is inferred or theoretical with no direct observed evidence. "
+            "HIGH rank must always be False — it must be anchored to an observed fact."
+        ),
+    )
     ranking_reason: str = Field(
         default="",
         description=(
@@ -57,6 +64,33 @@ class ProtocolDetection(BaseModel):
         )
     )
     confidence: Literal["HIGH", "MEDIUM", "LOW"]
+
+
+class DataSufficiency(BaseModel):
+    """Rates how complete the input data is for a reliable diagnosis."""
+    level: Literal["SUFFICIENT", "PARTIAL", "INSUFFICIENT"]
+    missing_data: str = Field(
+        description=(
+            "What additional data would improve diagnosis — e.g. 'TEC counter value, "
+            "oscilloscope trace, exact baudrate'. Write 'None' if level is SUFFICIENT."
+        )
+    )
+
+
+class InputAnalysisFact(BaseModel):
+    """One fact or assumption extracted from the user's input."""
+    statement: str = Field(description="The fact or assumption in plain English")
+    is_assumption: bool = Field(
+        description="True if this was inferred or assumed; False if directly stated by the user"
+    )
+
+
+class DiagnosisBasisLine(BaseModel):
+    """Links one observed fact to its diagnostic implication — the reasoning chain."""
+    fact: str = Field(description="The specific fact or observation from input_analysis")
+    implication: str = Field(
+        description="What that fact implies about the fault — the diagnostic link"
+    )
 
 
 class NarrowingQuestion(BaseModel):

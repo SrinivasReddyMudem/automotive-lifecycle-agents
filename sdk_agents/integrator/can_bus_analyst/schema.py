@@ -13,6 +13,9 @@ from sdk_agents.core.shared_schema import (
     SelfEvaluationLine,  # re-exported for backward compatibility
     ToolSelection,
     ProtocolDetection,
+    DataSufficiency,
+    InputAnalysisFact,
+    DiagnosisBasisLine,
 )
 
 # Re-export so "from can_bus_analyst.schema import ProbableCause" still works
@@ -23,6 +26,9 @@ __all__ = [
     "SelfEvaluationLine",
     "ToolSelection",
     "ProtocolDetection",
+    "DataSufficiency",
+    "InputAnalysisFact",
+    "DiagnosisBasisLine",
 ]
 
 
@@ -36,10 +42,32 @@ class CanBusAnalystOutput(BaseModel):
             "what words in the input revealed it, and your confidence level."
         )
     )
+    input_analysis: list[InputAnalysisFact] = Field(
+        description=(
+            "STEP 1: list every fact and assumption extracted from the user's input. "
+            "Facts are things the user directly stated. Assumptions are things you infer "
+            "because they were not stated — e.g. 'assumed standard CAN frame, no DLC given'. "
+            "This is the traceability anchor for the whole diagnosis."
+        )
+    )
+    data_sufficiency: DataSufficiency = Field(
+        description=(
+            "STEP 2: rate data completeness. SUFFICIENT = enough to diagnose with confidence. "
+            "PARTIAL = diagnosis possible but one or more key measurements are missing. "
+            "INSUFFICIENT = too little data — list exactly what is needed."
+        )
+    )
     expert_diagnosis: str = Field(
         description=(
             "1-2 sentence immediate read: which OSI layer the fault is at "
             "and what the symptom pattern rules out"
+        )
+    )
+    diagnosis_basis: list[DiagnosisBasisLine] = Field(
+        description=(
+            "Explicit fact → implication chain that justifies expert_diagnosis. "
+            "Each line links one observed fact to one diagnostic conclusion. "
+            "Minimum 2 lines. This prevents unsupported leaps in reasoning."
         )
     )
     osi_layer: str = Field(
@@ -88,6 +116,13 @@ class CanBusAnalystOutput(BaseModel):
             "ranking_reason must justify why this cause has this rank vs the others. "
             "validation_test must be one single definitive action + expected result."
         ),
+    )
+    contradictions: list[str] = Field(
+        description=(
+            "Observations in the input that contradict each other or contradict an eliminated cause. "
+            "Each string is one contradiction: 'Observation X contradicts Y because Z'. "
+            "Write ['None identified'] if all observations are consistent."
+        )
     )
     decision_flow: list[str] = Field(
         description=(

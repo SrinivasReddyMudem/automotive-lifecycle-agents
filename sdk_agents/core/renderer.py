@@ -53,7 +53,9 @@ def _render_probable_causes(causes: list) -> None:
     with st.expander("Probable Causes (ranked)", expanded=True):
         for i, cause in enumerate(causes):
             rank_color = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(cause.rank, "⚪")
-            st.markdown(f"**{rank_color} {cause.rank} — {cause.description}**")
+            is_hyp = getattr(cause, "is_hypothesis", False)
+            hyp_tag = " *(hypothesis)*" if is_hyp else ""
+            st.markdown(f"**{rank_color} {cause.rank} — {cause.description}**{hyp_tag}")
             # ranking_reason — available on new-style ProbableCause only
             ranking_reason = getattr(cause, "ranking_reason", "")
             if ranking_reason:
@@ -99,14 +101,44 @@ def render_can_bus_analyst(output) -> None:
         render_agent_error(output)
         return
 
-    # Protocol detection badge (new field — safe fallback if absent)
+    # Protocol detection badge
     proto = getattr(output, "protocol_detection", None)
     if proto:
         conf_icon = {"HIGH": "🟢", "MEDIUM": "🟡", "LOW": "🔴"}.get(proto.confidence, "⚪")
         st.caption(f"Protocol detected: **{proto.protocol}** {conf_icon} {proto.confidence} confidence — {proto.detected_from}")
 
+    # Input analysis + data sufficiency
+    input_facts = getattr(output, "input_analysis", None)
+    data_suf = getattr(output, "data_sufficiency", None)
+    if input_facts or data_suf:
+        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+            if data_suf:
+                suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
+                    data_suf.level, "info"
+                )
+                getattr(st, suf_color)(f"**Data: {data_suf.level}** — {data_suf.missing_data}")
+            if input_facts:
+                facts = [f for f in input_facts if not f.is_assumption]
+                assumptions = [f for f in input_facts if f.is_assumption]
+                if facts:
+                    st.markdown("**Observed facts:**")
+                    for f in facts:
+                        st.markdown(f"- {f.statement}")
+                if assumptions:
+                    st.markdown("**Assumptions (not stated by user):**")
+                    for a in assumptions:
+                        st.caption(f"⚠ {a.statement}")
+
     st.markdown("### 💡 Key Insight")
     st.info(output.expert_diagnosis)
+
+    # Diagnosis basis — fact → implication chain
+    basis = getattr(output, "diagnosis_basis", None)
+    if basis:
+        with st.expander("Diagnosis Basis", expanded=False):
+            for line in basis:
+                st.markdown(f"**{line.fact}**")
+                st.caption(f"→ {line.implication}")
 
     col1, col2 = st.columns(2)
     col1.metric("OSI Layer", output.osi_layer)
@@ -139,6 +171,12 @@ def render_can_bus_analyst(output) -> None:
         _render_calc_block(bus, "CAN Bus Load Calculation", expanded=True)
 
     _render_probable_causes(output.probable_causes)
+
+    contras = getattr(output, "contradictions", None)
+    if contras and contras != ["None identified"]:
+        with st.expander("Contradictions"):
+            for c in contras:
+                st.warning(c)
 
     with st.expander("Decision Flow"):
         flow = output.decision_flow

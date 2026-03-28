@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from sdk_agents.integrator.can_bus_analyst.schema import (
     CanBusAnalystOutput, ProbableCause, NarrowingQuestion, SelfEvaluationLine,
-    ToolSelection, ProtocolDetection,
+    ToolSelection, ProtocolDetection, DataSufficiency, InputAnalysisFact, DiagnosisBasisLine,
 )
 from sdk_agents.integrator.can_bus_analyst import CanBusAnalystAgent
 from sdk_agents.integrator.can_bus_analyst import validators
@@ -26,7 +26,27 @@ def make_valid_output(**overrides) -> CanBusAnalystOutput:
             detected_from="user mentioned bus-off, TEC, 500 kbps — CAN protocol confirmed",
             confidence="HIGH",
         ),
+        "input_analysis": [
+            InputAnalysisFact(statement="ECU goes bus-off after 3 minutes", is_assumption=False),
+            InputAnalysisFact(statement="Fault only occurs when engine is running", is_assumption=False),
+            InputAnalysisFact(statement="Other nodes are unaffected", is_assumption=False),
+            InputAnalysisFact(statement="Assumed standard 500 kbps CAN — baudrate not stated", is_assumption=True),
+        ],
+        "data_sufficiency": DataSufficiency(
+            level="PARTIAL",
+            missing_data="TEC counter value at time of bus-off, oscilloscope trace of Vcc rail",
+        ),
         "expert_diagnosis": "TEC accumulation from engine-induced noise — not a hard fault.",
+        "diagnosis_basis": [
+            DiagnosisBasisLine(
+                fact="Bus-off only when engine running",
+                implication="Engine alternator introduces Vcc ripple or GND offset — L1 Physical suspect",
+            ),
+            DiagnosisBasisLine(
+                fact="3-minute onset matches TEC accumulation at low error rate",
+                implication="Not a hard wiring fault — gradual noise source, not open circuit",
+            ),
+        ],
         "osi_layer": "L1 Physical",
         "autosar_layer": "MCAL (CanDrv)",
         "tool_selection": ToolSelection(
@@ -59,25 +79,37 @@ def make_valid_output(**overrides) -> CanBusAnalystOutput:
         "probable_causes": [
             ProbableCause(
                 rank="HIGH",
+                is_hypothesis=False,
                 description="Ground potential shift under engine load",
+                ranking_reason="Engine-only onset + 3-min gradual timing directly points to GND/supply noise",
                 test="DMM DC between ECU GND pin and battery negative, engine running at idle",
                 pass_criteria="Offset < 50 mV — ground path is clean",
                 fail_criteria="Offset > 200 mV — corroded ground strap, replace and retest",
+                validation_test="DMM on ECU GND vs battery neg at 2000 RPM — >200 mV confirms, <50 mV rules out",
             ),
             ProbableCause(
                 rank="HIGH",
+                is_hypothesis=False,
                 description="Alternator ripple on transceiver Vcc rail",
+                ranking_reason="Alternator output scales with engine RPM — matches engine-only fault pattern",
                 test="Oscilloscope AC-coupled on transceiver Vcc pin, engine at 2000 RPM",
                 pass_criteria="Ripple < 200 mV peak-to-peak — supply is clean",
                 fail_criteria="Ripple > 500 mV or dips below 4.5 V — add bulk capacitor",
+                validation_test="Scope on Vcc at 2000 RPM — >500 mVpp confirms ripple, <200 mVpp rules out",
             ),
             ProbableCause(
                 rank="MEDIUM",
+                is_hypothesis=True,
                 description="Thermal drift of CAN transceiver",
+                ranking_reason="Thermal effect possible but no temperature data — lower confidence than supply noise",
                 test="Heat gun aimed at PCB for 3 minutes, engine off, bus active on CANoe",
                 pass_criteria="No bus-off after 3 min of heat — thermal cause ruled out",
                 fail_criteria="Bus-off triggered by heat alone — replace transceiver",
+                validation_test="Heat gun 60°C on PCB for 3 min engine-off — bus-off confirms thermal, no event rules out",
             ),
+        ],
+        "contradictions": [
+            "None identified — engine-only onset and 3-min timing are mutually consistent",
         ],
         "decision_flow": [
             "L1 Physical clean (scope: diff voltage OK, Vcc stable, GND offset < 50 mV)?",
@@ -140,10 +172,34 @@ class TestSchema:
     def test_schema_has_required_fields(self):
         schema = CanBusAnalystOutput.model_json_schema()
         required = schema.get("required", [])
-        for field in ["protocol_detection", "expert_diagnosis", "osi_layer", "autosar_layer",
-                      "tool_selection", "tec_math", "probable_causes", "decision_flow",
-                      "narrowing_questions", "self_evaluation"]:
+        for field in ["protocol_detection", "input_analysis", "data_sufficiency",
+                      "expert_diagnosis", "diagnosis_basis", "osi_layer", "autosar_layer",
+                      "tool_selection", "tec_math", "probable_causes", "contradictions",
+                      "decision_flow", "narrowing_questions", "self_evaluation"]:
             assert field in required, f"Field '{field}' missing from schema required list"
+
+    def test_is_hypothesis_defaults_false(self):
+        cause = ProbableCause(
+            rank="HIGH",
+            description="test cause",
+            test="test action",
+            pass_criteria="pass",
+            fail_criteria="fail",
+        )
+        assert cause.is_hypothesis is False
+
+    def test_data_sufficiency_levels(self):
+        for level in ("SUFFICIENT", "PARTIAL", "INSUFFICIENT"):
+            ds = DataSufficiency(level=level, missing_data="None")
+            assert ds.level == level
+
+    def test_diagnosis_basis_links_fact_to_implication(self):
+        line = DiagnosisBasisLine(
+            fact="Bus-off only at engine-on",
+            implication="L1 Physical noise from alternator suspected",
+        )
+        assert "engine" in line.fact.lower()
+        assert "L1" in line.implication
 
     def test_schema_extra_is_ignore(self):
         # extra="ignore" means unknown fields are silently dropped, not rejected
