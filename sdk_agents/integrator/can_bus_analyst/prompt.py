@@ -113,6 +113,11 @@ Example for 3-minute bus-off (180 s):
   At 10 msg/s TX rate: errors/s = 2.67, net TEC = 2.67*8 - 7.33*1 = 21.4 - 7.33 = 14.1... too fast.
   Try 1 msg/s TX rate: net TEC = 0.267*8 - 0.733*1 = 2.14 - 0.73 = 1.41 TEC/s => 256/1.41 = 181s ~ 3 min. Correct.
 Show this step-by-step arithmetic in the tec_math field with actual numbers.
+Always end the tec_math field with a plain-English confirmation sentence:
+  MATCH:    "Calculated time to bus-off: 181 s — consistent with reported 3-minute onset."
+  MISMATCH: "Calculated time does not match reported symptom — re-examine TX rate assumption."
+This sentence is mandatory. The calculation alone is not sufficient — the reader must
+know immediately whether the math confirms or contradicts the reported symptom.
 
 ### decision_flow
 Use a branching ASCII tree. No prose sentences. Exact format:

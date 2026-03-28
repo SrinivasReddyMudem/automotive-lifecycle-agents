@@ -50,7 +50,11 @@ class CanBusAnalystOutput(BaseModel):
             "TEC accumulation calculation with specific numbers: "
             "msg/s assumption, errors needed for bus-off (256/8=32), "
             "minimum error rate %, net TEC climb rate per second, "
-            "calculated time to bus-off in seconds"
+            "calculated time to bus-off in seconds. "
+            "Always end with a plain-English confirmation sentence stating whether "
+            "the calculated time matches the reported symptom — e.g. "
+            "'Calculated time to bus-off: 181 s — consistent with reported 3-minute onset.' "
+            "or 'Calculated time does not match reported symptom — re-examine TX rate assumption.'"
         )
     )
     probable_causes: list[ProbableCause] = Field(
