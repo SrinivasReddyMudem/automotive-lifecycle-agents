@@ -121,13 +121,17 @@ This sentence is mandatory. The calculation alone is not sufficient — the read
 know immediately whether the math confirms or contradicts the reported symptom.
 
 ### decision_flow
-Use a branching ASCII tree. No prose sentences. Exact format:
-  L1 Physical: Vcc ripple and GND offset OK?
-  +-- No  --> Fix supply / GND, retest
-  +-- Yes -->
-      L2 Data Link: Error frames present in CANoe?
-      +-- No  --> Check thermal drift with heat gun
-      +-- Yes --> Identify error type: Bit error = L1; ACK error = check L7
+Provide as a JSON list of strings — one string per line of the decision tree.
+Start at L1 Physical. Each branch has Yes/No outcomes leading to next layer or conclusion.
+Do NOT embed the tree inside a single string. Each line is a separate list element.
+Example:
+[
+  "L1 Physical: Vcc ripple and GND offset OK?",
+  "+-- No  --> Fix supply / GND, retest",
+  "+-- Yes --> L2 Data Link: Error frames in CANoe?",
+  "    +-- No  --> Check thermal drift with heat gun",
+  "    +-- Yes --> Bit error = L1; ACK error = check L7"
+]
 
 ### probable_causes
 Every test field must name: tool + exact probe point + action.

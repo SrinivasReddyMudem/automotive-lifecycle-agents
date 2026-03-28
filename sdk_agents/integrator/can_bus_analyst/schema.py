@@ -63,10 +63,16 @@ class CanBusAnalystOutput(BaseModel):
         max_length=3,
         description="Exactly 3 ranked causes with specific Test/Pass/Fail measurements",
     )
-    decision_flow: str = Field(
+    decision_flow: list[str] = Field(
         description=(
-            "Branching diagnostic tree starting at L1 Physical, "
-            "each branch has Yes/No leading to next layer or conclusion"
+            "Branching diagnostic tree as a list of lines — one string per line. "
+            "Start at L1 Physical. Each branch has Yes/No leading to next layer or conclusion. "
+            "Example lines: "
+            "'L1 Physical: Vcc ripple and GND offset OK?', "
+            "'+-- No  --> Fix supply / GND, retest', "
+            "'+-- Yes --> L2 Data Link: Error frames in CANoe?', "
+            "'    +-- No  --> Check thermal drift with heat gun', "
+            "'    +-- Yes --> Bit error = L1; ACK error = check L7'"
         )
     )
     narrowing_questions: list[NarrowingQuestion] = Field(

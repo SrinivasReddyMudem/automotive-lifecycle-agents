@@ -90,7 +90,8 @@ def render_can_bus_analyst(output) -> None:
     _render_probable_causes(output.probable_causes)
 
     with st.expander("Decision Flow"):
-        st.code(output.decision_flow)
+        flow = output.decision_flow
+        st.code("\n".join(flow) if isinstance(flow, list) else flow)
 
     _render_narrowing_questions(output.narrowing_questions)
     _render_self_evaluation(output.self_evaluation)
