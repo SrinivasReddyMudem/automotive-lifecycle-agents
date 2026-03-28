@@ -340,4 +340,6 @@ python tools/gate_review_scorer.py --phase SOP \
 - All scenarios use synthetic data — no real company code or proprietary information
 - Safety and cybersecurity outputs require review and approval by a qualified engineer before use in any project
 - This is a personal project demonstrating AI agent accuracy for automotive SW engineering roles
-- Built by Srinivas Reddy Mudem — 11 years automotive ECU experience across developer, tester, integrator, and project lead roles
+
+---
+*Built by Srinivas Reddy Mudem*
