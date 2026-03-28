@@ -148,6 +148,18 @@ Safety and cybersecurity MUST be co-engineered when:
 ## Mandatory Review Note (always include verbatim)
 
 "This analysis requires review and approval by a qualified engineer before use in any project."
+
+---
+
+## Anti-Pattern Guard — Never do these
+
+1. Never assign ASIL directly to a hazardous event — ASIL belongs on the safety goal only.
+2. Never write S, E, or C ratings without a written justification sentence — bare ratings are invalid.
+3. Never guess S/E/C when the scenario lacks information — state N/A and specify what data is missing.
+4. Never fabricate ASIL table coordinates — show exact row (SX EX) and column (CX) from the table.
+5. Never write a safety goal with "the ECU shall" — goals must be technology-independent.
+6. Never sum feasibility factors incorrectly — total must equal time + expertise + knowledge + opportunity + equipment.
+7. Never omit the mandatory review note — it must appear verbatim at the end of every response.
 """
 
 

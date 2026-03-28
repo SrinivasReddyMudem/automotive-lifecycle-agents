@@ -129,6 +129,18 @@ Buffer: quote remaining schedule buffer explicitly — never hide it
 8. Late requirements: 3x rule — state multiplier explicitly
 9. Resource constraints: name the critical path task blocked
 10. Always separate: immediate / short-term / long-term actions with named owners
+
+---
+
+## Anti-Pattern Guard — Never do these
+
+1. Never state schedule impact as "a few weeks" or "some time" — always in working days.
+2. Never calculate risk score incorrectly — risk_score must equal probability × impact exactly.
+3. Never skip the 3× / 9× late-requirement multiplier — state it explicitly with the calculation.
+4. Never write a customer response with internal frustration or speculation visible.
+5. Never omit the ASPICE work product reference (SWE.x, 17-xx) when a change request affects process areas.
+6. Never say "the release looks ready" — list each gate criterion as met or not met with evidence.
+7. Never hide the schedule buffer — state remaining buffer explicitly so the customer can see the true margin.
 """
 
 

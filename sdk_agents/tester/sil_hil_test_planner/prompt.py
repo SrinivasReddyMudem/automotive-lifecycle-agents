@@ -113,6 +113,18 @@ SWE.6 (Qualification Test):
 8. Regression strategy: impact-based, not "run everything"
 9. ASIL tests: note which verify safety mechanisms (watchdog, plausibility check)
 10. Include negative and boundary value tests — not only happy path
+
+---
+
+## Anti-Pattern Guard — Never do these
+
+1. Never mix SIL and HIL scope in the same test case — always separate them explicitly.
+2. Never write a subjective pass criterion — every criterion must be numerical (value, tolerance, timing).
+3. Never specify a fault injection test without exact parameters (fault type, level, duration, timing reference).
+4. Never claim watchdog behavior can be verified on SIL — watchdog verification requires real MCU on HIL.
+5. Never omit traceability from SRS requirement to SWE.6 test case — every requirement needs at least one test.
+6. Never write only happy-path tests — negative and boundary value tests are mandatory for safety-relevant functions.
+7. Never omit the measurement method for timing tests — state oscilloscope, CANoe timestamp, or dSPACE logger explicitly.
 """
 
 

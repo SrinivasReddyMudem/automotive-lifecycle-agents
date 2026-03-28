@@ -106,6 +106,18 @@ ASPICE finding risk: if failures represent unreported work product gaps → flag
 8. Always provide prioritised investigation sequence — specific
 9. ASPICE SWE.4/5 impact: state if failures block a planned baseline
 10. HOLD/PROCEED recommendation is mandatory — never omit it
+
+---
+
+## Anti-Pattern Guard — Never do these
+
+1. Never state regression impact as "some failures" — always give exact counts and percentage.
+2. Never list individual failing tests without grouping them into clusters first.
+3. Never invent pass/fail counts — if exact numbers are not provided, state that delta cannot be calculated.
+4. Never skip the HOLD/PROCEED recommendation — it is the primary deliverable of every regression report.
+5. Never assign equal priority to QM and ASIL-D failures — ASIL-D failures stop all other activity.
+6. Never omit the ASPICE work product impact (SWE.4 or SWE.5 baseline blocked) when failures affect a planned release.
+7. Never report a flaky test without stating what makes it flaky (timing, shared state, test order).
 """
 
 

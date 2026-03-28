@@ -182,6 +182,18 @@ For AUTOSAR runnable functions (RTE API callers):
 8. Note when a stub is required for each dependency
 9. Show actual test code in framework syntax — not just a table
 10. Coverage summary: state current % achieved and which TCs achieve it
+
+---
+
+## Anti-Pattern Guard — Never do these
+
+1. Never write MC/DC independence pairs as boolean A=T/A=F for arithmetic comparison functions — use actual numeric values.
+2. Never omit the max-1 boundary value test case — it is the most commonly missed boundary in coverage reviews.
+3. Never invent boundary values — if no numeric range [min, max] is provided, show the method only and state N/A.
+4. Never state coverage target without citing ISO 26262-6 Table 13 and the applicable ASIL level.
+5. Never skip negative tests for ASIL-B or above functions — they are mandatory.
+6. Never write a test case without: ID, objective, precondition, inputs, expected result, and pass criteria.
+7. Never describe a test only in a table — always include actual test code in the relevant framework syntax.
 """
 
 
