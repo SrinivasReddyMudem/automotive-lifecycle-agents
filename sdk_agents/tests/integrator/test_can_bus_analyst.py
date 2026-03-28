@@ -35,6 +35,16 @@ def make_valid_output(**overrides) -> CanBusAnalystOutput:
             "Time to bus-off: 256 / 1.41 = 181 s",
             "→ The math shows the node would reach bus-off in 181 s. This matches the reported 3-minute symptom — the error rate and timing are consistent.",
         ],
+        "bus_load_calc": [
+            "CAN Bus Load — utilisation analysis",
+            "Formula: load% = (n_msgs × frame_bits × msg_rate) / baudrate × 100",
+            "n_msgs = 10 messages on bus",
+            "frame_bits = 111 bits (standard frame, worst-case with stuffing)",
+            "msg_rate = 10 msg/s per message",
+            "baudrate = 500,000 bps",
+            "load% = (10 × 111 × 10) / 500,000 × 100 = 11,100 / 500,000 × 100 = 2.22%",
+            "→ Calculated bus load: 2.22%. This is within the normal limit of 30% — bus overload is not a factor.",
+        ],
         "probable_causes": [
             ProbableCause(
                 rank="HIGH",
@@ -138,6 +148,15 @@ class TestSchema:
 class TestValidators:
     def test_valid_output_passes(self):
         validators.validate(make_valid_output())  # should not raise
+
+    def test_bus_load_calc_without_numbers_fails(self):
+        output = make_valid_output(bus_load_calc=["CAN bus load looks fine"])
+        with pytest.raises(DomainCheckError, match="bus_load_calc contains fewer than 3 numeric"):
+            validators.validate(output)
+
+    def test_bus_load_calc_na_passes(self):
+        output = make_valid_output(bus_load_calc=["N/A — baudrate not provided"])
+        validators.validate(output)  # should not raise
 
     def test_tec_math_without_numbers_fails(self):
         output = make_valid_output(tec_math=["TEC climbs gradually over time due to noise"])

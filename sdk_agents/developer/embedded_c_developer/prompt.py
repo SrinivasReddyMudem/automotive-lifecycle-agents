@@ -161,6 +161,38 @@ GOOD: "volatile uint32_t g_CanBusOffCount = 0U;  /* Rule 8.4: volatile for ISR-s
 ### misra_notes
 Rule must be specific: "Rule 14.4" not "MISRA says..."
 Show synthetic violation and compliant rewrite for each rule.
+
+### rtos_calc
+Provide as a JSON list of strings — one string per line.
+If RTOS is involved, show stack sizing and/or watchdog window arithmetic:
+
+Stack sizing example:
+[
+  "Stack Sizing — worst-case calculation",
+  "base_frame: 3 locals × 4 bytes = 12 bytes",
+  "call_chain: 5 frames × 64 bytes = 320 bytes",
+  "ISR_frame: 8 registers × 4 bytes = 32 bytes",
+  "subtotal = 12 + 320 + 32 = 364 bytes",
+  "safety_margin: 364 × 0.20 = 73 bytes",
+  "worst_case = 364 + 73 = 437 bytes",
+  "→ Calculated worst-case stack: 437 bytes. This fits within the allocated 512 bytes — SAFE."
+]
+
+Watchdog timing example (append after stack lines, or standalone):
+[
+  "Watchdog Window Timing",
+  "WDT period = 100 ms (WDTCON register value)",
+  "open_window = 100 × 0.75 = 75 ms",
+  "close_window = 100 × 1.00 = 100 ms",
+  "task_period = 20 ms",
+  "20 ms ≤ 75 ms — kick is within open window",
+  "→ Task period of 20 ms is within the kick window of 75 ms. Watchdog service is guaranteed."
+]
+
+If no RTOS or numbers not provided, use a single-element list:
+["N/A — no RTOS involved in this scenario"]
+["N/A — stack sizes and call depth not stated. Provide sizeof each local variable,
+the deepest call chain depth, and whether ISR preemption applies."]
 """
 
 

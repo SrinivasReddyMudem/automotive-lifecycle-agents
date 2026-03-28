@@ -20,6 +20,7 @@ def validate(output: CanBusAnalystOutput) -> None:
     """Run all domain checks. Raises DomainCheckError on first failure."""
 
     _check_tec_math_has_numbers(output)
+    _check_bus_load_calc_has_numbers(output)
     _check_autosar_layer_known(output)
     _check_probable_causes_specific(output)
     _check_self_evaluation_has_evidence(output)
@@ -33,6 +34,20 @@ def _check_tec_math_has_numbers(output: CanBusAnalystOutput) -> None:
         raise DomainCheckError(
             f"tec_math contains fewer than 3 numeric characters — "
             f"model returned a vague description instead of a calculation. "
+            f"Got: '{text[:80]}'"
+        )
+
+
+def _check_bus_load_calc_has_numbers(output: CanBusAnalystOutput) -> None:
+    calc = output.bus_load_calc
+    text = "\n".join(calc) if isinstance(calc, list) else str(calc)
+    if "N/A" in text:
+        return  # fallback path is valid
+    digits = sum(c.isdigit() for c in text)
+    if digits < 3:
+        raise DomainCheckError(
+            f"bus_load_calc contains fewer than 3 numeric characters but N/A was not declared. "
+            f"Either show step-by-step arithmetic or write 'N/A — [reason]'. "
             f"Got: '{text[:80]}'"
         )
 

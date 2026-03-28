@@ -143,6 +143,36 @@ Example:
   "    +-- Yes --> Bit error = L1; ACK error = check L7"
 ]
 
+### bus_load_calc
+Provide as a JSON list of strings — one string per line.
+CAN 2.0B standard frame = 111 bits worst-case (with bit stuffing).
+CAN 2.0B extended frame = 128 bits worst-case.
+
+If baudrate and message schedule are known:
+
+Line 1 (header):  "CAN Bus Load — utilisation analysis"
+Line 2 (formula): "Formula: load% = (n_msgs × frame_bits × msg_rate) / baudrate × 100"
+Line 3+ (working): one arithmetic step per line with actual numbers
+Last line (confirmation — MANDATORY):
+  SAFE:    "→ Calculated bus load: X%. This is within the normal limit of 30% — bus capacity is healthy."
+  WARNING: "→ Calculated bus load: X%. This is above 30% but below 60% — monitor for latency issues."
+  RISK:    "→ Calculated bus load: X%. This exceeds 60% — bus overload is a contributing factor to the errors."
+
+Example for 10 messages at 10 msg/s on 500 kbps:
+[
+  "CAN Bus Load — utilisation analysis",
+  "Formula: load% = (n_msgs × frame_bits × msg_rate) / baudrate × 100",
+  "n_msgs = 10 messages on bus",
+  "frame_bits = 111 bits (standard frame, worst-case with stuffing)",
+  "msg_rate = 10 msg/s per message",
+  "baudrate = 500,000 bps",
+  "load% = (10 × 111 × 10) / 500,000 × 100 = 11,100 / 500,000 × 100 = 2.22%",
+  "→ Calculated bus load: 2.22%. This is within the normal limit of 30% — bus overload is not a factor."
+]
+
+If baudrate or message schedule not provided:
+["N/A — baudrate and message schedule not provided. State baudrate (bps), number of CAN messages, and TX rate per message to calculate bus load."]
+
 ### probable_causes
 Every test field must name: tool + exact probe point + action.
 Every pass_criteria and fail_criteria must contain a numeric threshold.

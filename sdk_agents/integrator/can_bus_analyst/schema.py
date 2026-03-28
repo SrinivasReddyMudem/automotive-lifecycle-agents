@@ -55,6 +55,19 @@ class CanBusAnalystOutput(BaseModel):
             "['N/A — no symptom timing provided. State how long before bus-off occurs.']"
         )
     )
+    bus_load_calc: list[str] = Field(
+        description=(
+            "CAN bus load calculation as a list of strings — one string per line. "
+            "First element: header 'CAN Bus Load — utilisation analysis'. "
+            "Second element: formula 'Formula: load% = (n_msgs × frame_bits × msg_rate) / baudrate × 100'. "
+            "Middle elements: one arithmetic step per line with actual numbers. "
+            "Last element: plain-English confirmation starting with → stating whether "
+            "load is within safe limits (< 30% normal, < 60% maximum). "
+            "If baudrate or message count not provided: "
+            "['N/A — baudrate and message schedule not provided. "
+            "State baudrate (bps), number of CAN messages, and TX rate per message.']"
+        )
+    )
     probable_causes: list[ProbableCause] = Field(
         min_length=3,
         max_length=3,

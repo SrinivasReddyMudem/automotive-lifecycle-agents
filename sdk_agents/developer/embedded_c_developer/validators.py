@@ -16,6 +16,7 @@ def validate(output: EmbeddedCDeveloperOutput) -> None:
     _check_cfsr_decode_present(output)
     _check_code_pattern_specific(output)
     _check_root_cause_specific(output)
+    _check_rtos_calc_structure(output)
     _check_self_evaluation_has_evidence(output)
 
 
@@ -59,6 +60,20 @@ def _check_root_cause_specific(output: EmbeddedCDeveloperOutput) -> None:
         raise DomainCheckError(
             f"root_cause is too short ({len(output.root_cause)} chars, "
             f"minimum {MIN_ROOT_CAUSE_LENGTH}). Must be a specific diagnosis."
+        )
+
+
+def _check_rtos_calc_structure(output: EmbeddedCDeveloperOutput) -> None:
+    calc = output.rtos_calc
+    text = "\n".join(calc) if isinstance(calc, list) else str(calc)
+    if "N/A" in text:
+        return  # fallback path is valid
+    digits = sum(c.isdigit() for c in text)
+    if digits < 3:
+        raise DomainCheckError(
+            f"rtos_calc contains fewer than 3 numeric characters but N/A was not declared. "
+            f"Either show step-by-step arithmetic or write 'N/A — [reason]'. "
+            f"Got: '{text[:80]}'"
         )
 
 

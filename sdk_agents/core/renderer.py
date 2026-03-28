@@ -84,9 +84,15 @@ def render_can_bus_analyst(output) -> None:
     col3.metric("Recommended Tool", output.recommended_tool)
     st.markdown("---")
 
-    with st.expander("TEC Math", expanded=True):
+    with st.expander("TEC (Transmit Error Counter) Math", expanded=True):
         tec = output.tec_math
         st.code("\n".join(tec) if isinstance(tec, list) else tec)
+
+    bus = output.bus_load_calc
+    bus_text = "\n".join(bus) if isinstance(bus, list) else str(bus)
+    if "N/A" not in bus_text:
+        with st.expander("CAN Bus Load Calculation"):
+            st.code(bus_text)
 
     _render_probable_causes(output.probable_causes)
 
@@ -147,7 +153,7 @@ def render_field_debug_fae(output) -> None:
     tec = output.tec_math
     tec_text = "\n".join(tec) if isinstance(tec, list) else tec
     if "N/A" not in tec_text:
-        with st.expander("TEC Math"):
+        with st.expander("TEC (Transmit Error Counter) Math"):
             st.code(tec_text)
 
     with st.expander("Debug Steps", expanded=True):
@@ -288,9 +294,11 @@ def render_embedded_c_developer(output) -> None:
                 st.markdown(f"**{note.rule}** ({note.category}) — {note.violation_pattern}")
                 st.code(note.compliant_fix, language="c")
 
-    if output.rtos_notes != "N/A":
-        with st.expander("RTOS Notes"):
-            st.markdown(output.rtos_notes)
+    rtos = output.rtos_calc
+    rtos_text = "\n".join(rtos) if isinstance(rtos, list) else str(rtos)
+    if "N/A" not in rtos_text:
+        with st.expander("RTOS Timing Calculations", expanded=True):
+            st.code(rtos_text)
 
     _render_narrowing_questions(output.narrowing_questions)
     _render_self_evaluation(output.self_evaluation)

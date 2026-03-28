@@ -59,11 +59,17 @@ class EmbeddedCDeveloperOutput(BaseModel):
     misra_notes: list[MisraNote] = Field(
         description="MISRA rules applicable to this implementation or fix"
     )
-    rtos_notes: str = Field(
+    rtos_calc: list[str] = Field(
         description=(
-            "RTOS-specific concerns: stack sizing formula, priority assignment, "
-            "mutex use, watchdog kick window, ISR latency budget. "
-            "N/A if no RTOS is involved."
+            "RTOS timing calculations as a list of strings — one string per line. "
+            "Cover stack sizing and/or watchdog window with actual numbers. "
+            "First element: header e.g. 'Stack Sizing — worst-case calculation'. "
+            "Middle elements: one arithmetic step per line with actual numbers. "
+            "Last element: plain-English confirmation starting with →. "
+            "If no RTOS is involved or numbers are not provided: "
+            "['N/A — no RTOS involved in this scenario'] or "
+            "['N/A — stack sizes and call depth not stated. Provide sizeof each local, "
+            "deepest call chain depth, and whether ISR preemption applies.']"
         )
     )
     narrowing_questions: list[NarrowingQuestion] = Field(
