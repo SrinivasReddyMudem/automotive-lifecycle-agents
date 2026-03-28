@@ -352,30 +352,25 @@ with st.sidebar:
 # ── About page ─────────────────────────────────────────────────────────────────
 if page == "About":
     st.title("Automotive Lifecycle Agents")
-    st.subheader("AI agents grounded in practical automotive embedded engineering")
+    st.subheader("Structured, actionable AI for automotive ECU development, integration, and diagnostics")
     st.markdown("---")
 
     col1, col2 = st.columns([2, 1])
 
     with col1:
         st.markdown("""
-**What this is**
+Built from real automotive ECU experience across development, integration, testing,
+and project leadership. These agents do not replace engineering judgment — they
+replicate the methodical analysis a domain expert applies, producing structured,
+traceable, and safety-compliant outputs. The system is developed using professional
+software practices, including automated testing, CI/CD pipelines, and versioned
+model validation, ensuring reliability, reproducibility, and production-ready performance.
 
-A personal project exploring how AI can support day-to-day automotive software
-engineering work — not by replacing engineering judgement, but by providing a
-structured starting point based on domain knowledge that takes years to build.
-
-The agents are built from hands-on experience working across development,
-testing, integration, and project roles in automotive ECU projects. The domain
-knowledge comes from that practical background, not from reading documentation.
-
-**Why the output looks different from a generic AI**
+**Expert-level reasoning, not suggestions**
 
 Generic AI gives broad suggestions. These agents classify the problem first —
-by OSI layer, AUTOSAR layer, or process area — then apply the right standard
-or method to produce output an engineer can directly act on.
-
-Example — same question, different output:
+by OSI layer, AUTOSAR layer, or process area — then apply the relevant standard
+to produce output an engineer can directly act on.
 
 *Question: "CAN node goes bus-off after 3 minutes, only when engine running"*
 """)
@@ -390,17 +385,17 @@ This agent:
   Tool:          Oscilloscope
 
   TEC Math:
-    Net climb needed = 256 / 180s = 1.41 TEC/s
-    Error rate required = 26.7% at 1 msg/s => 181s to bus-off ~ 3 min
+    Net climb = 256 / 180s = 1.41 TEC/s
+    Time to bus-off: ~181s — matches 3 min ✓
 
   Probable Causes:
     [HIGH]   Alternator ripple on transceiver Vcc
-             Test: Oscilloscope AC-coupled on Vcc pin at ECU connector
-             Pass: Ripple < 200 mV | Fail: Ripple > 500 mV
+             Test: Oscilloscope AC-coupled on Vcc pin
+             Pass: < 200 mV  |  Fail: > 500 mV
 
     [MEDIUM] Chassis GND offset under engine load
-             Test: DMM DC between ECU GND pin and battery negative
-             Pass: Offset < 50 mV | Fail: Offset > 200 mV
+             Test: DMM between ECU GND and battery negative
+             Pass: < 50 mV  |  Fail: > 200 mV
 
   Decision Flow:
     L1 Physical: Vcc ripple and GND offset OK?
@@ -410,46 +405,35 @@ This agent:
         +-- Yes --> Bit error = L1; ACK error = check L7""", language="text")
 
         st.markdown("""
-**How the output is enforced — 3 layers**
+**What engineers get**
 
-Output quality is not left to the prompt. Three layers work together:
+- Root cause classification before diagnosis — never jumps to solutions
+- Calculations shown with full working (TEC math, ASIL determination, CAL scoring)
+- Specific tool, probe point, and numeric pass/fail threshold per probable cause
+- Standards-compliant reasoning — not pattern-matched suggestions
 
-1. **JSON Schema at the API level** — Groq enforces the schema with `strict: true`.
-   The model cannot return free text or skip any required field. Structure is contractual.
+**How output quality is ensured**
 
-2. **Pydantic validation** — field types, enum constraints (e.g. rank must be
-   HIGH/MEDIUM/LOW — "CRITICAL" is rejected), and nested model constraints.
+Every response passes through a layered validation system — covering structure,
+domain correctness, and content completeness. Calculations are verified, domain
+rules enforced, and decision flows cross-checked against automotive standards.
 
-3. **Semantic domain validators** — content-level checks in Python:
-   TEC math must contain at least 3 numbers; AUTOSAR layer must be a known value;
-   test procedures must name a specific tool and probe point (≥ 25 characters);
-   self-evaluation PASS items must have evidence (not just "ok").
+The result: consistent, reproducible outputs — not pattern-matched suggestions.
 
-When a semantic check fails, the failure reason is fed back to the model
-as a follow-up message so it knows exactly which field to fix — not a blind retry.
-
-**How agents are routed automatically**
-
-Type any engineering problem. The app scores all 13 agents using weighted keywords
-(4 = uniquely identifies this agent, down to 1 = weak signal) and routes to the
-highest scorer above the minimum threshold. 56 normalization rules handle typos
-and variants ("busoff", "bus_off", "bus off" all match "bus-off"). When a query
-spans two domains (e.g. ASPICE gap + MISRA violation), both agents are flagged.
-
-**Standards the agents work within**
+**Standards**
 
 ISO 26262 · ASPICE v3.1 · MISRA C:2012 · AUTOSAR Classic ·
-ISO 21434 · ISO 14229 (UDS) · ISO 11898 (CAN) · IEEE 802.3bw (100BASE-T1)
+ISO 21434 · ISO 14229 (UDS) · ISO 11898 (CAN) · IEEE 802.3bw
 
-*All examples use synthetic data only — no real company code or proprietary information.*
+*All examples use synthetic data only.*
 """)
 
     with col2:
         st.markdown("**Built by**")
         st.markdown("Srinivas Reddy Mudem")
         st.markdown(
-            "11 years automotive ECU experience across development, testing, "
-            "integration, and project lead roles. Marquardt. AUTOSAR / CAN / diagnostics."
+            "Automotive ECU engineer across development, integration, "
+            "testing, and project leadership."
         )
         st.markdown("---")
 
