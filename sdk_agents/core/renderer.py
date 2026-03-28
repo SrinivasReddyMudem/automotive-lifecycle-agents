@@ -143,9 +143,11 @@ def render_field_debug_fae(output) -> None:
             if uds.session_sequence_issue != "N/A":
                 st.markdown(f"**Session sequence issue:** {uds.session_sequence_issue}")
 
-    if "N/A" not in output.tec_math:
+    tec = output.tec_math
+    tec_text = "\n".join(tec) if isinstance(tec, list) else tec
+    if "N/A" not in tec_text:
         with st.expander("TEC Math"):
-            st.code(output.tec_math)
+            st.code(tec_text)
 
     with st.expander("Debug Steps", expanded=True):
         for step in output.debug_steps:
@@ -311,10 +313,12 @@ def render_misra_reviewer(output) -> None:
     with st.expander("Violations", expanded=True):
         for v in output.violations:
             st.markdown(f"**{v.rule}**")
-            st.code(v.violation_pattern, language="c")
+            vp = v.violation_pattern
+            st.code("\n".join(vp) if isinstance(vp, list) else vp, language="c")
             st.markdown(f"*Why:* {v.explanation}")
             st.markdown("**Compliant rewrite:**")
-            st.code(v.compliant_rewrite, language="c")
+            cr = v.compliant_rewrite
+            st.code("\n".join(cr) if isinstance(cr, list) else cr, language="c")
             st.markdown("---")
 
     with st.expander("Root Cause Clusters"):
@@ -622,7 +626,8 @@ def render_sw_unit_tester(output) -> None:
                 st.caption(f"Conditions: {pair.condition_values} → Decision: {pair.decision_result}")
 
     with st.expander("Test Code", expanded=True):
-        st.code(output.test_code, language="c")
+        tc = output.test_code
+        st.code("\n".join(tc) if isinstance(tc, list) else tc, language="c")
 
     with st.expander("Coverage Summary"):
         for cs in output.coverage_summary:

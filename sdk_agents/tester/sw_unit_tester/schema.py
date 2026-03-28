@@ -65,9 +65,9 @@ class SwUnitTesterOutput(BaseModel):
     mcdc_pairs: list[MCDCPair] = Field(
         description="MC/DC independence pairs — empty list for ASIL-A/B functions"
     )
-    test_code: str = Field(
+    test_code: list[str] = Field(
         description=(
-            "Actual test code in framework syntax for key test cases. "
+            "Actual test code in framework syntax for key test cases — one string per line. "
             "Use synthetic variable names. Show SETUP, test body, assertions."
         )
     )

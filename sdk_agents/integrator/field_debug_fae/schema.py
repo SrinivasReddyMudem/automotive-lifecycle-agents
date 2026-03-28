@@ -58,11 +58,12 @@ class FieldDebugFaeOutput(BaseModel):
         max_length=3,
         description="Exactly 3 ranked causes. Each test must name tool + probe point + action.",
     )
-    tec_math: str = Field(
+    tec_math: list[str] = Field(
         description=(
-            "TEC accumulation calculation if CAN is involved. "
-            "Show: net_TEC/s = (error_rate*8) - ((1-error_rate)*1), time to bus-off. "
-            "Use 'N/A — no CAN trace involved' if not applicable."
+            "TEC (Transmit Error Counter) calculation if CAN is involved — one string per line. "
+            "Show: net_TEC/s = (error_rate*8) - ((1-error_rate)*1), time to bus-off, "
+            "and a plain-English confirmation sentence whether the result matches the symptom. "
+            "If not applicable use a single-element list: ['N/A — no CAN trace involved']."
         )
     )
     analysis: str = Field(

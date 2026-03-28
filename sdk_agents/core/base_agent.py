@@ -8,13 +8,13 @@ Get a free API key (no credit card) at: console.groq.com
 """
 
 import os
-from groq import Groq
+from groq import Groq, BadRequestError
 from pydantic import BaseModel, ValidationError
 from typing import Literal
 from .logger import get_logger
 
 MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-MAX_RETRIES = 2  # retry twice: once for transient validation, once with domain-check feedback
+MAX_RETRIES = 2  # retry up to 2 times after first failure
 
 
 class AgentError(BaseModel):
@@ -71,6 +71,11 @@ class BaseAgent:
                         message=str(e),
                         raw_response=raw,
                     )
+                # Tell the model exactly what was wrong so it can fix the specific field
+                domain_feedback = (
+                    f"Your previous response failed JSON schema validation: {e} "
+                    f"Return the complete corrected response matching the schema exactly."
+                )
 
             except DomainCheckError as e:
                 self.logger.warning(
@@ -88,13 +93,33 @@ class BaseAgent:
                     f"Please fix this specific issue and return the complete corrected response."
                 )
 
-            except Exception as e:
-                self.logger.error(f"API error: {e}")
-                return AgentError(
-                    agent=self.AGENT_NAME,
-                    error_type="api_error",
-                    message=str(e),
+            except BadRequestError as e:
+                # Groq 400 — generated JSON does not match schema (model non-determinism).
+                # Retry: the model's probabilistic output often succeeds on the next attempt.
+                self.logger.warning(
+                    f"API schema rejection (attempt {attempt + 1}): {e}"
                 )
+                if attempt == MAX_RETRIES:
+                    return AgentError(
+                        agent=self.AGENT_NAME,
+                        error_type="api_error",
+                        message=str(e),
+                    )
+                domain_feedback = (
+                    f"Your previous response was rejected because the JSON did not match "
+                    f"the required schema. Return valid JSON matching the schema exactly. "
+                    f"Ensure every field is present and every string value is a plain string, "
+                    f"not a JSON key."
+                )
+
+            except Exception as e:
+                self.logger.error(f"Unexpected error (attempt {attempt + 1}): {e}")
+                if attempt == MAX_RETRIES:
+                    return AgentError(
+                        agent=self.AGENT_NAME,
+                        error_type="api_error",
+                        message=str(e),
+                    )
 
     @staticmethod
     def _inline_schema(schema: dict) -> dict:

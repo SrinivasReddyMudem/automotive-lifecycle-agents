@@ -54,14 +54,13 @@ def make_valid_output(**overrides) -> CanBusAnalystOutput:
                 fail_criteria="Bus-off triggered by heat alone — replace transceiver",
             ),
         ],
-        "decision_flow": (
-            "L1 Physical clean (scope: diff voltage OK, Vcc stable, GND offset < 50 mV)?\n"
-            "├── No  → Fix GND strap or add Vcc decoupling, retest\n"
-            "└── Yes ↓\n"
-            "L2 Data Link clean (no error frames, TEC = 0)?\n"
-            "├── No  → Check error type: Bit error → L1; ACK error → check L7\n"
-            "└── Yes → Thermal — reproduce with heat gun engine off"
-        ),
+        "decision_flow": [
+            "L1 Physical clean (scope: diff voltage OK, Vcc stable, GND offset < 50 mV)?",
+            "+-- No  --> Fix GND strap or add Vcc decoupling, retest",
+            "+-- Yes --> L2 Data Link clean (no error frames, TEC = 0)?",
+            "    +-- No  --> Check error type: Bit error = L1; ACK error = check L7",
+            "    +-- Yes --> Thermal — reproduce with heat gun engine off",
+        ],
         "narrowing_questions": [
             NarrowingQuestion(
                 question="Does the 3-minute timer reset if you stop and immediately restart the engine?",

@@ -10,14 +10,14 @@ from sdk_agents.core.shared_schema import SelfEvaluationLine
 
 class MisraViolation(BaseModel):
     rule: str = Field(description="MISRA C:2012 rule number e.g. Rule 11.3")
-    violation_pattern: str = Field(
-        description="Synthetic C code showing the violation with comment marking the problem line"
+    violation_pattern: list[str] = Field(
+        description="Synthetic C code showing the violation — one string per line, with a comment line marking the problem"
     )
     explanation: str = Field(
         description="Precise technical explanation of why this violates the rule"
     )
-    compliant_rewrite: str = Field(
-        description="The compliant C code rewrite with comment per change"
+    compliant_rewrite: list[str] = Field(
+        description="The compliant C code rewrite — one string per line, with a comment line per change"
     )
 
 
