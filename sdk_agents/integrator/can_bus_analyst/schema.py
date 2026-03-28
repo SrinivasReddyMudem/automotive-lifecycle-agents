@@ -1,35 +1,42 @@
 """
 Output schema for can_bus_analyst.
 Enforced at API level via tool_choice — model cannot deviate from this structure.
+
+ProbableCause, NarrowingQuestion, SelfEvaluationLine are re-exported from shared_schema
+so existing imports from this module continue to work unchanged.
 """
 
 from pydantic import BaseModel, Field
 from typing import Literal
+from sdk_agents.core.shared_schema import (
+    ProbableCause,       # re-exported for backward compatibility
+    NarrowingQuestion,   # re-exported for backward compatibility
+    SelfEvaluationLine,  # re-exported for backward compatibility
+    ToolSelection,
+    ProtocolDetection,
+)
 
-
-class ProbableCause(BaseModel):
-    rank: Literal["HIGH", "MEDIUM", "LOW"]
-    description: str = Field(description="What is causing the fault and why")
-    test: str = Field(description="Specific measurement to perform — tool, signal, value")
-    pass_criteria: str = Field(description="Exact value/condition that rules this cause out")
-    fail_criteria: str = Field(description="Exact value/condition that confirms this cause")
-
-
-class NarrowingQuestion(BaseModel):
-    question: str
-    yes_consequence: str = Field(description="What yes means for the diagnosis")
-    no_consequence: str = Field(description="What no means for the diagnosis")
-
-
-class SelfEvaluationLine(BaseModel):
-    item: str = Field(description="What was checked")
-    result: Literal["PASS", "FAIL"]
-    evidence: str = Field(description="Specific numbers or values from this response that prove the result")
+# Re-export so "from can_bus_analyst.schema import ProbableCause" still works
+__all__ = [
+    "CanBusAnalystOutput",
+    "ProbableCause",
+    "NarrowingQuestion",
+    "SelfEvaluationLine",
+    "ToolSelection",
+    "ProtocolDetection",
+]
 
 
 class CanBusAnalystOutput(BaseModel):
     model_config = {"extra": "ignore"}
 
+    protocol_detection: ProtocolDetection = Field(
+        description=(
+            "STEP 0: identify the bus protocol from the user's input before any diagnosis. "
+            "State the protocol (CAN / CAN-FD / LIN / Ethernet / RTOS / UDS / Unknown), "
+            "what words in the input revealed it, and your confidence level."
+        )
+    )
     expert_diagnosis: str = Field(
         description=(
             "1-2 sentence immediate read: which OSI layer the fault is at "
@@ -42,8 +49,14 @@ class CanBusAnalystOutput(BaseModel):
     autosar_layer: str = Field(
         description="AUTOSAR layer: MCAL / CanIf / CanSM / COM / PduR / SWC / RTE / DCM"
     )
-    recommended_tool: str = Field(
-        description="Primary debug tool for this fault: oscilloscope / CANoe / TRACE32 / DLT Viewer"
+    tool_selection: ToolSelection = Field(
+        description=(
+            "Structured tool recommendation for this specific fault. "
+            "primary: best tool for this protocol + OSI layer. "
+            "secondary: cross-verification tool. "
+            "reason: why primary is optimal. "
+            "fallback: alternative if primary unavailable."
+        )
     )
     tec_math: list[str] = Field(
         description=(
@@ -71,12 +84,17 @@ class CanBusAnalystOutput(BaseModel):
     probable_causes: list[ProbableCause] = Field(
         min_length=3,
         max_length=3,
-        description="Exactly 3 ranked causes with specific Test/Pass/Fail measurements",
+        description=(
+            "Exactly 3 ranked causes with specific Test/Pass/Fail measurements. "
+            "ranking_reason must justify why this cause has this rank vs the others. "
+            "validation_test must be one single definitive action + expected result."
+        ),
     )
     decision_flow: list[str] = Field(
         description=(
             "Branching diagnostic tree as a list of lines — one string per line. "
-            "Start at L1 Physical. Each branch has Yes/No leading to next layer or conclusion. "
+            "MUST start at L1 Physical layer — never start at a higher layer. "
+            "Each branch has Yes/No leading to next layer or conclusion. "
             "Example lines: "
             "'L1 Physical: Vcc ripple and GND offset OK?', "
             "'+-- No  --> Fix supply / GND, retest', "

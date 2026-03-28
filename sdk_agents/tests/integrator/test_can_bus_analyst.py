@@ -7,7 +7,8 @@ All API calls are mocked — runs without a GOOGLE_API_KEY.
 import pytest
 from unittest.mock import patch, MagicMock
 from sdk_agents.integrator.can_bus_analyst.schema import (
-    CanBusAnalystOutput, ProbableCause, NarrowingQuestion, SelfEvaluationLine
+    CanBusAnalystOutput, ProbableCause, NarrowingQuestion, SelfEvaluationLine,
+    ToolSelection, ProtocolDetection,
 )
 from sdk_agents.integrator.can_bus_analyst import CanBusAnalystAgent
 from sdk_agents.integrator.can_bus_analyst import validators
@@ -20,10 +21,20 @@ from sdk_agents.core.skill_loader import load_skill
 def make_valid_output(**overrides) -> CanBusAnalystOutput:
     """Build a valid CanBusAnalystOutput for testing."""
     data = {
+        "protocol_detection": ProtocolDetection(
+            protocol="CAN",
+            detected_from="user mentioned bus-off, TEC, 500 kbps — CAN protocol confirmed",
+            confidence="HIGH",
+        ),
         "expert_diagnosis": "TEC accumulation from engine-induced noise — not a hard fault.",
         "osi_layer": "L1 Physical",
         "autosar_layer": "MCAL (CanDrv)",
-        "recommended_tool": "Oscilloscope",
+        "tool_selection": ToolSelection(
+            primary="Oscilloscope",
+            secondary="DMM",
+            reason="L1 Physical fault — need waveform to see Vcc ripple and differential voltage",
+            fallback="Logic Analyser with CAN decode",
+        ),
         "tec_math": [
             "TEC (Transmit Error Counter) — bus-off accumulation analysis",
             "Formula: net_TEC/s = (error_rate × 8) − ((1 − error_rate) × 1)",
@@ -129,8 +140,8 @@ class TestSchema:
     def test_schema_has_required_fields(self):
         schema = CanBusAnalystOutput.model_json_schema()
         required = schema.get("required", [])
-        for field in ["expert_diagnosis", "osi_layer", "autosar_layer",
-                      "tec_math", "probable_causes", "decision_flow",
+        for field in ["protocol_detection", "expert_diagnosis", "osi_layer", "autosar_layer",
+                      "tool_selection", "tec_math", "probable_causes", "decision_flow",
                       "narrowing_questions", "self_evaluation"]:
             assert field in required, f"Field '{field}' missing from schema required list"
 
@@ -189,6 +200,50 @@ class TestValidators:
         output = make_valid_output(self_evaluation=[line])
         with pytest.raises(DomainCheckError, match="evidence field is empty or too short"):
             validators.validate(output)
+
+    def test_wrong_tool_for_protocol_layer_fails(self):
+        """tool_selection.primary must be appropriate for the detected protocol + OSI layer."""
+        ts = ToolSelection(
+            primary="Wireshark",  # wrong — Wireshark is for Ethernet, not CAN L1 Physical
+            secondary="DMM",
+            reason="network capture",
+            fallback="Logic Analyser",
+        )
+        output = make_valid_output(tool_selection=ts)
+        with pytest.raises(DomainCheckError, match="not appropriate for"):
+            validators.validate(output)
+
+    def test_correct_tool_for_protocol_layer_passes(self):
+        """Oscilloscope is valid for CAN L1 Physical."""
+        ts = ToolSelection(
+            primary="Oscilloscope",
+            secondary="DMM",
+            reason="waveform capture for L1 Physical",
+            fallback="Logic Analyser",
+        )
+        output = make_valid_output(tool_selection=ts)
+        validators.validate(output)  # should not raise
+
+    def test_decision_flow_not_starting_l1_fails(self):
+        """Decision flow must open at L1 Physical."""
+        flow = [
+            "L7 Application: Is the state machine in the correct state?",
+            "+-- No  --> Reset state machine",
+            "+-- Yes --> Check further",
+        ]
+        output = make_valid_output(decision_flow=flow)
+        with pytest.raises(DomainCheckError, match="must start at L1 Physical"):
+            validators.validate(output)
+
+    def test_decision_flow_starting_l1_passes(self):
+        """Decision flow starting with L1 Physical reference passes."""
+        flow = [
+            "L1 Physical: Vcc stable and GND offset < 50 mV?",
+            "+-- No  --> Fix supply, retest",
+            "+-- Yes --> L2 Data Link: error frames present?",
+        ]
+        output = make_valid_output(decision_flow=flow)
+        validators.validate(output)  # should not raise
 
 
 # ── Skill loader tests ────────────────────────────────────────────────────────
