@@ -51,9 +51,22 @@ def _check_layer_suspect_matches_root_cause(output: EmbeddedCDeveloperOutput) ->
         layer_lower = suspect.layer.lower()
         # Allow layer name OR common synonyms
         synonyms = {
-            "physical": ["physical", "hardware", "supply", "power", "clock", "crystal", "vcc"],
-            "rtos": ["rtos", "os", "task", "stack", "scheduler", "watchdog", "isr", "interrupt"],
-            "application": ["application", "app", "logic", "state", "sw", "software", "code"],
+            "physical": [
+                "physical", "hardware", "supply", "power", "clock", "crystal",
+                "vcc", "voltage", "current", "signal", "gnd", "ground", "rail",
+                "oscillator", "peripheral", "register", "pin", "transceiver",
+            ],
+            "rtos": [
+                "rtos", "os", "task", "stack", "scheduler", "watchdog", "wdt",
+                "isr", "interrupt", "deadline", "cpu", "overload", "preempt",
+                "context", "tick", "period", "execution", "timing", "budget",
+                "utilisation", "utilization", "load", "starvation", "priority",
+            ],
+            "application": [
+                "application", "app", "logic", "state", "sw", "software", "code",
+                "algorithm", "function", "data", "variable", "flag", "mode",
+                "value", "calculation", "buffer", "pointer", "null", "overflow",
+            ],
         }
         accepted_words = synonyms.get(layer_lower, [layer_lower])
         if not any(word in root_lower for word in accepted_words):
