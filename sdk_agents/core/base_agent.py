@@ -106,10 +106,10 @@ class BaseAgent:
                         message=str(e),
                     )
                 domain_feedback = (
-                    f"Your previous response was rejected because the JSON did not match "
-                    f"the required schema. Return valid JSON matching the schema exactly. "
-                    f"Ensure every field is present and every string value is a plain string, "
-                    f"not a JSON key."
+                    "Your previous response was rejected because the JSON did not match "
+                    "the required schema. Return valid JSON matching the schema exactly. "
+                    "Ensure every field is present and every string value is a plain string, "
+                    "not a JSON key."
                 )
 
             except Exception as e:

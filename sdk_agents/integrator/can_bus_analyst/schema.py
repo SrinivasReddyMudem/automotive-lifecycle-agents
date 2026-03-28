@@ -7,7 +7,6 @@ so existing imports from this module continue to work unchanged.
 """
 
 from pydantic import BaseModel, Field
-from typing import Literal
 from sdk_agents.core.shared_schema import (
     ProbableCause,       # re-exported for backward compatibility
     NarrowingQuestion,   # re-exported for backward compatibility

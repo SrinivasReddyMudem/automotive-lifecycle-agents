@@ -14,7 +14,6 @@ from dotenv import load_dotenv  # noqa: E402
 load_dotenv(Path(__file__).parent / ".env")
 
 from sdk_agents.core.registry import get_agent, AGENT_NAMES, AGENT_DISPLAY_NAMES  # noqa: E402
-from sdk_agents.core.base_agent import AgentError  # noqa: E402
 from sdk_agents.core.renderer import (  # noqa: E402
     safe_render,
     render_can_bus_analyst,
