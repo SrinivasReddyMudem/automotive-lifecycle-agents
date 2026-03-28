@@ -6,7 +6,7 @@ Covers DTC triage, UDS session analysis, CAN fault correlation, and debug steps.
 from pydantic import BaseModel, Field
 from typing import Literal
 from sdk_agents.core.shared_schema import (
-    ProbableCause, SelfEvaluationLine, DebugStep
+    ProbableCause, SelfEvaluationLine, DebugStep, ProtocolDetection,
 )
 
 
@@ -44,8 +44,15 @@ class UdsSessionAnalysis(BaseModel):
 class FieldDebugFaeOutput(BaseModel):
     model_config = {"extra": "ignore"}
 
+    protocol_detection: ProtocolDetection = Field(
+        description=(
+            "STEP 0: identify the bus protocol from the customer complaint before any diagnosis. "
+            "State the protocol (CAN / CAN-FD / LIN / Ethernet / UDS / Unknown), "
+            "what in the complaint or DTC revealed it, and your confidence level."
+        )
+    )
     symptom_translation: SymptomTranslation = Field(
-        description="STEP 0: translate customer complaint to engineering layer before any diagnosis"
+        description="STEP 1: translate customer complaint to engineering layer before any diagnosis"
     )
     fault_details: FaultDetails = Field(
         description="STEP 1: DTC code, status byte decoded bit-by-bit, safety relevance"

@@ -19,6 +19,7 @@ def validate(output: SwIntegratorOutput) -> None:
     _check_autosar_layer_known(output)
     _check_analysis_specific(output)
     _check_resolution_steps_specific(output)
+    _check_resource_calc_when_memory_issue(output)
     _check_resource_budget_calc(output)
     _check_self_evaluation_has_evidence(output)
 
@@ -47,6 +48,24 @@ def _check_resolution_steps_specific(output: SwIntegratorOutput) -> None:
                 f"resolution_steps[{i}].action is too vague "
                 f"({len(step.action)} chars, minimum {MIN_ACTION_LENGTH}). "
                 f"Got: '{step.action}'"
+            )
+
+
+def _check_resource_calc_when_memory_issue(output: SwIntegratorOutput) -> None:
+    """
+    If the error is at the Linker layer, resource_budget_calc must not be N/A.
+    Linker errors (section overflow, address range exceeded) always need memory budget arithmetic.
+    """
+    layer = output.error_classification.autosar_layer
+    if "Linker" in layer:
+        calc = output.resource_budget_calc
+        text = "\n".join(calc) if isinstance(calc, list) else str(calc)
+        if "N/A" in text:
+            raise DomainCheckError(
+                f"error_classification.autosar_layer is '{layer}' (Linker error) "
+                f"but resource_budget_calc is N/A. "
+                f"Linker errors require memory section arithmetic — "
+                f"show used vs allocated size for the affected section."
             )
 
 

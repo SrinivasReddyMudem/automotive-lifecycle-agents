@@ -16,6 +16,7 @@ def validate(output: EmbeddedCDeveloperOutput) -> None:
     _check_cfsr_decode_present(output)
     _check_code_pattern_specific(output)
     _check_root_cause_specific(output)
+    _check_layer_suspect_matches_root_cause(output)
     _check_rtos_calc_structure(output)
     _check_cpu_load_calc(output)
     _check_self_evaluation_has_evidence(output)
@@ -37,6 +38,30 @@ def _check_layer_diagnosis_complete(output: EmbeddedCDeveloperOutput) -> None:
             "No layer is marked SUSPECT in layer_diagnosis. "
             "At least one layer must be identified as the fault candidate."
         )
+
+
+def _check_layer_suspect_matches_root_cause(output: EmbeddedCDeveloperOutput) -> None:
+    """
+    The root_cause text must reference the name of the SUSPECT layer.
+    This ensures the agent's conclusion is anchored to its own layer diagnosis.
+    """
+    suspects = [d for d in output.layer_diagnosis if d.status == "SUSPECT"]
+    root_lower = output.root_cause.lower()
+    for suspect in suspects:
+        layer_lower = suspect.layer.lower()
+        # Allow layer name OR common synonyms
+        synonyms = {
+            "physical": ["physical", "hardware", "supply", "power", "clock", "crystal", "vcc"],
+            "rtos": ["rtos", "os", "task", "stack", "scheduler", "watchdog", "isr", "interrupt"],
+            "application": ["application", "app", "logic", "state", "sw", "software", "code"],
+        }
+        accepted_words = synonyms.get(layer_lower, [layer_lower])
+        if not any(word in root_lower for word in accepted_words):
+            raise DomainCheckError(
+                f"root_cause does not reference the SUSPECT layer '{suspect.layer}'. "
+                f"The root_cause conclusion must name or describe the layer identified as SUSPECT. "
+                f"root_cause starts with: '{output.root_cause[:80]}'"
+            )
 
 
 def _check_cfsr_decode_present(output: EmbeddedCDeveloperOutput) -> None:

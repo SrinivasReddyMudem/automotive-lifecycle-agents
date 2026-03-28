@@ -13,6 +13,7 @@ MIN_ANALYSIS_LENGTH = 40
 
 
 def validate(output: FieldDebugFaeOutput) -> None:
+    _check_protocol_tec_consistency(output)
     _check_status_byte_decoded(output)
     _check_safety_relevant_consistent(output)
     _check_analysis_has_lab_vs_field(output)
@@ -20,6 +21,25 @@ def validate(output: FieldDebugFaeOutput) -> None:
     _check_nrc_root_causes(output)
     _check_debug_steps_specific(output)
     _check_self_evaluation_has_evidence(output)
+
+
+def _check_protocol_tec_consistency(output: FieldDebugFaeOutput) -> None:
+    """
+    If protocol_detection says CAN or CAN-FD and confidence is HIGH,
+    tec_math must not be N/A — the agent must show TEC accumulation math.
+    """
+    protocol = output.protocol_detection.protocol
+    confidence = output.protocol_detection.confidence
+    if protocol in ("CAN", "CAN-FD") and confidence == "HIGH":
+        tec = output.tec_math
+        text = "\n".join(tec) if isinstance(tec, list) else str(tec)
+        if "N/A" in text:
+            raise DomainCheckError(
+                f"protocol_detection identifies '{protocol}' with HIGH confidence "
+                f"but tec_math is set to N/A. "
+                f"CAN faults require TEC accumulation math — show the net_TEC/s calculation "
+                f"or lower protocol confidence if CAN is not confirmed."
+            )
 
 
 def _check_safety_relevant_consistent(output: FieldDebugFaeOutput) -> None:
