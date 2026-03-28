@@ -507,8 +507,6 @@ Regression Analyst · SIL/HIL Test Planner · SW Unit Tester
 Gate Review Approver *(trigger: /gate-review)*
         """)
 
-        st.info("💡 Best results: use protocol or standard keywords — CAN, AUTOSAR, ASPICE, ISO 26262, MISRA, UDS. LIN, FlexRay, and Automotive Ethernet are recognised. Additional skills and agents are in progress.")
-
         st.info(
             "💡 **Getting the best results:** Describe your problem using protocol or standard "
             "keywords such as CAN, AUTOSAR, ASPICE, ISO 26262, MISRA, or UDS — the right agent "
