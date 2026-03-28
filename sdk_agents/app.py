@@ -517,6 +517,15 @@ analysis of real engineering data.*
 """)
 
     with col2:
+        st.markdown("**Author**")
+        st.markdown("**Srinivas Reddy Mudem**")
+        st.caption(
+            "Exploring how effectively domain-specific AI agents can replicate "
+            "structured engineering reasoning when built around the right knowledge, "
+            "constraints, and validation."
+        )
+        st.markdown("---")
+
         st.markdown("**Agents**")
         st.markdown("""
 ✅ **Live — validated & domain-tested**
@@ -536,14 +545,6 @@ Regression Analyst · SIL/HIL Test Planner · SW Unit Tester
 *Gate review*
 Gate Review Approver *(trigger: /gate-review)*
         """)
-
-        st.info(
-            "💡 **Getting the best results:** Describe your problem using protocol or standard "
-            "keywords such as CAN, AUTOSAR, ASPICE, ISO 26262, MISRA, or UDS — the right agent "
-            "and skills load automatically. LIN, FlexRay, and Automotive Ethernet inputs are "
-            "recognised and routed, but have lighter skill depth than core protocols. "
-            "Additional agents and skills are actively in progress."
-        )
 
         st.markdown("**Domain knowledge loaded**")
         st.markdown("""
