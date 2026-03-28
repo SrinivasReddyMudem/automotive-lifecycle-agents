@@ -410,27 +410,47 @@ This agent:
         +-- Yes --> Bit error = L1; ACK error = check L7""", language="text")
 
         st.markdown("""
-**How the output is enforced**
+**How the output is enforced — 3 layers**
 
-The response structure is enforced at the API level using JSON Schema — the
-model cannot return free text or skip any required field. A second layer of
-domain checks validates that the content is specific: TEC math must contain
-numbers, AUTOSAR layer must be a known value, test descriptions must name a
-tool and probe point. This is what separates structured output from a
-well-formatted guess.
+Output quality is not left to the prompt. Three layers work together:
+
+1. **JSON Schema at the API level** — Groq enforces the schema with `strict: true`.
+   The model cannot return free text or skip any required field. Structure is contractual.
+
+2. **Pydantic validation** — field types, enum constraints (e.g. rank must be
+   HIGH/MEDIUM/LOW — "CRITICAL" is rejected), and nested model constraints.
+
+3. **Semantic domain validators** — content-level checks in Python:
+   TEC math must contain at least 3 numbers; AUTOSAR layer must be a known value;
+   test procedures must name a specific tool and probe point (≥ 25 characters);
+   self-evaluation PASS items must have evidence (not just "ok").
+
+When a semantic check fails, the failure reason is fed back to the model
+as a follow-up message so it knows exactly which field to fix — not a blind retry.
+
+**How agents are routed automatically**
+
+Type any engineering problem. The app scores all 13 agents using weighted keywords
+(4 = uniquely identifies this agent, down to 1 = weak signal) and routes to the
+highest scorer above the minimum threshold. 56 normalization rules handle typos
+and variants ("busoff", "bus_off", "bus off" all match "bus-off"). When a query
+spans two domains (e.g. ASPICE gap + MISRA violation), both agents are flagged.
 
 **Standards the agents work within**
 
 ISO 26262 · ASPICE v3.1 · MISRA C:2012 · AUTOSAR Classic ·
 ISO 21434 · ISO 14229 (UDS) · ISO 11898 (CAN) · IEEE 802.3bw (100BASE-T1)
 
-*All examples in this project use synthetic data only.*
+*All examples use synthetic data only — no real company code or proprietary information.*
 """)
 
     with col2:
         st.markdown("**Built by**")
         st.markdown("Srinivas Reddy Mudem")
-        st.markdown("Automotive embedded engineer with hands-on experience across ECU development, integration, and testing.")
+        st.markdown(
+            "11 years automotive ECU experience across development, testing, "
+            "integration, and project lead roles. Marquardt. AUTOSAR / CAN / diagnostics."
+        )
         st.markdown("---")
 
         st.markdown("**Agents — all live**")
@@ -459,14 +479,14 @@ ISO 21434 · ISO 14229 (UDS) · ISO 11898 (CAN) · IEEE 802.3bw (100BASE-T1)
 
         st.markdown("**Domain knowledge loaded**")
         st.markdown("""
-- CAN bus / error counters
-- ISO 26262 / HARA / ASIL
-- ASPICE SWE.1 – SWE.6
-- MISRA C:2012
-- AUTOSAR Classic
-- UDS / diagnostics
-- ISO 21434 / TARA
-- Embedded patterns
+- CAN bus / error counters / TEC math
+- ISO 26262 / HARA / ASIL table
+- ASPICE SWE.1–6 · SUP.8 · SUP.10 · MAN.3
+- MISRA C:2012 rules + deviations
+- AUTOSAR Classic BSW/RTE/COM
+- UDS/diagnostics / NRC codes
+- ISO 21434 / TARA / attack feasibility
+- Embedded RTOS / ISR / watchdog
         """)
 
         st.markdown("---")

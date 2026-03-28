@@ -1,6 +1,6 @@
 # Architecture Reference — Automotive Lifecycle Agents
 
-**Author: Srinivas Reddy M**
+**Author: Srinivas Reddy Mudem**
 Complete guide to every layer, what it contains, how layers connect,
 what to modify when adding or changing something, and what to run.
 
@@ -8,668 +8,525 @@ what to modify when adding or changing something, and what to run.
 
 ## Table of contents
 
-1. [System overview](#1-system-overview)
-2. [Layer map](#2-layer-map)
-3. [Layer 1 — CLAUDE.md (global rules)](#3-layer-1--claudemd-global-rules)
-4. [Layer 2 — Skills (domain knowledge)](#4-layer-2--skills-domain-knowledge)
-5. [Layer 3 — Agents (role behaviour)](#5-layer-3--agents-role-behaviour)
-6. [Layer 4 — Python tools (standalone calculators)](#6-layer-4--python-tools-standalone-calculators)
-7. [Layer 5 — Tests (quality gate)](#7-layer-5--tests-quality-gate)
-8. [Layer 6 — CI/CD (automated validation)](#8-layer-6--cicd-automated-validation)
-9. [How the layers connect](#9-how-the-layers-connect)
-10. [Modification guide — what to change for each scenario](#10-modification-guide)
-11. [Commands reference](#11-commands-reference)
-12. [File naming rules](#12-file-naming-rules)
+1. [System overview — two implementations](#1-system-overview)
+2. [Shared foundation](#2-shared-foundation)
+3. [md_agents layer map](#3-md_agents-layer-map)
+4. [sdk_agents layer map](#4-sdk_agents-layer-map)
+5. [Skills layer (shared)](#5-skills-layer)
+6. [md_agents — agents in depth](#6-md_agents-agents)
+7. [sdk_agents — core in depth](#7-sdk_agents-core)
+8. [sdk_agents — 3-layer quality system](#8-3-layer-quality)
+9. [sdk_agents — routing system](#9-routing-system)
+10. [Python tools](#10-python-tools)
+11. [Tests and CI/CD](#11-tests-and-cicd)
+12. [Modification guide](#12-modification-guide)
+13. [Commands reference](#13-commands-reference)
 
 ---
 
 ## 1. System overview
 
-This project works as a Claude Code extension. When installed into `.claude/`,
-Claude Code reads the agents and skills and uses them to respond to user prompts
-with automotive domain expertise.
+This project implements 13 automotive engineering AI agents in two ways.
+Both read from the same 8 skills. Same domain knowledge — two enforcement mechanisms.
 
 ```
-User types a prompt in plain English
-        ↓
-Claude Code reads CLAUDE.md global rules
-        ↓
-Description keywords in agents match the prompt → correct agent activates
-        ↓
-Agent loads its skills → skills load their reference files
-        ↓
-Agent + skill content shapes the response
-        ↓
-Python tools run independently from the command line (no Claude needed)
+User describes an engineering problem in plain English
+          │
+          ├── md_agents path (Claude Code)
+          │     Claude reads agent descriptions → picks best match →
+          │     agent loads skills → produces structured response via prompt
+          │
+          └── sdk_agents path (Streamlit browser app)
+                Weighted keyword scoring → routes to agent class →
+                Groq API call with JSON Schema → Pydantic validation →
+                semantic validators → structured UI output
 ```
 
-**The user never names a standard, an agent, or a skill.
-Everything routes automatically from keywords in the prompt.**
+**Key architectural difference:**
+- `md_agents`: format enforcement via prompt instructions (model tries to comply)
+- `sdk_agents`: format enforcement via `json_schema` API parameter (schema is contractual)
 
 ---
 
-## 2. Layer map
+## 2. Shared foundation
 
 ```
-automotive-lifecycle-md_agents/
+automotive-lifecycle-agents/
 │
-├── CLAUDE.md                    ← LAYER 1: Global rules (always loaded)
-│
-├── skills/                      ← LAYER 2: Domain knowledge
+├── skills/                     ← SHARED: 8 domain knowledge packs
 │   ├── iso26262-hara/
-│   │   ├── SKILL.md             ← Trigger keywords + method overview
-│   │   └── references/          ← Deep reference content (tables, templates)
-│   ├── misra-c-2012/
 │   ├── aspice-process/
+│   ├── misra-c-2012/
 │   ├── iso21434-tara/
 │   ├── autosar-classic/
 │   ├── uds-diagnostics/
 │   ├── can-bus-analysis/
 │   └── embedded-patterns/
 │
-├── md_agents/                      ← LAYER 3: Role behaviour
-│   ├── developer/               ← 3 agents
-│   ├── tester/                  ← 3 agents
-│   ├── integrator/              ← 3 agents
-│   └── project-lead/            ← 4 agents
+├── tools/                      ← SHARED: Python CLI calculators (ASIL, CAL, ASPICE, Gate)
 │
-├── tools/                       ← LAYER 4: Python CLI tools
-│   ├── asil_calculator.py
-│   ├── aspice_checker.py
-│   ├── cal_calculator.py
-│   └── gate_review_scorer.py
+├── tests/                      ← Tests for Python tools (pytest, no API key)
 │
-├── tests/                       ← LAYER 5: Automated tests
-│   ├── test_asil_calculator.py
-│   ├── test_aspice_checker.py
-│   └── test_cal_calculator.py
+├── md_agents/                  ← Implementation 1: Claude Code agents
+│   ├── developer/
+│   ├── tester/
+│   ├── integrator/
+│   └── project-lead/
 │
-├── .github/workflows/           ← LAYER 6: CI/CD
-│   └── validate.yml
+├── sdk_agents/                 ← Implementation 2: Python SDK + Streamlit
+│   ├── core/
+│   ├── integrator/
+│   ├── developer/
+│   ├── tester/
+│   └── project_lead/
 │
-└── docs/                        ← Documentation (not a runtime layer)
+└── .github/workflows/          ← 5 CI workflows (one badge per check type)
 ```
+
+Skills are written once. `md_agents` loads them via Claude Code's `skills:` frontmatter
+directive. `sdk_agents` loads them via `skill_loader.py` which reads the same files from
+disk into the Groq system prompt. One source of truth — two consumers.
 
 ---
 
-## 3. Layer 1 — CLAUDE.md (global rules)
+## 3. md_agents layer map
 
-### What it contains
-- Rules that apply to every agent and every response
-- The auto-routing skill table (which keywords trigger which skill)
-- Four worked examples showing prompt → agent activation
-
-### How it connects to other layers
-- Claude Code loads `CLAUDE.md` first, before any agent activates
-- Rules in CLAUDE.md override any agent-level behaviour
-- The skill auto-loading table in CLAUDE.md is documentation only —
-  the real trigger mechanism is in each skill's `description:` field
-
-### When to modify CLAUDE.md
-- Adding a new global rule that applies to all agents
-- Adding a new skill to the routing table (after adding the skill to `skills/`)
-- Changing the synthetic data or safety disclaimer policy
-
-### What to run after modifying
-```bash
-# No test needed — restart Claude Code to reload CLAUDE.md
-# Verify by typing a prompt that should trigger the new rule
 ```
+CLAUDE.md                       ← Global rules (always loaded first)
+│  - 7 rules applying to every agent response
+│  - Skill auto-loading table (documentation)
+│  - /gate-review explicit-trigger requirement
+│
+skills/<name>/SKILL.md          ← Domain knowledge trigger + method overview
+│  description: (keyword list)  ← Auto-routing trigger
+│  references/                  ← Deep tables loaded when skill is active
+│
+md_agents/<role>/<name>.md      ← Agent behaviour
+│  ---YAML frontmatter---
+│  name:          unique id
+│  description:   80+ word trigger (this IS the routing signal)
+│  tools:         Claude Code permissions
+│  skills:        reference packs this agent always loads
+│  maxTurns:      5–15 based on task complexity
+│  ---Markdown body---
+│  ## Role
+│  ## Response rules
+│  ## Output format
+│  ## Synthetic example
+│
+Interface: Claude Code chat tab (VS Code extension or CLI)
+```
+
+**How auto-routing works:**
+When a user types a message, Claude Code reads ALL agent descriptions and picks the best
+semantic match. The description IS the routing signal — a vague description means no routing.
+Skills also auto-load when their trigger keywords appear, even without the agent listing them.
+
+**gate-review-approver special rule:**
+Has `disable-model-invocation: true` in frontmatter. Only activates on explicit `/gate-review`
+command. Never auto-triggers. The CI `validate-agents` job checks this flag is always present.
 
 ---
 
-## 4. Layer 2 — Skills (domain knowledge)
+## 4. sdk_agents layer map
 
-### What it contains
+```
+sdk_agents/
+│
+├── core/
+│   ├── base_agent.py           ← BaseAgent class
+│   │     Groq API call with json_schema enforcement
+│   │     _inline_schema(): resolves $ref → flat schema (required by Groq strict mode)
+│   │     MAX_RETRIES = 2: retry on ValidationError or DomainCheckError
+│   │     domain_feedback: on DomainCheckError, feeds failure reason back to model
+│   │     Returns BaseModel or AgentError — never raises
+│   │
+│   ├── skill_loader.py         ← load_skill("name") → reads skills/ folder → string
+│   │
+│   ├── registry.py             ← Agent name + aliases → agent class (lazy imports)
+│   │
+│   ├── renderer.py             ← Pydantic model → Streamlit UI (safe_render wrapper)
+│   │
+│   └── logger.py               ← Raw API response logging to sdk_agents/logs/
+│
+├── <role>/<agent_name>/
+│   ├── __init__.py             ← AgentClass(BaseAgent): get_schema(), get_prompt(), _validate_domain()
+│   ├── prompt.py               ← AGENT_KNOWLEDGE string + load_skill() → get_system_prompt()
+│   ├── schema.py               ← Pydantic v2 output model (all required fields)
+│   └── validators.py           ← validate(output): domain-specific semantic checks
+│
+├── app.py                      ← Streamlit UI + AGENT_SCORES + RENDER_MAP
+│   │   _NORMALIZATIONS (56 regex rules)
+│   │   detect_agents() → weighted scoring → primary + secondaries
+│
+├── run.py                      ← CLI: python run.py --agent X --prompt "..."
+│
+└── test_routing.py             ← 40 single-agent + 7 multi-agent routing cases
+```
+
+**Interface:** Browser at `http://localhost:8501` after `streamlit run sdk_agents/app.py`
+
+**Model:** `meta-llama/llama-4-scout-17b-16e-instruct` via Groq free tier
+
+---
+
+## 5. Skills layer
 
 Each skill folder has two parts:
 
 ```
 skills/<skill-name>/
-├── SKILL.md          ← Frontmatter (name, description/trigger keywords)
-│                        + method overview + links to references
-└── references/       ← Detailed content files
-    ├── <table>.md    ← Complete tables, worked examples, templates
+├── SKILL.md              ← Frontmatter (name, description/trigger keywords) + content
+└── references/           ← Deep reference files (tables, templates, worked examples)
+    ├── <table>.md
     └── <template>.md
 ```
 
-### The trigger mechanism (most important concept)
+| Skill | Trigger keywords | Reference content |
+|---|---|---|
+| iso26262-hara | ASIL, HARA, safety goal, hazard | 64-entry S×E×C table, HARA template, safety goal format |
+| aspice-process | ASPICE, assessment, SWE.x, gap | BP checklists SWE.1–6, assessor questions, gap template |
+| misra-c-2012 | MISRA, rule violation, static analysis | Top 15 rules with compliant rewrites, deviation template |
+| iso21434-tara | cybersecurity, TARA, CAL, OTA attack | CAL table, TARA template, STRIDE catalog, UN R155 |
+| autosar-classic | AUTOSAR, SWC, BSW, RTE, ARXML | BSW module APIs, SWC patterns, composition ARXML |
+| uds-diagnostics | UDS, DTC, NRC, flash, diagnostic | All service IDs 0x10–0x3E, NRC codes, flash sequence |
+| can-bus-analysis | CAN, bus-off, error frame, TEC | Error type TEC/REC table, fault pattern table |
+| embedded-patterns | embedded, RTOS, ISR, watchdog | RTOS patterns, interrupt handling, watchdog pattern |
 
-The `description:` field in `SKILL.md` frontmatter is the **auto-routing trigger**.
-Claude reads it and loads the skill when any keyword in the description appears in
-the user's prompt. This is why descriptions must be long and keyword-rich.
-
-```yaml
----
-name: iso26262-hara
-description: |
-  Load automatically when any of these appear:
-  HARA, ASIL, ASIL-A, ASIL-B, ASIL-C, ASIL-D,
-  safety goal, hazard, ...
----
-```
-
-### How skills connect to agents
-
-Agents declare which skills they always need in their frontmatter:
-
-```yaml
-skills:
-  - iso26262-hara
-  - misra-c-2012
-```
-
-When the agent activates, those skills load with it. Skills can also load
-independently when keywords appear — without the agent explicitly listing them.
-
-### How reference files connect to SKILL.md
-
-SKILL.md contains pointers to reference files using this pattern:
-
-```markdown
-[reference: references/asil-table.md]
-All 64 S x E x C combinations listed explicitly.
-```
-
-Claude reads the reference file content when the skill is active.
-
-### 8 skills and what each reference contains
-
-| Skill | Reference files | What they contain |
-|-------|----------------|-------------------|
-| iso26262-hara | asil-table.md | All 64 S×E×C → ASIL combinations |
-| | hara-template.md | Full worked HARA example (brake-by-wire) |
-| | safety-goal-format.md | Format rules + 3 worked safety goals |
-| misra-c-2012 | top-rules.md | 15 rules: violation code + compliant rewrite |
-| | deviation-template.md | Formal deviation request template |
-| aspice-process | swe-work-products.md | All work products per SWE.1-6 with gaps |
-| | assessor-questions.md | 5 real questions per SWE area + evidence |
-| | gap-analysis-template.md | RAG gap report template |
-| iso21434-tara | cal-table.md | Impact × Feasibility → CAL table |
-| | tara-template.md | Full TARA example (OTA update system) |
-| autosar-classic | bsw-modules.md | 15 BSW modules with APIs and issues |
-| | swc-patterns.md | 5 SWC design patterns with ARXML names |
-| uds-diagnostics | service-ids.md | All UDS services 0x10-0x3E |
-| | nrc-codes.md | All NRC codes with root causes |
-| can-bus-analysis | error-types.md | All 5 CAN error types with TEC/REC impact |
-| | fault-patterns.md | Symptom → cause → debug step table |
-| embedded-patterns | rtos-patterns.md | 5 RTOS patterns with safety notes |
-| | interrupt-patterns.md | ISR design + Automotive Ethernet DMA |
-
-### When to modify skills
-
-| Scenario | What to change |
-|----------|---------------|
-| Standard table is incomplete | Edit the relevant reference file |
-| Skill not triggering on a keyword | Add keyword to `description:` in SKILL.md |
-| Add a new reference topic | Add new file in `references/`, add pointer in SKILL.md |
-| Add a brand new skill | Create new `skills/<name>/` folder with SKILL.md + references/ |
+**md_agents loads skills via:** `skills:` frontmatter list (Claude Code resolves at runtime)
+**sdk_agents loads skills via:** `load_skill("name")` in prompt.py (reads files into string)
 
 ---
 
-## 5. Layer 3 — Agents (role behaviour)
+## 6. md_agents — agents in depth
 
-### What it contains
-
-Each agent is a single `.md` file with two parts:
-
-```markdown
----                          ← YAML frontmatter (machine-readable config)
-name: autosar-bsw-developer
-description: |               ← Auto-routing trigger (keyword-rich)
-  AUTOSAR, BSW, SWC, RTE...
-tools:                       ← Which Claude tools the agent can use
-  - Read
-  - Write
-skills:                      ← Which skills always load with this agent
-  - autosar-classic
-  - misra-c-2012
-maxTurns: 15                 ← Max conversation turns before agent stops
----
-
-## Role                      ← Markdown body (human-readable instructions)
-...
-## Response rules
-...
-## Output format
-...
-## Synthetic example
-...
-```
-
-### The 4 agent frontmatter rules (never break these)
-
-1. `name:` must be unique across all agents
-2. `description:` must be 80+ words and keyword-rich — this is the trigger
-3. **Never add `model:` field** — hardcoding a model breaks future updates
-4. `gate-review-approver` must have `disable-model-invocation: true`
-
-### Agent folder structure
+### The 13 agents by role
 
 ```
 md_agents/
-├── developer/          ← Software construction role
-│   ├── autosar-bsw-developer.md     maxTurns: 15 (complex design tasks)
+├── developer/
+│   ├── autosar-bsw-developer.md     maxTurns: 15  (design tasks)
 │   ├── embedded-c-developer.md      maxTurns: 15
-│   └── misra-reviewer.md            maxTurns: 6  (read-only, focused)
-├── tester/             ← Verification and validation role
+│   └── misra-reviewer.md            maxTurns: 6   (read-only)
+│
+├── tester/
 │   ├── sw-unit-tester.md            maxTurns: 12
 │   ├── sil-hil-test-planner.md      maxTurns: 10
-│   └── regression-analyst.md        maxTurns: 6  (read-only, analysis)
-├── integrator/         ← Integration and field support role
+│   └── regression-analyst.md        maxTurns: 6   (read-only)
+│
+├── integrator/
+│   ├── can-bus-analyst.md           maxTurns: 6   (read-only)
 │   ├── field-debug-fae.md           maxTurns: 8
-│   ├── sw-integrator.md             maxTurns: 12
-│   └── can-bus-analyst.md           maxTurns: 6  (read-only, analysis)
-└── project-lead/       ← Project management and standards role
+│   └── sw-integrator.md             maxTurns: 12
+│
+└── project-lead/
+    ├── safety-and-cyber-lead.md     maxTurns: 10  (read-only)
+    ├── aspice-process-coach.md      maxTurns: 10  (read-only)
     ├── sw-project-lead.md           maxTurns: 12
-    ├── safety-and-cyber-lead.md     maxTurns: 10 (read-only)
-    ├── aspice-process-coach.md      maxTurns: 10 (read-only)
-    └── gate-review-approver.md      maxTurns: 5  (manual trigger only)
+    └── gate-review-approver.md      maxTurns: 5   (manual trigger only)
 ```
 
-### maxTurns logic
+### YAML frontmatter rules
 
-| maxTurns | Used for |
-|----------|----------|
-| 5–6 | Read-only analysis agents; short focused answers |
-| 8–10 | Medium complexity agents; structured output |
-| 12–15 | Full design and implementation agents |
-
-### How agents connect to skills
-
-```
-Agent frontmatter                    Skill SKILL.md
-─────────────────                    ──────────────
-skills:               → loads →      name: iso26262-hara
-  - iso26262-hara                    description: (trigger keywords)
-  - misra-c-2012                     references/asil-table.md
-                                     references/hara-template.md
-```
-
-### When to modify agents
-
-| Scenario | What to change |
-|----------|---------------|
-| Agent not activating on your keywords | Add keywords to `description:` |
-| Agent response format not right | Edit the `## Output format` section |
-| Agent needs a new skill | Add skill name to `skills:` list |
-| Agent writes files it shouldn't | Remove `Write` and `Edit` from `tools:` |
-| Add a new agent | Create new `.md` in the appropriate role folder |
-| New engineering role | Create new subfolder in `md_agents/` |
+1. `name:` — unique, must match filename without `.md`
+2. `description:` — 80+ words, keyword-rich — this IS the routing signal
+3. `tools:` — minimum needed (misra-reviewer and can-bus-analyst are read-only)
+4. `skills:` — skills this agent always loads (others may auto-load from keywords)
+5. `maxTurns:` — 5–6 for read-only analysis, 12–15 for design/implementation
+6. **Never add `model:` field** — hardcodes a version, breaks future updates
+7. `gate-review-approver` must always have `disable-model-invocation: true`
 
 ---
 
-## 6. Layer 4 — Python tools (standalone calculators)
+## 7. sdk_agents — core in depth
 
-### What it contains
-
-Four independent CLI tools. They run from the command line with no Claude
-needed and no external pip dependencies.
-
-| Tool | Standard | Input | Output |
-|------|----------|-------|--------|
-| asil_calculator.py | ISO 26262-3 Table 4 | S, E, C ratings | ASIL level |
-| aspice_checker.py | Automotive SPICE | Phase + work products you have | Gap report |
-| cal_calculator.py | ISO 21434 | Impact + Feasibility | CAL level |
-| gate_review_scorer.py | Project gate | Phase + criterion statuses | RAG score |
-
-### How tools connect to skills
-
-Tools are **standalone** — they do not call skills or agents. However they
-implement the same tables that the skills reference:
-
-```
-skills/iso26262-hara/references/asil-table.md  ←→  tools/asil_calculator.py
-skills/iso21434-tara/references/cal-table.md   ←→  tools/cal_calculator.py
-skills/aspice-process/references/swe-work-products.md ←→ tools/aspice_checker.py
-```
-
-**Rule:** If you update a table in a reference file, update the corresponding
-tool's lookup table to keep them consistent.
-
-### Tool structure pattern (same for all 4)
+### base_agent.py — the orchestrator
 
 ```python
-# 1. Lookup table (dictionary) — the data
-ASIL_TABLE = { ("S3","E4","C3"): "ASIL D", ... }
+class BaseAgent:
+    def run(self, user_message: str) -> BaseModel | AgentError:
+        # Loop MAX_RETRIES + 1 times
+        for attempt in range(MAX_RETRIES + 1):
+            try:
+                raw = self._call_api(user_message, domain_feedback)
+                parsed = self._parse(raw)          # Pydantic validation
+                self._validate_domain(parsed)       # semantic checks
+                return parsed                       # success
+            except ValidationError:
+                # retry (no feedback — likely transient)
+            except DomainCheckError as e:
+                # retry WITH feedback: model knows what to fix
+                domain_feedback = f"Quality check failed: {e}. Fix this specific issue."
+            except Exception:
+                return AgentError(...)              # API error — return immediately
 
-# 2. Core function — pure logic, testable
-def lookup_asil(severity, exposure, controllability):
-    ...
+    def _inline_schema(self, schema):
+        # Resolve all $ref to inline — required for Groq strict mode
+        # Strip $defs, title, minItems, maxItems
+        # Add "additionalProperties": false to every object
 
-# 3. Print function — formatted output with disclaimer
-def print_result(severity, exposure, controllability):
-    ...
-
-# 4. CLI entry point — argparse
-def main():
-    parser = argparse.ArgumentParser(...)
-    ...
+    def _call_api(self, user_message, domain_feedback=None):
+        # Build messages: [system, user] + [domain_feedback if retry]
+        # Call Groq with response_format: {type: json_schema, strict: True}
 ```
 
-### When to modify tools
+### _inline_schema — why it exists
 
-| Scenario | What to change |
-|----------|---------------|
-| Add a new S/E/C combination | Edit `ASIL_TABLE` dict in asil_calculator.py |
-| Add a new ASPICE work product | Edit `SWE_WORK_PRODUCTS` dict in aspice_checker.py |
-| Add new gate criterion | Edit `GATE_CRITERIA` dict in gate_review_scorer.py |
-| Change output format | Edit the `print_result()` function |
-| Add new CLI flag | Add `parser.add_argument()` and handle in `main()` |
+Pydantic generates schemas with `$ref` references. Groq strict mode requires fully inlined
+schemas (no `$ref` allowed). The method recursively substitutes every `$ref` with the full
+definition from `$defs`, then removes `$defs`. Without this, every API call fails with
+a schema error before any content is generated.
 
-**After any tool change — always run tests:**
-```bash
-pytest tests/ -v
-```
+### registry.py — lazy imports
+
+All 13 agent classes are imported inside `_get_registry()` (not at module level). This
+means importing the registry module does not load any agents. Agents load only when
+`get_agent("name")` is called. This keeps startup fast and avoids loading all 13 skill
+files when only one agent will be used.
 
 ---
 
-## 7. Layer 5 — Tests (quality gate)
+## 8. sdk_agents — 3-layer quality system
 
-### What it contains
-
-Three pytest files — one per tool (gate_review_scorer has no dedicated test file
-but is covered through integration in the other tests).
+Every agent response passes through three validation layers before reaching the user:
 
 ```
-tests/
-├── test_asil_calculator.py    ← 20+ tests: all ASIL levels, invalid input
-├── test_aspice_checker.py     ← gap detection, structure validation, all phases
-└── test_cal_calculator.py     ← all CAL levels, table completeness, validation
+Layer 1: API Schema Enforcement
+  Groq json_schema strict=True
+  ├── All required fields present?
+  ├── Field types correct?
+  └── No extra fields?
+  → Fails → retry (ValidationError)
+
+Layer 2: Pydantic Validation
+  schema.model_validate_json(raw)
+  ├── Literal constraints satisfied?    e.g. rank must be "HIGH"|"MEDIUM"|"LOW"
+  ├── Type coercion issues?
+  └── Nested model constraints?
+  → Fails → retry (ValidationError)
+
+Layer 3: Semantic Domain Validation
+  validators.validate(parsed)
+  ├── Content specificity checks        e.g. tec_math has ≥ 3 numbers
+  ├── Domain value checks               e.g. autosar_layer is a known value
+  ├── Length/completeness checks        e.g. test description ≥ 25 chars
+  └── Self-evaluation evidence checks   e.g. PASS items have ≥ 15 char evidence
+  → Fails → DomainCheckError
+  → Retry with specific failure message fed back to model
 ```
 
-### How tests connect to tools
+The retry with feedback is the key innovation:
+- `ValidationError` retry: clean attempt (transient schema issue)
+- `DomainCheckError` retry: appends the failure reason to the messages array
+  so the model knows exactly which field to fix and why
 
-Tests import directly from `tools/`:
+---
+
+## 9. sdk_agents — routing system
+
+### Step 1 — Normalization (56 regex rules)
 
 ```python
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from tools.asil_calculator import lookup_asil, print_result
+_NORMALIZATIONS = [
+    (r"\bbus[\s_-]?off\b",      "bus-off"),          # "busoff", "bus_off", "bus off" → "bus-off"
+    (r"\bhard[\s_]?fault\b",    "hard fault"),        # "hardfault", "hard_fault" → "hard fault"
+    (r"\bunit[\s_]test(ing)?\b","unit test"),          # "unit testing" → "unit test"
+    ...56 total rules...
+]
 ```
 
-### Test coverage targets
+### Step 2 — Weighted scoring
 
-| Tool | Key assertions tested |
-|------|-----------------------|
-| asil_calculator | S3/E4/C3=ASIL D, only one ASIL D exists, all 5 ASIL levels reachable, invalid inputs raise ValueError |
-| aspice_checker | All WPs present = 0 gaps, missing static analysis = HIGH risk gap, invalid phase = ValueError |
-| cal_calculator | I4/AF4=CAL 4 only, I3/AF2=CAL 2, 16 entries in table, all CAL levels reachable |
+```python
+AGENT_SCORES = {
+    "can-bus-analyst": {
+        "bus-off": 4,     # uniquely identifies this agent
+        "error frame": 3, # strong signal
+        "canoe": 2,       # shared signal
+        "can": 1,         # weak corroborating evidence
+    },
+    ...
+}
+```
 
-### When to modify tests
+### Step 3 — Primary + secondary detection
 
-| Scenario | What to change |
-|----------|---------------|
-| Added new lookup combination to a tool | Add test asserting the new combination |
-| Changed risk level of an ASPICE work product | Update the corresponding risk assertion |
-| Added new CLI flag | Add test calling the flag |
-| Changed ASIL/CAL table values | Update expected values in tests |
+```python
+_MIN_ROUTE_SCORE = 3
 
-### What to run
+def detect_agents(text):
+    # Score all agents against normalized text
+    # Pick primary = highest scorer above threshold
+    # Secondary floor = max(3, min(best * 0.4, 7))
+    # Return [primary] + [secondaries above floor]
+```
 
-```bash
-# Run all tests
-pytest tests/ -v
+The secondary floor cap at 7 prevents high-scoring primaries (score 20) from
+requiring secondaries to also score 8+. This ensures genuinely overlapping
+domains (ASPICE gap + MISRA violation, CAN bus-off + UDS session) are detected.
 
-# Run with coverage report
-pytest tests/ -v --cov=tools --cov-report=term-missing
+### What triggers multi-agent notification
 
-# Run a single test file
-pytest tests/test_asil_calculator.py -v
+The app shows "Multi-skill query detected. Also relevant: [agent names]" when
+secondaries are detected. The user can switch agents in the sidebar to get each
+perspective. Secondary agents are not run automatically — only the primary runs.
 
-# Run a single test
-pytest tests/test_asil_calculator.py::TestAsilLookup::test_s3_e4_c3_returns_asil_d -v
+---
+
+## 10. Python tools
+
+Four standalone CLI calculators. No agent, no API key, no Claude needed.
+
+| Tool | Standard | Inputs | Output |
+|---|---|---|---|
+| asil_calculator.py | ISO 26262-3 Table 4 | --severity S0-S3, --exposure E0-E4, --controllability C0-C3 | ASIL level |
+| aspice_checker.py | ASPICE v3.1 | --phase SWE1-SWE6, --have "work_product_list" | Gap report with assessor risk |
+| cal_calculator.py | ISO 21434 | --impact I1-I4, --feasibility AF1-AF4 | CAL level |
+| gate_review_scorer.py | Project governance | --phase SOR/SOP, --criteria "key:status,..." | RAG score with blockers |
+
+Tools implement the same tables as the skills reference files:
+
+```
+skills/iso26262-hara/references/asil-table.md  ←→  tools/asil_calculator.py (ASIL_TABLE dict)
+skills/iso21434-tara/references/cal-table.md   ←→  tools/cal_calculator.py (CAL_TABLE dict)
+```
+
+**Rule:** If you update a table value in a reference file, update the tool lookup dict too.
+The tests verify both are consistent.
+
+---
+
+## 11. Tests and CI/CD
+
+### 5 CI workflows — one badge each
+
+| Badge | Workflow | What it validates |
+|---|---|---|
+| Tests | tests.yml | 78 pytest cases for Python tools (asil, aspice, cal, gate) |
+| Agents | validate-agents.yml | All 13 md_agents files: frontmatter, description length, gate-review flag |
+| SDK | validate-sdk.yml | All 13 sdk agent imports, schemas, skill loader, routing (47 cases), unit tests, lint |
+| Skills | validate-skills.yml | All 8 skill files present and correctly formatted |
+| Lint | lint.yml | flake8 on tools/ and tests/ (root level) |
+
+### validate-sdk.yml steps (no API key needed)
+
+1. Import all 13 agent classes — catches structural/wiring errors
+2. Validate all 13 Pydantic schemas — checks required fields present
+3. Validate skill loader — all 8 skills load successfully with content > 100 chars
+4. Run routing tests — 40 single-agent + 7 multi-agent routing cases
+5. Run unit tests — pytest sdk_agents/tests/ (all API calls mocked)
+6. Lint — flake8 with E501, E231 suppressed (intentional compact dict style)
+
+### Test structure
+
+```
+tests/                           ← Python tool tests (root-level pytest)
+│   test_asil_calculator.py      ← 20+ cases: all ASIL levels, invalid input
+│   test_aspice_checker.py       ← gap detection, phase validation
+│   └── test_cal_calculator.py   ← all CAL levels, table completeness
+
+sdk_agents/tests/                ← sdk_agents unit tests (mocked)
+└── integrator/
+    └── test_can_bus_analyst.py  ← Schema (6), Validators (4), Skill loader (3), Agent (7)
 ```
 
 ---
 
-## 8. Layer 6 — CI/CD (automated validation)
+## 12. Modification guide
 
-### What it contains
+### Add a new agent to sdk_agents
 
-One GitHub Actions workflow file: `.github/workflows/validate.yml`
+1. Create `sdk_agents/<role>/<agent_name>/` with 4 files: `__init__.py`, `prompt.py`, `schema.py`, `validators.py`
+2. Schema: Pydantic v2 model, all fields required, include `self_evaluation: list[SelfEvaluationLine]`
+3. Prompt: `AGENT_KNOWLEDGE` string + `get_system_prompt()` that calls `load_skill()`
+4. Validators: `validate(output)` that raises `DomainCheckError` for weak content
+5. `__init__.py`: class inheriting `BaseAgent`, override `get_schema()`, `get_prompt()`, `_validate_domain()`
+6. Add to `core/registry.py`: canonical name + snake_case alias + short alias
+7. Add to `AGENT_DISPLAY_NAMES` in registry.py
+8. Add `render_<agent_name>()` to `core/renderer.py`
+9. Add to `RENDER_MAP` in `app.py`
+10. Add keyword scores to `AGENT_SCORES` in `app.py`
+11. Add tests in `sdk_agents/tests/<role>/test_<agent_name>.py`
+12. Add to schema validation list in `.github/workflows/validate-sdk.yml`
 
-It runs 4 jobs on every push and pull request to `main`:
+### Add a new agent to md_agents
 
-| Job | What it checks |
-|-----|---------------|
-| test | pytest + coverage on all 3 test files |
-| validate-agents | Frontmatter fields, no model: field, gate-review-approver rule, description length |
-| validate-skills | SKILL.md present in every skill folder, name + description fields |
-| lint | flake8 on tools/ and tests/ (max line length 88) |
-
-### How CI connects to other layers
-
-```
-Push to GitHub
-     ↓
-validate-agents → reads md_agents/**/*.md → checks Layer 3
-validate-skills → reads skills/*/SKILL.md → checks Layer 2
-test            → imports tools/*.py → runs Layer 5 against Layer 4
-lint            → checks tools/ and tests/ code style
-```
-
-### When to modify CI
-
-| Scenario | What to change |
-|----------|---------------|
-| Add a new required frontmatter field | Add to the field check list in validate-agents job |
-| Change Python version | Edit `python-version:` in setup-python step |
-| Add a new test file | No change needed — `pytest tests/` picks it up automatically |
-| Change max line length | Edit `--max-line-length` in lint job |
-
----
-
-## 9. How the layers connect
-
-### Full connection diagram
-
-```
-LAYER 1: CLAUDE.md
-  │  global rules → applied to every response
-  │  skill routing table → documentation reference
-  ↓
-LAYER 2: skills/<name>/SKILL.md
-  │  description: keywords → auto-routing trigger
-  │  references/ → deep content loaded when skill is active
-  ↓
-LAYER 3: md_agents/<role>/<name>.md
-  │  description: keywords → agent auto-routing trigger
-  │  skills: list → pulls in Layer 2 content
-  │  tools: list → grants Claude Code tool permissions
-  │  body (Role/Rules/Format/Example) → shapes response
-  ↓
-LAYER 4: tools/*.py              ← independent, run from terminal
-  ↓
-LAYER 5: tests/*.py              ← validates Layer 4 logic
-  ↓
-LAYER 6: .github/workflows/      ← validates Layer 2, 3, 4, 5 on push
-```
-
-### Key data flows
-
-**Flow 1 — User prompt triggers an agent:**
-```
-User: "ASIL-B SWC for vehicle speed"
-  → ASIL-B keyword → iso26262-hara skill loads
-  → AUTOSAR/SWC keyword → autosar-bsw-developer agent activates
-  → Agent body shapes the response format
-  → iso26262-hara reference files provide ASIL context
-  → autosar-classic skill provides SWC design patterns
-```
-
-**Flow 2 — Table in skill and table in tool must stay in sync:**
-```
-skills/iso26262-hara/references/asil-table.md  (human-readable table)
-                ↕  must match
-tools/asil_calculator.py  ASIL_TABLE dict  (machine-executable table)
-```
-
-**Flow 3 — Agent description drives CI validation:**
-```
-md_agents/developer/autosar-bsw-developer.md
-  → description: field
-  → CI validate-agents job checks word count ≥ 80
-  → If too short → CI fails → push blocked
-```
-
----
-
-## 10. Modification guide
-
-### Add a new agent
-
-1. Decide the role folder: `developer/`, `tester/`, `integrator/`, or `project-lead/`
-2. Create `md_agents/<role>/<new-agent-name>.md`
-3. Write YAML frontmatter:
-   - `name:` unique, lowercase-hyphen
-   - `description:` 80+ words with all trigger keywords
-   - `tools:` minimum needed
-   - `skills:` skills this agent always needs
-   - `maxTurns:` 5–15 based on complexity
-   - **No `model:` field**
-4. Write agent body: Role, What you work with, Response rules, Output format, Synthetic example
-5. Update `CLAUDE.md` routing table if it's a new keyword domain
-6. Update `docs/agent-guide.md` with the new agent entry
-7. Run: `pytest tests/ -v` — no test change needed for agent files
-8. Push: CI validate-agents job will check frontmatter automatically
+1. Create `md_agents/<role>/<agent-name>.md`
+2. YAML frontmatter: `name`, `description` (80+ words, keyword-rich), `tools`, `skills`, `maxTurns`
+3. Agent body: Role, Response rules, Output format, Synthetic example
+4. CI validate-agents checks the file automatically on push — no CI change needed
 
 ### Add a new skill
 
-1. Create folder: `skills/<new-skill-name>/`
-2. Create `skills/<new-skill-name>/SKILL.md` with frontmatter + content
-3. Create `skills/<new-skill-name>/references/` with at least 2 reference files
-4. Reference files must have real content — no placeholder text
-5. Update `CLAUDE.md` routing table to include the new skill
-6. Update any agents that should auto-load this skill (add to their `skills:` list)
-7. Run: no test needed — CI validate-skills job checks presence automatically
-8. Update `docs/agent-guide.md` if the skill changes agent behaviour
+1. Create `skills/<skill-name>/SKILL.md` with frontmatter and content
+2. Create `skills/<skill-name>/references/` with at least 2 reference files
+3. Update `CLAUDE.md` routing table (md_agents documentation)
+4. Update any agents that should auto-load this skill
 
-### Expand an existing reference file
+### Modify the ASIL or CAL table
 
-1. Open the reference file in `skills/<name>/references/`
-2. Add the new content (table row, new section, worked example)
-3. If the content is also in a Python tool lookup table: update the tool too
-4. Run: `pytest tests/ -v` to confirm tool tests still pass
+Three files must stay in sync:
+1. `skills/<standard>/references/<table>.md` (human-readable reference)
+2. `tools/<calculator>.py` — update the Python dict
+3. `tests/test_<calculator>.py` — update expected values
 
-### Add a new Python tool
-
-1. Create `tools/<new_tool>.py` following the 4-part structure:
-   - Lookup table / data dict
-   - Core logic function (pure, testable)
-   - Print/output function
-   - `main()` with argparse
-2. Add author header: `Author: Srinivas Reddy M`
-3. Create `tests/test_<new_tool>.py` with:
-   - At least one test per major output value
-   - Invalid input raises ValueError tests
-   - Output function runs without error
-4. Run: `pytest tests/ -v` — all tests must pass
-5. CI will pick up the new test file automatically
-
-### Modify the ASIL table
-
-If you need to correct an ASIL value:
-1. Edit `skills/iso26262-hara/references/asil-table.md` — update the table row
-2. Edit `tools/asil_calculator.py` — update the `ASIL_TABLE` dict entry
-3. Edit `tests/test_asil_calculator.py` — update the expected value in the test
-4. Run: `pytest tests/test_asil_calculator.py -v`
-
-### Modify the CAL table
-
-Same pattern as ASIL:
-1. Edit `skills/iso21434-tara/references/cal-table.md`
-2. Edit `tools/cal_calculator.py` — update `CAL_TABLE` dict
-3. Edit `tests/test_cal_calculator.py` — update expected value
-4. Run: `pytest tests/test_cal_calculator.py -v`
+Run `pytest tests/ -v` to verify all three are consistent.
 
 ---
 
-## 11. Commands reference
+## 13. Commands reference
 
-### Install and setup
+### md_agents setup
+
 ```bash
-# Clone for current project
-git clone https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents .claude
-
-# Clone globally
+# Install globally (agents available in all Claude Code sessions)
 git clone https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents ~/.claude
 
-# Using setup.sh
-./setup.sh --project     # current project
-./setup.sh --global      # global
-./setup.sh --remove      # remove from current project
-
 # Update
-git -C .claude pull
+git -C ~/.claude pull
+```
+
+### sdk_agents setup
+
+```bash
+cd sdk_agents
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env: GROQ_API_KEY=your-key  (free at console.groq.com, no credit card)
+
+# Run Streamlit UI
+streamlit run sdk_agents/app.py    # opens http://localhost:8501
+
+# Run CLI
+python run.py --agent can-bus-analyst --prompt "CAN node goes bus-off after 3 minutes"
 ```
 
 ### Python tools
+
 ```bash
-# ASIL calculator
 python tools/asil_calculator.py --severity S3 --exposure E4 --controllability C2
-python tools/asil_calculator.py --interactive
-python tools/asil_calculator.py --list-all
-
-# ASPICE checker
 python tools/aspice_checker.py --phase SWE4 --have "unit_test_spec,test_results"
-python tools/aspice_checker.py --phase all --have "srs,sad"
-python tools/aspice_checker.py --list-phases
-
-# CAL calculator
 python tools/cal_calculator.py --impact I3 --feasibility AF2
-python tools/cal_calculator.py --interactive
-python tools/cal_calculator.py --list-all
-
-# Gate review scorer
-python tools/gate_review_scorer.py --phase SOP \
-  --criteria "test_complete:pass,traceability:partial,cm_baselines:fail"
-python tools/gate_review_scorer.py --phase SOR --interactive
-python tools/gate_review_scorer.py --list-criteria SOP
+python tools/gate_review_scorer.py --phase SOP --criteria "test_complete:pass,traceability:partial"
 ```
 
 ### Testing
+
 ```bash
-# Run all tests
+# All tests
+pytest tests/ sdk_agents/tests/ -v
+
+# Python tools only
 pytest tests/ -v
 
-# Run with coverage
-pytest tests/ -v --cov=tools --cov-report=term-missing
+# sdk_agents unit tests (no API key)
+pytest sdk_agents/tests/ -v
 
-# Single file
-pytest tests/test_asil_calculator.py -v
+# Routing test
+python sdk_agents/test_routing.py
 
-# Single test
-pytest tests/test_asil_calculator.py::TestAsilLookup::test_s3_e4_c3_returns_asil_d
-```
-
-### Linting
-```bash
-pip install flake8
+# Lint
+flake8 sdk_agents/ --max-line-length 100 --extend-ignore=E501,E231 \
+  --exclude=sdk_agents/logs,sdk_agents/.venv
 flake8 tools/ tests/ --max-line-length 88
 ```
-
-### Git (first time)
-```bash
-cd "c:/SrinivasReddy/Projects/automotive-lifecycle-agents"
-git init
-git remote add origin https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents.git
-```
-
----
-
-## 12. File naming rules
-
-| Layer | Convention | Example |
-|-------|-----------|---------|
-| Agents | lowercase-hyphen.md | `autosar-bsw-developer.md` |
-| Skills folder | lowercase-hyphen | `iso26262-hara/` |
-| SKILL.md | always `SKILL.md` | `SKILL.md` |
-| Reference files | lowercase-hyphen.md | `asil-table.md` |
-| Python tools | lowercase_underscore.py | `asil_calculator.py` |
-| Test files | `test_` + tool name | `test_asil_calculator.py` |
-| Agent `name:` field | matches filename without .md | `autosar-bsw-developer` |
-| Skill `name:` field | matches folder name | `iso26262-hara` |
-
-**Breaking these naming rules will cause CI validation to fail or skills/agents
-to not load correctly in Claude Code.**

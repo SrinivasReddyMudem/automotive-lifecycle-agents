@@ -1,7 +1,12 @@
 # Agent Guide
 
-Detailed reference for all 12 agents — what they do, when they activate,
+Detailed reference for all 13 agents — what they do, when they activate,
 and what output to expect.
+
+This guide covers both implementations:
+- **md_agents**: activate automatically in Claude Code from keyword routing
+- **sdk_agents**: activate from the Streamlit app's weighted keyword scoring or
+  manual agent selection in the sidebar
 
 ---
 
@@ -221,20 +226,23 @@ ISO 26262, ISO 21434, damage scenario, attack feasibility, FMEA, FTA
 ### aspice-process-coach
 
 **When it activates:** ASPICE assessment, process gap, work product missing,
-SWE.1 through SWE.6, assessor, gap analysis, Level 1/2/3
+SWE.1 through SWE.6, SUP.8, SUP.10, MAN.3, assessor, gap analysis, Level 1/2/3
 
 **What it produces:**
-- Work product status table per SWE process area with RAG rating
+- Work product status table per process area with RAG rating (SWE + SUP.8 + SUP.10 + MAN.3)
 - BP1–BP6 individual status per process area
 - PA 2.2 hidden trap check: review record, approval record, and CM baseline
-  verified as three separate items
-- Top 3 priority actions with effort estimate
+  verified as three separate conditions (all three required — having two is still a finding)
+- Top 3 priority risks ranked Major → Minor → Observation
+- Day-by-day immediate action plan (not categories — actual daily tasks)
 - Assessor finding prediction per BP number with Major/Minor severity
-- Formal 3-part finding response template (action / evidence / prevention)
-- Overall readiness assessment
+- Formal 3-part finding response template (action taken / evidence produced / root cause fixed)
+- Effort estimate including review/approval cycles (2–3 days per document)
 
-**Expert approach:** Focuses on highest-risk BPs from experience (SWE.1 BP4,
-SWE.2 BP5, SWE.5 BP1). PA 2.2 is the most frequent hidden trap at Level 2.
+**Expert approach:** Covers SUP.8 (CM tool mandatory, not SharePoint), SUP.10
+(retroactive CR creation acceptable with impact analysis), MAN.3 (milestone tracking
+records required — weekly status email is not sufficient). PA 2.2 is the most
+frequent hidden trap at Level 2: approval + CM baseline are two separate activities.
 
 ---
 

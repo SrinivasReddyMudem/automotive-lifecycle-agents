@@ -124,15 +124,45 @@ pytest tests/ -v
 ## Folder structure
 
 ```
-automotive-lifecycle-md_agents/
+automotive-lifecycle-agents/
 ├── CLAUDE.md               — global rules loaded by Claude Code
-├── md_agents/                 — 12 agent definitions (4 roles)
+├── md_agents/              — 13 agent definitions (4 roles, Claude Code)
 │   ├── developer/          — autosar-bsw-developer, embedded-c-developer, misra-reviewer
 │   ├── tester/             — sw-unit-tester, sil-hil-test-planner, regression-analyst
 │   ├── integrator/         — field-debug-fae, sw-integrator, can-bus-analyst
 │   └── project-lead/       — sw-project-lead, safety-and-cyber-lead, aspice-process-coach, gate-review-approver
-├── skills/                 — 8 domain skills with reference files
-├── tools/                  — 4 Python CLI tools
-├── tests/                  — pytest test suite
+├── sdk_agents/             — 13 agent implementations (Python SDK + Streamlit)
+│   ├── core/               — BaseAgent, skill_loader, registry, renderer, logger
+│   ├── integrator/         — can_bus_analyst, field_debug_fae, sw_integrator
+│   ├── developer/          — autosar_bsw_developer, embedded_c_developer, misra_reviewer
+│   ├── tester/             — sw_unit_tester, sil_hil_test_planner, regression_analyst
+│   ├── project_lead/       — aspice_process_coach, gate_review_approver, safety_and_cyber_lead, sw_project_lead
+│   ├── app.py              — Streamlit browser UI
+│   └── run.py              — CLI entry point
+├── skills/                 — 8 domain knowledge packs (shared by both implementations)
+├── tools/                  — 4 Python CLI tools (ASIL, CAL, ASPICE, Gate Review)
+├── tests/                  — pytest test suite for Python tools
 └── docs/                   — this documentation
+```
+
+## sdk_agents quick start
+
+```bash
+cd sdk_agents
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env: GROQ_API_KEY=your-key-here  (free at console.groq.com, no credit card)
+
+streamlit run sdk_agents/app.py   # opens http://localhost:8501
+```
+
+Run without the UI:
+```bash
+python run.py --agent can-bus-analyst --prompt "CAN node goes bus-off after 3 minutes"
+```
+
+Run tests (no API key needed):
+```bash
+pytest sdk_agents/tests/ -v
+python sdk_agents/test_routing.py
 ```
