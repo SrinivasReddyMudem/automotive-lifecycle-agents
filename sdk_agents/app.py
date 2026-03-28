@@ -367,12 +367,12 @@ if page == "About":
 
     with col1:
         st.markdown("""
-Built from real automotive ECU experience across development, integration, testing,
+Built from hands-on automotive ECU experience across development, integration, testing,
 and project leadership. These agents do not replace engineering judgment — they
 replicate the methodical analysis a domain expert applies, producing structured,
 traceable, and safety-compliant outputs. The system is developed using professional
 software practices, including automated testing, CI/CD pipelines, and versioned
-model validation, ensuring reliability, reproducibility, and production-ready performance.
+model validation, ensuring reliability, reproducibility, and production-ready quality.
 
 **Expert-level reasoning, not suggestions**
 
@@ -434,7 +434,7 @@ Every response passes through a layered validation system — covering structure
 domain correctness, and content completeness. Calculations are verified, domain
 rules enforced, and decision flows cross-checked against automotive standards.
 
-The result: consistent, reproducible outputs — not pattern-matched suggestions.
+The result: consistent, reproducible outputs that hold up under engineering scrutiny.
 
 **Standards**
 
@@ -445,7 +445,7 @@ ISO 21434 · ISO 14229 (UDS) · ISO 11898 (CAN) · IEEE 802.3bw
 """)
 
     with col2:
-        st.markdown("**Built by**")
+        st.markdown("**Author**")
         st.markdown("Srinivas Reddy Mudem")
         st.markdown(
             "Automotive ECU engineer across development, integration, "
