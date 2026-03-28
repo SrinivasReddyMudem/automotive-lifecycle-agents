@@ -11,34 +11,27 @@
 
 ---
 
-## CI quality checks
-
-Every push runs 5 automated checks:
-
-| Badge | What it validates |
-|---|---|
-| **Tests** | 78 pytest cases — all 4 Python tools produce correct outputs |
-| **Agents** | All 13 Claude Code agent files are structurally valid with correct frontmatter |
-| **SDK** | All 13 Python agent schemas, imports, routing (47 cases), unit tests — no API key needed |
-| **Skills** | All 8 skill reference files present and correctly formatted |
-| **Lint** | Python code passes flake8 |
-
----
-
 ## What this is
 
-Automotive software development follows strict international standards —
-ISO 26262 for functional safety, ASPICE for process quality, MISRA C for
-coding safety, ISO 21434 for cybersecurity. A generic AI assistant knows
-*about* these standards. These agents work *within* them.
+After years working across ECU development, integration, testing, and project roles,
+I repeatedly saw the same pattern — **complex issues taking days to diagnose** when a
+structured, experience-driven approach could narrow them down in under an hour.
 
-Each agent covers one engineering role in the automotive development lifecycle.
-Describe your problem in plain English. The agent classifies it, applies the
-right standard, and produces structured output a real engineer can act on.
+This gap has real impact: **unstable baselines during integration**, repeated test failures
+and re-validation cycles, **rework during safety reviews**, and late-stage change requests
+that should have been identified earlier in the lifecycle.
 
-**Built from:** 11 years of hands-on experience across developer, tester, integrator,
-and SW project lead roles in automotive ECU development.
-All examples use synthetic data only.
+Most AI tools do not address this well — they generate broad suggestions without
+classification, calculations, or alignment to engineering standards. In automotive systems,
+where **safety, timing, and traceability** matter, broad suggestions are not sufficient.
+
+This project demonstrates how **domain knowledge, structured schemas, and engineering
+guardrails** can constrain an LLM to produce outputs that are precise, traceable, and
+actionable — reflecting how an experienced automotive engineer reasons through a problem,
+and robust enough to stand up to real engineering scrutiny.
+
+The goal is not to replace engineering judgment, but to make **expert-level reasoning
+accessible, consistent, and scalable** across the development lifecycle.
 
 ---
 
@@ -99,6 +92,39 @@ Probable Causes (ranked):
 The agent classifies the fault by OSI layer and AUTOSAR layer before diagnosing.
 It calculates the exact TEC climb rate from the 3-minute symptom. Each cause has
 a specific tool, probe point, and numeric pass/fail threshold. No guessing.
+
+---
+
+## What engineers get
+
+- **Classified before diagnosed** — every problem is first placed in context (OSI layer,
+  AUTOSAR layer, ASPICE process area, or safety integrity level), ensuring the right
+  domain approach from the start
+- **Transparent calculations** — TEC accumulation, ASIL determination, risk scoring,
+  and boundary conditions are shown step-by-step, not assumed
+- **Concrete, testable outputs** — tool selection, exact probe points, and pass/fail
+  thresholds enable immediate validation, not guesswork
+- **Standards-aligned reasoning** — outputs follow ISO 26262, ASPICE, MISRA C:2012,
+  AUTOSAR, ISO 21434, and UDS, ensuring consistency with real automotive engineering practice
+
+---
+
+## How output quality is ensured
+
+Each response is structured to reflect how an experienced automotive engineer approaches
+a problem — **starting from the available facts**, stating assumptions where data is
+missing, and **narrowing down causes based on evidence**.
+
+The output is not just a conclusion, but **a clear reasoning path** — what was considered,
+what was ruled out, and why a specific cause is more likely.
+
+Behind the output, a **domain validation pipeline enforces correctness** — risk scores
+must equal P × I, feasibility totals must match factor sums, schedule impacts must be
+stated in working days. Responses that fail validation are rejected and retried before
+the engineer sees them.
+
+The result is output that is **consistent, traceable, and trustworthy** — supporting
+real engineering decisions rather than generic suggestions.
 
 ---
 
@@ -240,9 +266,23 @@ python run.py --agent can-bus-analyst --prompt "CAN node goes bus-off after 3 mi
 
 Run tests (no API key needed):
 ```bash
-pytest sdk_agents/tests/ -v          # 20 unit tests, all mocked
-python sdk_agents/test_routing.py    # 40 single-agent + 7 multi-agent routing cases
+pytest sdk_agents/tests/ -v
+python sdk_agents/test_routing.py
 ```
+
+---
+
+## CI quality checks
+
+Every push runs 5 automated checks:
+
+| Badge | What it validates |
+|---|---|
+| **Tests** | 154 pytest cases — all Python agents produce correct, validated outputs |
+| **Agents** | All 13 Claude Code agent files are structurally valid with correct frontmatter |
+| **SDK** | All 13 Python agent schemas, imports, routing, and unit tests — no API key needed |
+| **Skills** | All 8 skill reference files present and correctly formatted |
+| **Lint** | Python code passes flake8 |
 
 ---
 
@@ -280,7 +320,18 @@ python tools/gate_review_scorer.py --phase SOP \
 | **AUTOSAR Classic** | ECU Software Architecture | SWC, BSW, RTE, COM, NvM, CanIf, OS API |
 | **ISO 14229 (UDS)** | Unified Diagnostic Services | All service IDs, NRC codes, flash sequence |
 | **ISO 11898** | CAN Bus | Error types, TEC/REC rules, bus-off recovery |
-| **IEEE 802.3bw** | 100BASE-T1 Automotive Ethernet | PHY, SOME/IP, DoIP |
+
+*Automotive Ethernet (IEEE 802.3bw) and LIN are recognised, with dedicated skill depth under active development.*
+
+---
+
+## What's next
+
+- Extending **structured input analysis** and data sufficiency handling across all diagnostic agents
+- Supporting **real engineering artifacts** such as CAN traces, logs, and coverage reports
+- Expanding **protocol depth** for LIN and Automotive Ethernet diagnostics
+
+*The goal is to move from structured reasoning on described problems toward direct analysis of real engineering data.*
 
 ---
 
@@ -289,4 +340,4 @@ python tools/gate_review_scorer.py --phase SOP \
 - All scenarios use synthetic data — no real company code or proprietary information
 - Safety and cybersecurity outputs require review and approval by a qualified engineer before use in any project
 - This is a personal project demonstrating AI agent accuracy for automotive SW engineering roles
-- Built by Srinivas Reddy Mudem — 11 years automotive ECU experience (Marquardt, AUTOSAR/CAN/diagnostics)
+- Built by Srinivas Reddy Mudem — 11 years automotive ECU experience across developer, tester, integrator, and project lead roles
