@@ -529,15 +529,24 @@ elif page == "Try the Agent":
     for entry in st.session_state[history_key]:
         with st.chat_message("user"):
             st.markdown(entry["prompt"])
+            # Restore routing captions saved at submission time
+            if entry.get("auto_routed_to"):
+                st.caption(f"Auto-routed to: **{AGENT_DISPLAY_NAMES[entry['auto_routed_to']]}**")
+            if entry.get("secondaries"):
+                names = ", ".join(f"**{AGENT_DISPLAY_NAMES[a]}**" for a in entry["secondaries"])
+                st.info(
+                    f"Multi-skill query detected. Also relevant: {names}. "
+                    f"Switch agents in the sidebar to get each perspective.",
+                )
         with st.chat_message("assistant"):
             if entry.get("result") is None:
                 st.warning("No agent matched for this input.")
                 continue
             entry_agent = entry.get("agent", selected_agent)
             _render = RENDER_MAP.get(entry_agent, render_agent_error)
-            _render(entry["result"])
+            safe_render(_render, entry["result"])
 
-    # Chat input
+    # Chat input — new submission
     if prompt := st.chat_input("Describe the fault or ask your engineering question..."):
         # Multi-agent routing: detect primary + any strongly overlapping secondaries
         detected_agents = detect_agents(prompt)
@@ -546,45 +555,28 @@ elif page == "Try the Agent":
         # active_agent: use auto-detected primary, fall back to manual selection
         active_agent = primary_agent if primary_agent else selected_agent
 
-        with st.chat_message("user"):
-            st.markdown(prompt)
-            if primary_agent and primary_agent != selected_agent:
-                st.caption(f"Auto-routed to: **{AGENT_DISPLAY_NAMES[primary_agent]}**")
-            if secondaries:
-                names = ", ".join(f"**{AGENT_DISPLAY_NAMES[a]}**" for a in secondaries)
-                st.info(
-                    f"Multi-skill query detected. Also relevant: {names}. "
-                    f"Switch agents in the sidebar to get each perspective.",
-                )
-
-        # If Auto mode and no agent could be detected, prompt the user
+        # If Auto mode and no agent could be detected, save and rerun so it shows in history
         if active_agent is None:
-            with st.chat_message("assistant"):
-                st.warning(
-                    "No agent matched for this input. Try adding domain terms like "
-                    "*bus-off, NRC 0x22, ASIL-B, ASPICE SWE.4, hard fault, MISRA rule* — "
-                    "or pick an agent manually from the sidebar."
-                )
             st.session_state[history_key].append({
                 "prompt": prompt, "result": None, "agent": None,
+                "auto_routed_to": None, "secondaries": [],
             })
-            st.stop()
+            st.rerun()
 
-        with st.chat_message("assistant"):
-            with st.spinner("Analysing..."):
-                agent = get_agent(active_agent)
-                result = agent.run(prompt)
+        # Run the agent — show spinner while processing
+        with st.spinner(f"Analysing with {AGENT_DISPLAY_NAMES[active_agent]}..."):
+            agent = get_agent(active_agent)
+            result = agent.run(prompt)
 
-            render_fn = RENDER_MAP.get(active_agent)
-            if render_fn:
-                safe_render(render_fn, result)
-            elif isinstance(result, AgentError):
-                render_agent_error(result)
-            else:
-                st.json(result.model_dump())
-
+        # Save everything needed to re-render this entry from history on future reruns
         st.session_state[history_key].append({
             "prompt": prompt,
             "result": result,
             "agent": active_agent,
+            "auto_routed_to": primary_agent if primary_agent != selected_agent else None,
+            "secondaries": secondaries,
         })
+        # Rerun so the new entry is rendered via the history loop above and the page
+        # scrolls to the bottom automatically — without this, Streamlit stays at the
+        # last scroll position from the previous read
+        st.rerun()
