@@ -108,26 +108,36 @@ def render_can_bus_analyst(output) -> None:
         st.caption(f"Protocol detected: **{proto.protocol}** {conf_icon} {proto.confidence} confidence — {proto.detected_from}")
 
     # Input analysis + data sufficiency
-    input_facts = getattr(output, "input_analysis", None)
+    input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
-    if input_facts or data_suf:
+    if input_analysis or data_suf:
         with st.expander("Input Analysis & Data Sufficiency", expanded=False):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
                 )
-                getattr(st, suf_color)(f"**Data: {data_suf.level}** — {data_suf.missing_data}")
-            if input_facts:
-                facts = [f for f in input_facts if not f.is_assumption]
-                assumptions = [f for f in input_facts if f.is_assumption]
+                conf = getattr(data_suf, "confidence", "")
+                conf_reason = getattr(data_suf, "confidence_reason", "")
+                conf_str = f" | Confidence: **{conf}**" if conf else ""
+                getattr(st, suf_color)(f"**Data: {data_suf.level}**{conf_str}")
+                if conf_reason:
+                    st.caption(conf_reason)
+                missing = getattr(data_suf, "missing_critical_data", None)
+                if missing and missing != ["None — data is complete"]:
+                    st.markdown("**Missing critical data:**")
+                    for item in missing:
+                        st.caption(f"- {item}")
+            if input_analysis:
+                facts = getattr(input_analysis, "input_facts", [])
+                assumptions = getattr(input_analysis, "assumptions", [])
                 if facts:
                     st.markdown("**Observed facts:**")
                     for f in facts:
-                        st.markdown(f"- {f.statement}")
+                        st.markdown(f"- {f}")
                 if assumptions:
                     st.markdown("**Assumptions (not stated by user):**")
                     for a in assumptions:
-                        st.caption(f"⚠ {a.statement}")
+                        st.caption(f"⚠ {a}")
 
     st.markdown("### 💡 Key Insight")
     st.info(output.expert_diagnosis)

@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from sdk_agents.integrator.can_bus_analyst.schema import (
     CanBusAnalystOutput, ProbableCause, NarrowingQuestion, SelfEvaluationLine,
-    ToolSelection, ProtocolDetection, DataSufficiency, InputAnalysisFact, DiagnosisBasisLine,
+    ToolSelection, ProtocolDetection, DataSufficiency, InputAnalysis, DiagnosisBasisLine,
 )
 from sdk_agents.integrator.can_bus_analyst import CanBusAnalystAgent
 from sdk_agents.integrator.can_bus_analyst import validators
@@ -26,15 +26,26 @@ def make_valid_output(**overrides) -> CanBusAnalystOutput:
             detected_from="user mentioned bus-off, TEC, 500 kbps — CAN protocol confirmed",
             confidence="HIGH",
         ),
-        "input_analysis": [
-            InputAnalysisFact(statement="ECU goes bus-off after 3 minutes", is_assumption=False),
-            InputAnalysisFact(statement="Fault only occurs when engine is running", is_assumption=False),
-            InputAnalysisFact(statement="Other nodes are unaffected", is_assumption=False),
-            InputAnalysisFact(statement="Assumed standard 500 kbps CAN — baudrate not stated", is_assumption=True),
-        ],
+        "input_analysis": InputAnalysis(
+            input_facts=[
+                "ECU goes bus-off after 3 minutes",
+                "Fault only occurs when engine is running",
+                "Other nodes are unaffected",
+            ],
+            assumptions=[
+                "Assumed standard 500 kbps CAN — baudrate not stated",
+                "Assumed single ECU is the transmitting node — not confirmed",
+            ],
+        ),
         "data_sufficiency": DataSufficiency(
             level="PARTIAL",
-            missing_data="TEC counter value at time of bus-off, oscilloscope trace of Vcc rail",
+            confidence="MEDIUM",
+            confidence_reason="Engine-only onset is a strong signal but missing TEC value and Vcc trace",
+            missing_critical_data=[
+                "TEC counter value at time of bus-off",
+                "Oscilloscope trace of transceiver Vcc rail",
+                "Exact baudrate",
+            ],
         ),
         "expert_diagnosis": "TEC accumulation from engine-induced noise — not a hard fault.",
         "diagnosis_basis": [
@@ -190,8 +201,31 @@ class TestSchema:
 
     def test_data_sufficiency_levels(self):
         for level in ("SUFFICIENT", "PARTIAL", "INSUFFICIENT"):
-            ds = DataSufficiency(level=level, missing_data="None")
+            ds = DataSufficiency(
+                level=level,
+                confidence="HIGH",
+                confidence_reason="test reason",
+                missing_critical_data=["None — data is complete"],
+            )
             assert ds.level == level
+
+    def test_data_sufficiency_has_confidence_fields(self):
+        ds = DataSufficiency(
+            level="PARTIAL",
+            confidence="MEDIUM",
+            confidence_reason="Missing oscilloscope trace",
+            missing_critical_data=["Oscilloscope trace", "TEC counter value"],
+        )
+        assert ds.confidence == "MEDIUM"
+        assert len(ds.missing_critical_data) == 2
+
+    def test_input_analysis_separates_facts_from_assumptions(self):
+        ia = InputAnalysis(
+            input_facts=["Bus-off after 3 min", "Engine running only"],
+            assumptions=["Assumed 500 kbps — not stated"],
+        )
+        assert len(ia.input_facts) == 2
+        assert len(ia.assumptions) == 1
 
     def test_diagnosis_basis_links_fact_to_implication(self):
         line = DiagnosisBasisLine(

@@ -69,19 +69,39 @@ class ProtocolDetection(BaseModel):
 class DataSufficiency(BaseModel):
     """Rates how complete the input data is for a reliable diagnosis."""
     level: Literal["SUFFICIENT", "PARTIAL", "INSUFFICIENT"]
-    missing_data: str = Field(
+    confidence: Literal["HIGH", "MEDIUM", "LOW"] = Field(
         description=(
-            "What additional data would improve diagnosis — e.g. 'TEC counter value, "
-            "oscilloscope trace, exact baudrate'. Write 'None' if level is SUFFICIENT."
+            "How confident is the diagnosis given the available data. "
+            "HIGH = strong evidence, MEDIUM = probable but unconfirmed, LOW = speculative."
+        )
+    )
+    confidence_reason: str = Field(
+        description=(
+            "One sentence explaining why this confidence level was assigned — "
+            "e.g. 'Missing oscilloscope trace and exact baudrate reduce confidence.'"
+        )
+    )
+    missing_critical_data: list[str] = Field(
+        description=(
+            "List of specific measurements or values that are missing and would change the diagnosis. "
+            "Write ['None — data is complete'] if level is SUFFICIENT."
         )
     )
 
 
-class InputAnalysisFact(BaseModel):
-    """One fact or assumption extracted from the user's input."""
-    statement: str = Field(description="The fact or assumption in plain English")
-    is_assumption: bool = Field(
-        description="True if this was inferred or assumed; False if directly stated by the user"
+class InputAnalysis(BaseModel):
+    """Structured extraction of what the user stated vs what was assumed."""
+    input_facts: list[str] = Field(
+        description=(
+            "Facts the user directly stated — no inference. "
+            "E.g. 'bus-off after 3 minutes', 'only when engine running', 'other nodes unaffected'."
+        )
+    )
+    assumptions: list[str] = Field(
+        description=(
+            "Things inferred or assumed because they were not stated — flag uncertainty. "
+            "E.g. 'assumed standard CAN frame — DLC not given', 'assumed 500 kbps — baudrate not stated'."
+        )
     )
 
 

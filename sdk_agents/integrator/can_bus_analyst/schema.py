@@ -14,7 +14,7 @@ from sdk_agents.core.shared_schema import (
     ToolSelection,
     ProtocolDetection,
     DataSufficiency,
-    InputAnalysisFact,
+    InputAnalysis,
     DiagnosisBasisLine,
 )
 
@@ -27,7 +27,7 @@ __all__ = [
     "ToolSelection",
     "ProtocolDetection",
     "DataSufficiency",
-    "InputAnalysisFact",
+    "InputAnalysis",
     "DiagnosisBasisLine",
 ]
 
@@ -42,12 +42,11 @@ class CanBusAnalystOutput(BaseModel):
             "what words in the input revealed it, and your confidence level."
         )
     )
-    input_analysis: list[InputAnalysisFact] = Field(
+    input_analysis: InputAnalysis = Field(
         description=(
-            "STEP 1: list every fact and assumption extracted from the user's input. "
-            "Facts are things the user directly stated. Assumptions are things you infer "
-            "because they were not stated — e.g. 'assumed standard CAN frame, no DLC given'. "
-            "This is the traceability anchor for the whole diagnosis."
+            "STEP 1: separate what the user directly stated (input_facts) from what you inferred "
+            "or assumed (assumptions). This is the traceability anchor for the whole diagnosis. "
+            "Never mix assumed values into input_facts."
         )
     )
     data_sufficiency: DataSufficiency = Field(
