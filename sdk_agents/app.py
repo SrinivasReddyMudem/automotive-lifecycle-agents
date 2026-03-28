@@ -383,7 +383,7 @@ with st.sidebar:
 # ── About page ─────────────────────────────────────────────────────────────────
 if page == "About":
     st.title("Automotive Lifecycle Agents")
-    st.subheader("Structured, actionable AI for automotive ECU development, integration, and diagnostics")
+    st.subheader("Domain-specific AI agents for automotive ECU engineering — structured, traceable, and standards-aligned.")
     st.markdown("---")
 
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
@@ -398,21 +398,30 @@ if page == "About":
 
     with col1:
         st.markdown("""
-Built from hands-on automotive ECU experience across development, integration, testing,
-and project leadership. These agents do not replace engineering judgment — they
-replicate the methodical analysis a domain expert applies, producing structured,
-traceable, and safety-compliant outputs. The system is developed using professional
-software practices, including automated testing, CI/CD pipelines, and versioned
-model validation, ensuring reliability, reproducibility, and production-ready quality.
+After years working across ECU development, integration, testing, and project roles,
+I repeatedly saw the same pattern — **complex issues taking days to diagnose** when a
+structured, experience-driven approach could narrow them down in under an hour.
 
-**Expert-level reasoning, not suggestions**
+This gap has real impact: **unstable baselines during integration**, repeated test failures
+and re-validation cycles, **rework during safety reviews**, and late-stage change requests
+that should have been identified earlier in the lifecycle.
 
-Generic AI gives broad suggestions. These agents classify the problem first —
-by OSI layer, AUTOSAR layer, or process area — then apply the relevant standard
-to produce output an engineer can directly act on.
+Most AI tools do not address this well — they generate broad suggestions without
+classification, calculations, or alignment to engineering standards. In automotive systems,
+where **safety, timing, and traceability** matter, broad suggestions are not sufficient.
 
-*Question: "CAN node goes bus-off after 3 minutes, only when engine running"*
+This project demonstrates how **domain knowledge, structured schemas, and engineering
+guardrails** can constrain an LLM to produce outputs that are precise, traceable, and
+actionable — reflecting how an experienced automotive engineer reasons through a problem,
+and robust enough to stand up to real engineering scrutiny.
+
+The goal is not to replace engineering judgment, but to make **expert-level reasoning
+accessible, consistent, and scalable** across the development lifecycle.
 """)
+
+        st.markdown("---")
+        st.markdown("**Structured reasoning vs generic response — same question, different output**")
+        st.caption('*"CAN node goes bus-off after 3 minutes, only when engine running"*')
 
         ex_col1, ex_col2 = st.columns(2)
         with ex_col1:
@@ -454,39 +463,60 @@ Decision Flow:
       +-- Yes --> L1/L7""", language="text")
 
         st.markdown("""
+---
 **What engineers get**
 
-- Root cause classification before diagnosis — never jumps to solutions
-- Calculations shown with full working (TEC math, ASIL determination, CAL scoring)
-- Specific tool, probe point, and numeric pass/fail threshold per probable cause
-- Standards-compliant reasoning — not pattern-matched suggestions
+- **Classified before diagnosed** — every problem is first placed in context (OSI layer,
+  AUTOSAR layer, ASPICE process area, or safety integrity level), ensuring the right
+  domain approach from the start
+- **Transparent calculations** — TEC accumulation, ASIL determination, risk scoring,
+  and boundary conditions are shown step-by-step, not assumed
+- **Concrete, testable outputs** — tool selection, exact probe points, and pass/fail
+  thresholds enable immediate validation, not guesswork
+- **Standards-aligned reasoning** — outputs follow ISO 26262, ASPICE, MISRA C:2012,
+  AUTOSAR, ISO 21434, and UDS, ensuring consistency with real automotive engineering practice
 
+---
 **How output quality is ensured**
 
-Every response passes through a layered validation system — covering structure,
-domain correctness, and content completeness. Calculations are verified, domain
-rules enforced, and decision flows cross-checked against automotive standards.
+Each response is structured to reflect how an experienced automotive engineer approaches
+a problem — **starting from the available facts**, stating assumptions where data is
+missing, and **narrowing down causes based on evidence**.
 
-The result: consistent, reproducible outputs that hold up under engineering scrutiny.
-Agents self-correct on failure — responses are validated and retried before the engineer sees them.
+The output is not just a conclusion, but **a clear reasoning path**: what was considered,
+what was ruled out, and why a specific cause is more likely.
 
+Every recommendation is designed to be **testable** — with the right tool, measurement
+point, and expected result — so engineers can validate it directly in the system.
+
+The result is output that is **consistent, traceable, and trustworthy**, supporting
+real engineering decisions rather than generic suggestions.
+
+---
 **Standards**
 
-ISO 26262 · ASPICE v3.1 · MISRA C:2012 · AUTOSAR Classic ·
-ISO 21434 · ISO 14229 (UDS) · ISO 11898 (CAN) · IEEE 802.3bw
+Built around the standards used in real automotive development:
 
+ISO 26262 · ASPICE v3.1 · MISRA C:2012 · AUTOSAR Classic · ISO 21434 · ISO 14229 (UDS) · ISO 11898 (CAN)
+
+*Automotive Ethernet (IEEE 802.3bw) and LIN are recognised, with dedicated skill depth
+under active development.*
+
+---
+**What's next**
+
+- Extending **structured input analysis** and data sufficiency handling across all diagnostic agents
+- Supporting **real engineering artifacts** such as CAN traces, logs, and coverage reports
+- Expanding **protocol depth** for LIN and Automotive Ethernet diagnostics
+
+*The goal is to move from structured reasoning on described problems toward direct
+analysis of real engineering data.*
+
+---
 *All examples use synthetic data only.*
 """)
 
     with col2:
-        st.markdown("**Author**")
-        st.markdown("Srinivas Reddy Mudem")
-        st.markdown(
-            "Automotive ECU engineer across development, integration, "
-            "testing, and project leadership."
-        )
-        st.markdown("---")
-
         st.markdown("**Agents**")
         st.markdown("""
 ✅ **Live — validated & domain-tested**
