@@ -483,13 +483,15 @@ Each response is structured to reflect how an experienced automotive engineer ap
 a problem — **starting from the available facts**, stating assumptions where data is
 missing, and **narrowing down causes based on evidence**.
 
-The output is not just a conclusion, but **a clear reasoning path**: what was considered,
+The output is not just a conclusion, but **a clear reasoning path** — what was considered,
 what was ruled out, and why a specific cause is more likely.
 
-Every recommendation is designed to be **testable** — with the right tool, measurement
-point, and expected result — so engineers can validate it directly in the system.
+Behind the output, a **domain validation pipeline enforces correctness** — risk scores
+must equal P × I, feasibility totals must match factor sums, schedule impacts must be
+stated in working days. Responses that fail validation are rejected and retried before
+the engineer sees them.
 
-The result is output that is **consistent, traceable, and trustworthy**, supporting
+The result is output that is **consistent, traceable, and trustworthy** — supporting
 real engineering decisions rather than generic suggestions.
 
 ---
