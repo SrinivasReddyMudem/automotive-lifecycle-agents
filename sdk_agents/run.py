@@ -11,13 +11,13 @@ import argparse
 import json
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parents[1]))
+sys.path.insert(0, str(Path(__file__).parents[1]))  # noqa: E402
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 load_dotenv(Path(__file__).parent / ".env")
 
-from sdk_agents.core.registry import get_agent, AGENT_NAMES
-from sdk_agents.core.base_agent import AgentError
+from sdk_agents.core.registry import get_agent, AGENT_NAMES  # noqa: E402
+from sdk_agents.core.base_agent import AgentError  # noqa: E402
 
 
 def main():
@@ -77,7 +77,6 @@ def _print_result(result, agent_name: str):
     """Minimal terminal formatting for CLI output."""
     from rich.console import Console
     from rich.panel import Panel
-    from rich.table import Table
 
     console = Console(highlight=False, emoji=False)
     # Force ASCII-safe output on Windows terminals that don't support UTF-8

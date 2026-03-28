@@ -8,7 +8,6 @@ Get a free API key (no credit card) at: console.groq.com
 """
 
 import os
-import json
 from groq import Groq
 from pydantic import BaseModel, ValidationError
 from typing import Literal

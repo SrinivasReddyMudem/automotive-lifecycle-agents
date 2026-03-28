@@ -1,4 +1,4 @@
-from sdk_agents.core.base_agent import BaseAgent, DomainCheckError
+from sdk_agents.core.base_agent import BaseAgent
 from .schema import EmbeddedCDeveloperOutput
 from .prompt import get_system_prompt
 from . import validators

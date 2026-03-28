@@ -72,7 +72,6 @@ def _render_narrowing_questions(questions: list) -> None:
 # ── CAN Bus Analyst ─────────────────────────────────────────────────────────────
 
 def render_can_bus_analyst(output) -> None:
-    from sdk_agents.integrator.can_bus_analyst.schema import CanBusAnalystOutput
     if isinstance(output, AgentError):
         render_agent_error(output)
         return

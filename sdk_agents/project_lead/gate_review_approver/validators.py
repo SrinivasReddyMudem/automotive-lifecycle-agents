@@ -50,8 +50,8 @@ def _check_overall_consistent(output: GateReviewApproverOutput) -> None:
         )
     if not has_fail and has_amber and output.overall == "PASS":
         raise DomainCheckError(
-            f"Overall is PASS but AMBER criteria exist. "
-            f"Overall must be AMBER when any criterion is AMBER."
+            "Overall is PASS but AMBER criteria exist. "
+            "Overall must be AMBER when any criterion is AMBER."
         )
 
 

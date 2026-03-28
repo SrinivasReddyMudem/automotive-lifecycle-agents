@@ -5,7 +5,6 @@ All API calls are mocked — runs without a GOOGLE_API_KEY.
 """
 
 import pytest
-import json
 from unittest.mock import patch, MagicMock
 from sdk_agents.integrator.can_bus_analyst.schema import (
     CanBusAnalystOutput, ProbableCause, NarrowingQuestion, SelfEvaluationLine
@@ -123,7 +122,6 @@ class TestSchema:
             assert field in required, f"Field '{field}' missing from schema required list"
 
     def test_schema_extra_is_ignore(self):
-        from pydantic import BaseModel
         # extra="ignore" means unknown fields are silently dropped, not rejected
         output = CanBusAnalystOutput.model_validate(
             {**CanBusAnalystOutput.model_json_schema(), **{"unexpected_field": "x"},

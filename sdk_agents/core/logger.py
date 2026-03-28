@@ -4,7 +4,6 @@ Logs raw API responses and parsed output for debugging and audit trail.
 """
 
 import logging
-import json
 from pathlib import Path
 
 LOGS_DIR = Path(__file__).parents[1] / "logs"

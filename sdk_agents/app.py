@@ -3,18 +3,19 @@ Streamlit web UI for sdk_agents.
 Run with: streamlit run sdk_agents/app.py
 """
 
+import re as _re
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parents[1]))
+sys.path.insert(0, str(Path(__file__).parents[1]))  # noqa: E402
 
-import streamlit as st
-from dotenv import load_dotenv
+import streamlit as st  # noqa: E402
+from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(Path(__file__).parent / ".env")
 
-from sdk_agents.core.registry import get_agent, AGENT_NAMES, AGENT_DISPLAY_NAMES
-from sdk_agents.core.base_agent import AgentError
-from sdk_agents.core.renderer import (
+from sdk_agents.core.registry import get_agent, AGENT_NAMES, AGENT_DISPLAY_NAMES  # noqa: E402
+from sdk_agents.core.base_agent import AgentError  # noqa: E402
+from sdk_agents.core.renderer import (  # noqa: E402
     safe_render,
     render_can_bus_analyst,
     render_field_debug_fae,
@@ -167,7 +168,6 @@ AGENT_SCORES: dict[str, dict[str, int]] = {
 _MIN_ROUTE_SCORE = 3
 
 # ── Typo and variant normalization applied before scoring ──────────────────────
-import re as _re
 
 _NORMALIZATIONS: list[tuple[str, str]] = [
     # CAN bus variants
@@ -212,7 +212,7 @@ _NORMALIZATIONS: list[tuple[str, str]] = [
     (r"\bunit[\s_]test(ing|s)?\b",  "unit test"),
     (r"\bmc[\s_/]?dc\b",            "mc/dc"),
     (r"\bboundary[\s_]value\b",     "boundary value analysis"),
-    (r"\bequivalence[\s_]part\w*\b","equivalence partition"),
+    (r"\bequivalence[\s_]part\w*\b", "equivalence partition"),
     # Project lead
     (r"\bchange[\s_]request\b",     "change request"),
     (r"\bschedule[\s_]impact\b",    "schedule impact"),
@@ -518,8 +518,8 @@ elif page == "Try the Agent":
     if prompt := st.chat_input("Describe the fault or ask your engineering question..."):
         # Multi-agent routing: detect primary + any strongly overlapping secondaries
         detected_agents = detect_agents(prompt)
-        primary_agent   = detected_agents[0] if detected_agents else None
-        secondaries     = detected_agents[1:] if len(detected_agents) > 1 else []
+        primary_agent = detected_agents[0] if detected_agents else None
+        secondaries = detected_agents[1:] if len(detected_agents) > 1 else []
         # active_agent: use auto-detected primary, fall back to manual selection
         active_agent = primary_agent if primary_agent else selected_agent
 

@@ -22,7 +22,6 @@ def validate(output: FieldDebugFaeOutput) -> None:
     _check_self_evaluation_has_evidence(output)
 
 
-
 def _check_safety_relevant_consistent(output: FieldDebugFaeOutput) -> None:
     fd = output.fault_details
     if fd.safety_relevant == "YES" and "not safety" in fd.safety_impact.lower():

@@ -6,6 +6,7 @@ Enforced at API level via tool_choice — model cannot deviate from this structu
 from pydantic import BaseModel, Field
 from typing import Literal
 
+
 class ProbableCause(BaseModel):
     rank: Literal["HIGH", "MEDIUM", "LOW"]
     description: str = Field(description="What is causing the fault and why")
