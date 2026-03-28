@@ -69,6 +69,21 @@ def _render_probable_causes(causes: list) -> None:
                 st.markdown("---")
 
 
+def _render_calc_block(lines: list | str, label: str, expanded: bool = True) -> None:
+    """
+    Render a step-by-step calculation block.
+    All lines except the last are shown as a code block.
+    The final line (the plain-English conclusion) is highlighted with st.info().
+    """
+    text_list = lines if isinstance(lines, list) else str(lines).splitlines()
+    with st.expander(label, expanded=expanded):
+        if len(text_list) > 1:
+            st.code("\n".join(text_list[:-1]))
+            st.info(f"**Result:** {text_list[-1].lstrip('→ ').strip()}")
+        else:
+            st.code("\n".join(text_list))
+
+
 def _render_narrowing_questions(questions: list) -> None:
     with st.expander("Narrowing Questions"):
         for i, q in enumerate(questions, 1):
@@ -110,15 +125,18 @@ def render_can_bus_analyst(output) -> None:
 
     st.markdown("---")
 
-    with st.expander("TEC (Transmit Error Counter) Math", expanded=True):
-        tec = output.tec_math
-        st.code("\n".join(tec) if isinstance(tec, list) else tec)
+    tec = output.tec_math
+    tec_text = "\n".join(tec) if isinstance(tec, list) else str(tec)
+    if "N/A" not in tec_text:
+        _render_calc_block(tec, "TEC (Transmit Error Counter) Math", expanded=True)
+    else:
+        with st.expander("TEC (Transmit Error Counter) Math", expanded=False):
+            st.info(tec_text if isinstance(tec, str) else tec[0])
 
     bus = output.bus_load_calc
     bus_text = "\n".join(bus) if isinstance(bus, list) else str(bus)
     if "N/A" not in bus_text:
-        with st.expander("CAN Bus Load Calculation"):
-            st.code(bus_text)
+        _render_calc_block(bus, "CAN Bus Load Calculation", expanded=True)
 
     _render_probable_causes(output.probable_causes)
 
@@ -183,10 +201,9 @@ def render_field_debug_fae(output) -> None:
                 st.markdown(f"**Session sequence issue:** {uds.session_sequence_issue}")
 
     tec = output.tec_math
-    tec_text = "\n".join(tec) if isinstance(tec, list) else tec
+    tec_text = "\n".join(tec) if isinstance(tec, list) else str(tec)
     if "N/A" not in tec_text:
-        with st.expander("TEC (Transmit Error Counter) Math"):
-            st.code(tec_text)
+        _render_calc_block(tec, "TEC (Transmit Error Counter) Math", expanded=False)
 
     with st.expander("Debug Steps", expanded=True):
         for step in output.debug_steps:
@@ -335,14 +352,12 @@ def render_embedded_c_developer(output) -> None:
     cpu = output.cpu_load_calc
     cpu_text = "\n".join(cpu) if isinstance(cpu, list) else str(cpu)
     if "N/A" not in cpu_text:
-        with st.expander("CPU Load Calculation", expanded=True):
-            st.code(cpu_text)
+        _render_calc_block(cpu, "CPU Load Calculation", expanded=True)
 
     rtos = output.rtos_calc
     rtos_text = "\n".join(rtos) if isinstance(rtos, list) else str(rtos)
     if "N/A" not in rtos_text:
-        with st.expander("RTOS Timing Calculations", expanded=True):
-            st.code(rtos_text)
+        _render_calc_block(rtos, "RTOS Timing Calculations", expanded=True)
 
     _render_narrowing_questions(output.narrowing_questions)
     _render_self_evaluation(output.self_evaluation)
