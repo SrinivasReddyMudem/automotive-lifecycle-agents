@@ -388,7 +388,7 @@ if page == "About":
 
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
     col_m1.metric("Tests Passing", "✅ 31")
-    col_m2.metric("Agents Live", "✅ 7")
+    col_m2.metric("Agents Live", "✅ 8")
     col_m3.metric("Skills", "✅ 8")
     col_m4.metric("CI Checks", "✅ 5")
 
@@ -489,26 +489,25 @@ ISO 21434 · ISO 14229 (UDS) · ISO 11898 (CAN) · IEEE 802.3bw
 
         st.markdown("**Agents**")
         st.markdown("""
-**Integrator** ✅ Live
-- CAN Bus Analyst
-- Field Debug FAE
-- SW Integrator
+✅ **Live — validated & domain-tested**
 
-**Developer** ✅ Live
-- AUTOSAR BSW Developer
-- Embedded C Developer
-- MISRA Reviewer
+*Integrator*
+CAN Bus Analyst · Field Debug FAE · SW Integrator
 
-**Project Lead**
-- ASPICE Process Coach ✅ Live
-- Gate Review Approver *(use /gate-review)*
-- Safety & Cyber Lead 🔧 In progress
-- SW Project Lead 🔧 In progress
+*Developer*
+AUTOSAR BSW Developer · Embedded C Developer · MISRA Reviewer
 
-**Tester** 🔧 In progress
-- Regression Analyst
-- SIL/HIL Test Planner
-- SW Unit Tester
+*Project Lead*
+ASPICE Process Coach · SW Project Lead
+
+*Gate review*
+Gate Review Approver *(trigger: /gate-review)*
+
+---
+🔧 **In progress**
+
+Safety & Cyber Lead · Regression Analyst
+SIL/HIL Test Planner · SW Unit Tester
         """)
 
         st.markdown("**Domain knowledge loaded**")
