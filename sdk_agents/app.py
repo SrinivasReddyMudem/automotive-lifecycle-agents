@@ -387,8 +387,8 @@ if page == "About":
     st.markdown("---")
 
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-    col_m1.metric("Tests Passing", "✅ 31")
-    col_m2.metric("Agents Live", "✅ 8")
+    col_m1.metric("Tests Passing", "✅ 154")
+    col_m2.metric("Agents Live", "✅ 12")
     col_m3.metric("Skills", "✅ 8")
     col_m4.metric("CI Checks", "✅ 5")
 
@@ -498,16 +498,13 @@ CAN Bus Analyst · Field Debug FAE · SW Integrator
 AUTOSAR BSW Developer · Embedded C Developer · MISRA Reviewer
 
 *Project Lead*
-ASPICE Process Coach · SW Project Lead
+ASPICE Process Coach · SW Project Lead · Safety & Cyber Lead
+
+*Tester*
+Regression Analyst · SIL/HIL Test Planner · SW Unit Tester
 
 *Gate review*
 Gate Review Approver *(trigger: /gate-review)*
-
----
-🔧 **In progress**
-
-Safety & Cyber Lead · Regression Analyst
-SIL/HIL Test Planner · SW Unit Tester
         """)
 
         st.markdown("**Domain knowledge loaded**")
