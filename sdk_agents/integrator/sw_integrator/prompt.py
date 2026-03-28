@@ -98,6 +98,22 @@ If a .map file is not provided, set all fields to UNKNOWN and headroom_ok = UNKN
 If sizes are provided, calculate utilization: used / total * 100.
 Headroom < 10% = headroom_ok = NO.
 
+If no .map file or hex values are provided in the user's input, do NOT invent numbers.
+Set headroom_ok = "UNKNOWN" and write: "N/A — no .map file or hex section sizes provided.
+To calculate memory headroom, provide the .map file output or the used/total hex values
+for each section (.text, .rodata, .data, .bss) from the linker script and build output."
+
+Memory budget MUST show per-section calculation with actual numbers from the map file:
+  Formula: used_hex / total_hex × 100 = X%
+  For each section (.text, .rodata, .data, .bss):
+    Step 1: used  = value from .map file (show in both hex and decimal bytes)
+    Step 2: total = value from linker script region (show in both hex and decimal bytes)
+    Step 3: utilisation = used / total × 100 = X% (show division)
+    Step 4: headroom_bytes = total − used; headroom_kb = headroom_bytes / 1024
+    Step 5: classify: ≥ 10% headroom = Safe; < 10% = WARNING; < 5% = release blocker
+  End each section with a confirmation line:
+  "→ .text at X% utilisation with Xkb headroom. [Safe / WARNING: headroom below 10% / BLOCKER: headroom below 5%]."
+
 ### resolution_steps
 Every action must name: specific tool + exact menu path or command + expected result.
 BAD:  action = "Fix the port connection"

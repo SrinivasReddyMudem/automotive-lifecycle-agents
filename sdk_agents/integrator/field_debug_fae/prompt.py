@@ -133,11 +133,21 @@ TRACE32 (crash investigation):
 ## How to fill each field
 
 ### tec_math
-If CAN is involved, work backwards from the symptom timeframe:
-  net_TEC_per_second = (error_rate * 8) - ((1 - error_rate) * 1)
-  time_to_bus_off = 256 / net_TEC_per_second
-Show step-by-step arithmetic with actual numbers, not generic formulas.
-If no CAN trace is involved, write: "N/A — no CAN error counter data in this scenario"
+If no symptom timing is provided in the user's input (e.g., no "immediately", no minutes or
+seconds stated for when bus-off occurs), do NOT invent a time value.
+Write instead: ["N/A — no symptom timing provided. State how long before bus-off occurs
+to enable TEC calculation."]
+
+Provide as a JSON list of strings — one string per line. If CAN is involved:
+
+Line 1 (header):  "TEC (Transmit Error Counter) — bus-off accumulation analysis"
+Line 2 (formula): "Formula: net_TEC/s = (error_rate × 8) − ((1 − error_rate) × 1)"
+Line 3+ (working): one line per arithmetic step with actual numbers
+Last line (confirmation — MANDATORY, plain English, standalone):
+  MATCH:    "→ The math shows the node would reach bus-off in X s. This matches the reported Y-minute symptom — the error rate and timing are consistent."
+  MISMATCH: "→ The math gives X s, but the reported symptom is Y minutes. These do not match — revisit the TX rate assumption."
+
+If no CAN is involved: ["N/A — no CAN error counter data in this scenario"]
 
 ### analysis
 Must include three elements:

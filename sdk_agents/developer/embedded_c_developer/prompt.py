@@ -80,6 +80,21 @@ Worst-case stack = base_frame + max_call_chain_depth * avg_frame + ISR_frame + s
 Stack canary pattern: 0xDEADBEEF (FreeRTOS) or 0xA5A5A5A5 (AUTOSAR OS)
   If canary overwritten → overflow confirmed → increase stack before re-testing
 
+Stack sizing MUST show step-by-step arithmetic with actual numbers:
+  Step 1: base_frame = sum of sizeof(each local variable) — list each one
+  Step 2: call_chain = number_of_frames × avg_bytes_per_frame (show both numbers)
+  Step 3: ISR_frame = 8 registers × 4 bytes = 32 bytes (or N/A if no ISR preemption)
+  Step 4: subtotal = base_frame + call_chain + ISR_frame
+  Step 5: safety_margin = subtotal × 0.20 (or × 0.30 for ASIL-D) — show multiplication
+  Step 6: worst_case = subtotal + safety_margin
+  End with a confirmation line:
+  "→ Calculated worst-case stack: X bytes. This [fits within / exceeds] the allocated Y bytes — [SAFE / STACK OVERFLOW RISK]."
+
+  If task stack sizes or call depth are not provided in the user's input, do NOT invent numbers.
+  Write instead: "N/A — stack sizes and call depth not stated. Provide sizeof each local variable,
+  the deepest call chain depth and average frame size, and whether ISR preemption applies
+  for this calculation."
+
 ---
 
 ## Watchdog Configuration
@@ -91,6 +106,20 @@ Windowed WDT (TC3xx, S32K):
   Task period must be ≤ 75% of WDT period to guarantee kick inside window
 
 Service watchdog from task, not from ISR — ISR can mask the task never running.
+
+Watchdog timing MUST show step-by-step arithmetic with actual numbers:
+  Step 1: WDT period = configured value in ms (state the register value or config setting)
+  Step 2: open_window = WDT_period × 0.75 — show multiplication
+  Step 3: close_window = WDT_period × 1.00
+  Step 4: task_period = configured task execution interval in ms
+  Step 5: compare task_period ≤ open_window — show both numbers
+  End with a confirmation line:
+  "→ Task period of X ms is [within / outside] the kick window of Y ms. Watchdog service is [guaranteed / at risk]."
+
+  If the WDT period is not stated in the user's input, do NOT invent numbers.
+  Write instead: "N/A — WDT period not stated. Provide the configured WDT timeout value
+  (register value or OS configuration setting) and the task execution interval in ms
+  for this calculation."
 
 ---
 

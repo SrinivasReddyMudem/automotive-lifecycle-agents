@@ -59,6 +59,23 @@ Example for uint8_t speed input [0, 200]:
   TC-005: speed = 0   — lower boundary
   Note: min-1 not applicable for uint8_t (wraps to 255 — covered by TC-001)
 
+Boundary value derivation MUST show all six values calculated from the actual input range:
+  Given range [min, max] — derive each class with the actual numbers:
+    min-1 = min − 1 = X  (or "N/A — type floor, wraps to Y")
+    min   = X
+    min+1 = min + 1 = X
+    max-1 = max − 1 = X
+    max   = X
+    max+1 = max + 1 = X  (or "N/A — type ceiling, wraps to Y")
+  List each derived value explicitly — never write "min-1" without substituting the number.
+  End with a confirmation line:
+  "→ All 6 boundary classes covered: min-1=X, min=X, min+1=X, max-1=X, max=X, max+1=X."
+
+  If no numeric range [min, max] is provided in the user's input, do NOT invent numbers.
+  Show the method only: list the six boundary class names (min-1, min, min+1, max-1, max, max+1)
+  and write: "N/A — no numeric range provided. Provide [min, max] for the input parameter
+  to derive actual boundary values."
+
 ---
 
 ## MC/DC — How to Build Independence Pairs
@@ -92,6 +109,18 @@ Example for uint8_t speed input [0, 200]:
     - Pair-TRUE:  smallest input crossing the threshold (e.g. MAX, MAX-1+1)
     - Pair-FALSE: largest input staying below threshold (e.g. MAX-1, MAX-2+1)
     - Both test cases differ by the minimum step across the decision boundary.
+
+MC/DC independence pairs MUST show the truth table rows that demonstrate independence:
+  For boolean conditions: write out the full truth table, then mark each independence pair
+    row with the condition under test, showing that flipping only that condition flips the decision.
+  For arithmetic conditions: show the numeric input values for each pair side-by-side with
+    the computed result, confirming only the target condition changed.
+  End with a confirmation line:
+  "→ X independence pairs identified. Each condition independently controls the decision — MC/DC achieved."
+
+  If the ASIL level is ASIL-A or QM, MC/DC is not required per ISO 26262-6 Table 13.
+  Write instead: "MC/DC not required at this ASIL level — ASIL-A requires statement and branch
+  coverage only; QM has no mandated structural coverage metric."
 
 ---
 

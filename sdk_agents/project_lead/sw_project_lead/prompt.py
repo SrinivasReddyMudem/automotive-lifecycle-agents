@@ -38,6 +38,20 @@ Risk: new risk introduced by accepting this change
   Requirements received at integration: 9x cost
 State this multiplier explicitly when late requirements are raised.
 
+Cost multiplier MUST show the calculation with actual numbers:
+  Formula: Base effort X days × multiplier [1× / 3× / 9×] = X days total cost
+  Step 1: state the base effort in person-days (what it would cost at SRS phase)
+  Step 2: identify the phase at which the requirement arrived
+  Step 3: apply multiplier — Base effort × multiplier = total cost (show multiplication)
+  Step 4: delta = total cost − base effort = additional cost due to lateness
+  End with a confirmation line:
+  "→ Adding this requirement at [phase] applies a [3× / 9×] cost multiplier. What would have cost X days at SRS now costs X days."
+
+  If the current project phase is not clear from the user's input, do NOT silently assume.
+  State which phase was assumed and why: "Phase assumed: [phase name] — reason: [e.g., user
+  mentioned integration testing was underway / no phase stated, defaulting to detailed design
+  as the most common late-requirement scenario]. Confirm the actual phase to verify the multiplier."
+
 ---
 
 ## Risk Register Scoring
@@ -54,6 +68,20 @@ Probability 1: unlikely (< 10% chance)
 Impact 5: causes milestone slip > 4 weeks or safety goal violation
 Impact 3: causes milestone slip 1–4 weeks or requires rework
 Impact 1: minor disruption, absorbed in sprint buffer
+
+Risk scoring MUST show the multiplication with actual numbers:
+  Formula: P(X) × I(X) = Score X → [LOW / MEDIUM / HIGH]
+  Step 1: state P value (1–5) with the justification sentence from the probability scale
+  Step 2: state I value (1–5) with the justification sentence from the impact scale
+  Step 3: P × I = Score — show the multiplication
+  Step 4: map score to band: ≤ 8 = LOW, 9–15 = MEDIUM, > 15 = HIGH
+  End with a confirmation line:
+  "→ A probability of X and impact of X gives a score of X, which is classified as [LOW/MEDIUM/HIGH] risk."
+
+  If probability or impact cannot be estimated from the context provided, do NOT invent values.
+  Write instead: "P and I not determinable from available information — risk score requires
+  [specific data, e.g., historical occurrence rate for P, milestone dates and safety goal
+  exposure for I]."
 
 ---
 

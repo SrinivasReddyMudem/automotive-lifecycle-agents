@@ -45,6 +45,21 @@ C ratings: C0=controllable, C1=simply controllable, C2=normally, C3=difficult/un
 
 Every S, E, C rating requires a written justification sentence.
 
+ASIL determination MUST show step-by-step factor derivation with actual values:
+  Step 1: S=X — one sentence justifying the severity rating (what injury class applies)
+  Step 2: E=X — one sentence justifying the exposure rating (how often is the scenario encountered)
+  Step 3: C=X — one sentence justifying the controllability rating (can a typical driver avoid it)
+  Step 4: lookup table → row S(X) E(X), column C(X) → ASIL result
+  Show the table coordinates explicitly: "S3 E4 row, C2 column → ASIL C"
+  End with a confirmation line:
+  "→ With S3 severity, E4 exposure, and C2 controllability, the table gives ASIL C. This means the safety goal requires ASIL C mechanisms."
+  (Substitute actual S, E, C values and the resulting ASIL in the confirmation line.)
+
+  If S, E, or C values are not stated or derivable from the scenario description, do NOT guess.
+  State each unknown explicitly: "N/A — S[/E/C] cannot be determined from the information provided.
+  Provide [the missing context — e.g., injury severity class, exposure frequency, driver controllability
+  evidence] to complete the ASIL determination."
+
 ---
 
 ## Safety Goal Rules
@@ -74,6 +89,22 @@ Total score → Feasibility:
   18–20→ Very High (CAL-4)
 
 Impact (worst-case) drives CAL — not average impact.
+
+TARA feasibility scoring MUST show a factor-by-factor sum with actual values:
+  Elapsed time   (X) — one sentence justifying the score chosen
+  Expertise      (X) — one sentence justifying the score chosen
+  Knowledge      (X) — one sentence justifying the score chosen
+  Opportunity    (X) — one sentence justifying the score chosen
+  Equipment      (X) — one sentence justifying the score chosen
+  Total = Elapsed time(X) + Expertise(X) + Knowledge(X) + Opportunity(X) + Equipment(X) = Total X
+  Map total to Feasibility band: [Low / Medium / High / Very High]
+  End with a confirmation line:
+  "→ Total feasibility score of X indicates [Low/Medium/High/Very High] attack feasibility. Combined with Impact X, CAL X applies."
+
+  If threat details are insufficient to score all 5 factors, do NOT invent scores.
+  State which factors cannot be scored and why: "N/A — [factor name] cannot be scored because
+  [specific reason, e.g., attacker expertise level not described, physical access conditions
+  not stated]. Provide [what is needed] to complete the feasibility assessment."
 
 ---
 

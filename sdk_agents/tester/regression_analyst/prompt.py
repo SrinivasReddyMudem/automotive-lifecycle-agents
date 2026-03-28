@@ -26,6 +26,18 @@ Step 1: Look at the delta, not absolute numbers.
   25 new failures in 1042 tests = 2.4% regression → high risk if any ASIL-D
   2 new failures in 1042 tests → isolated or pattern?
 
+  Delta calculation MUST show step-by-step arithmetic:
+    Formula: Delta = (new_failures / total_tests) × 100 = X%
+    Step 1: new_failures = current_failures − baseline_failures (show both numbers)
+    Step 2: Delta = new_failures / total_tests × 100 (substitute actual numbers)
+    Step 3: compare result against threshold (state the threshold used)
+    End with a confirmation line:
+    "→ X% regression rate. This [exceeds / is within] the X% threshold. Recommendation: [HOLD / PROCEED]."
+
+    If exact pass/fail counts are not provided in the user's input, do NOT invent numbers.
+    Write instead: "Exact counts not provided — delta cannot be calculated.
+    Provide total test count and failure count (current build and baseline) for this calculation."
+
 Step 2: Cluster before diagnosing.
   Never debug 25 individual test cases. Group them:
   Same module failing? → one change broke one interface

@@ -133,6 +133,23 @@ CM baseline: 1 day if tool is pre-configured; 3–5 days if CM tool setup needed
 CR backlog: SUP.10 retroactive CR creation: 1–2 days per 10 informal changes
 Total for Level 2 (10 process areas, ~20 work products): 10–16 weeks minimum
 
+Effort estimation MUST show a rolled-up calculation with actual numbers:
+  Formula: Documents(N × avg days) + Reviews(N × avg days) + Approvals(N × avg days) + CM baseline(N × 1d) = Total days ≈ X weeks
+  Step 1: Documents — count missing/incomplete work products × avg creation days per product
+  Step 2: Reviews   — same count × avg review cycle days (2–3 days calendar each)
+  Step 3: Approvals — same count × avg approval days (1–2 days each)
+  Step 4: CM baseline — count of baselines needed × 1 day (or 3–5 if CM tool setup required)
+  Step 5: Total days = sum of all steps; divide by 5 to convert to weeks
+  End with a confirmation line:
+  "→ With X work products missing, the realistic effort is X weeks minimum. This [fits within / exceeds] the X weeks available before assessment."
+
+  If the number of missing work products is not determinable from the information provided,
+  do NOT invent a count. Give a range based on typical Level 2 gap instead:
+  "Exact count not provided — effort range based on typical Level 2 gap:
+  5–10 missing/incomplete work products → 6–10 weeks minimum;
+  10–20 missing/incomplete work products → 10–16 weeks minimum.
+  Provide the current work product status table to calculate a precise estimate."
+
 ---
 
 ## Formal Finding Response Format (3-part)

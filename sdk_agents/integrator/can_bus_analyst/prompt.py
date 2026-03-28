@@ -103,22 +103,32 @@ def get_system_prompt() -> str:
 ## How to fill each field
 
 ### tec_math
-Always open with: "TEC (Transmit Error Counter):" — define the term on first use.
-Work backwards from the symptom timeframe. Formula:
-  net_TEC_per_second = (error_rate * 8) - ((1 - error_rate) * 1)
-  time_to_bus_off = 256 / net_TEC_per_second
+If no symptom timing is provided in the user's input (e.g., no "immediately", no minutes or
+seconds stated for when bus-off occurs), do NOT invent a time value.
+Write instead: ["N/A — no symptom timing provided. State how long before bus-off occurs
+to enable TEC calculation."]
 
-Example for 3-minute bus-off (180 s):
-  Required net climb = 256 / 180 = 1.4 TEC/s
-  Solving: 9 * error_rate - 1 = 1.4  =>  error_rate = 2.4/9 = 26.7%
-  At 10 msg/s TX rate: errors/s = 2.67, net TEC = 2.67*8 - 7.33*1 = 21.4 - 7.33 = 14.1... too fast.
-  Try 1 msg/s TX rate: net TEC = 0.267*8 - 0.733*1 = 2.14 - 0.73 = 1.41 TEC/s => 256/1.41 = 181s ~ 3 min. Correct.
-Show this step-by-step arithmetic in the tec_math field with actual numbers.
-Always end the tec_math field with a plain-English confirmation sentence:
-  MATCH:    "Calculated time to bus-off: 181 s — consistent with reported 3-minute onset."
-  MISMATCH: "Calculated time does not match reported symptom — re-examine TX rate assumption."
-This sentence is mandatory. The calculation alone is not sufficient — the reader must
-know immediately whether the math confirms or contradicts the reported symptom.
+Provide as a JSON list of strings — one string per line. Exact required structure:
+
+Line 1 (header):  "TEC (Transmit Error Counter) — bus-off accumulation analysis"
+Line 2 (formula): "Formula: net_TEC/s = (error_rate × 8) − ((1 − error_rate) × 1)"
+Line 3+  (working): one line per arithmetic step — actual numbers, not variables
+Last line (confirmation — MANDATORY, plain English, standalone):
+  MATCH:    "→ The math shows the node would reach bus-off in 181 s. This matches the reported 3-minute symptom — the error rate and timing are consistent."
+  MISMATCH: "→ The math gives X s, but the reported symptom is Y minutes. These do not match — revisit the TX rate assumption and recalculate."
+
+Example list for 3-minute bus-off:
+[
+  "TEC (Transmit Error Counter) — bus-off accumulation analysis",
+  "Formula: net_TEC/s = (error_rate × 8) − ((1 − error_rate) × 1)",
+  "Required net climb: 256 / 180 s = 1.41 TEC/s",
+  "At 1 msg/s TX rate: net_TEC = 0.267×8 − 0.733×1 = 2.14 − 0.73 = 1.41 TEC/s",
+  "Time to bus-off: 256 / 1.41 = 181 s",
+  "→ The math shows the node would reach bus-off in 181 s. This matches the reported 3-minute symptom — the error rate and timing are consistent."
+]
+
+The confirmation line is mandatory and must be the last element.
+The reader must see immediately whether the math confirms or contradicts the symptom.
 
 ### decision_flow
 Provide as a JSON list of strings — one string per line of the decision tree.
