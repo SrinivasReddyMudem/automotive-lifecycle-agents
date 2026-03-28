@@ -45,17 +45,14 @@ class CanBusAnalystOutput(BaseModel):
     recommended_tool: str = Field(
         description="Primary debug tool for this fault: oscilloscope / CANoe / TRACE32 / DLT Viewer"
     )
-    tec_math: str = Field(
+    tec_math: list[str] = Field(
         description=(
-            "TEC (Transmit Error Counter) accumulation calculation with specific numbers: "
-            "msg/s assumption, errors needed for bus-off (256/8=32), "
-            "minimum error rate %, net TEC climb rate per second, "
-            "calculated time to bus-off in seconds. "
-            "Always start with: 'TEC (Transmit Error Counter):' to define the term. "
-            "Always end with a plain-English confirmation sentence stating whether "
-            "the calculated time matches the reported symptom — e.g. "
-            "'Calculated time to bus-off: 181 s — consistent with reported 3-minute onset.' "
-            "or 'Calculated time does not match reported symptom — re-examine TX rate assumption.'"
+            "TEC (Transmit Error Counter) accumulation calculation as a list of strings — "
+            "one string per line. First element: header. Second: formula. "
+            "Middle elements: step-by-step arithmetic with actual numbers. "
+            "Last element: plain-English confirmation whether calculated time matches reported symptom. "
+            "If no symptom timing is provided, use a single-element list: "
+            "['N/A — no symptom timing provided. State how long before bus-off occurs.']"
         )
     )
     probable_causes: list[ProbableCause] = Field(

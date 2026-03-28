@@ -85,7 +85,8 @@ def render_can_bus_analyst(output) -> None:
     st.markdown("---")
 
     with st.expander("TEC Math", expanded=True):
-        st.code(output.tec_math)
+        tec = output.tec_math
+        st.code("\n".join(tec) if isinstance(tec, list) else tec)
 
     _render_probable_causes(output.probable_causes)
 

@@ -24,13 +24,17 @@ def make_valid_output(**overrides) -> CanBusAnalystOutput:
         "osi_layer": "L1 Physical",
         "autosar_layer": "MCAL (CanDrv)",
         "recommended_tool": "Oscilloscope",
-        "tec_math": (
-            "TX rate: 10 msg/s → 1800 transmissions in 180s. "
-            "Errors for bus-off: 256/8=32. "
-            "Min error rate: 32/1800=1.8%. "
-            "Net TEC climb: 1.4 TEC/s. "
-            "Time to bus-off: 256/1.4=183s — matches 3 min."
-        ),
+        "tec_math": [
+            "TEC (Transmit Error Counter) — bus-off accumulation analysis",
+            "Formula: net_TEC/s = (error_rate × 8) − ((1 − error_rate) × 1)",
+            "TX rate: 10 msg/s → 1800 transmissions in 180 s",
+            "Errors for bus-off: 256 / 8 = 32",
+            "Min error rate: 32 / 1800 = 1.8%",
+            "Net TEC climb: 0.018 × 8 − 0.982 × 1 = 0.144 − 0.982 = −0.838 TEC/s",
+            "Recalculate at 26.7% error rate: 0.267 × 8 − 0.733 × 1 = 2.14 − 0.73 = 1.41 TEC/s",
+            "Time to bus-off: 256 / 1.41 = 181 s",
+            "→ The math shows the node would reach bus-off in 181 s. This matches the reported 3-minute symptom — the error rate and timing are consistent.",
+        ],
         "probable_causes": [
             ProbableCause(
                 rank="HIGH",
@@ -136,7 +140,7 @@ class TestValidators:
         validators.validate(make_valid_output())  # should not raise
 
     def test_tec_math_without_numbers_fails(self):
-        output = make_valid_output(tec_math="TEC climbs gradually over time due to noise")
+        output = make_valid_output(tec_math=["TEC climbs gradually over time due to noise"])
         with pytest.raises(DomainCheckError, match="tec_math contains fewer than 3 numeric"):
             validators.validate(output)
 

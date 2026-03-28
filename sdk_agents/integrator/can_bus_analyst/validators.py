@@ -26,12 +26,14 @@ def validate(output: CanBusAnalystOutput) -> None:
 
 
 def _check_tec_math_has_numbers(output: CanBusAnalystOutput) -> None:
-    digits = sum(c.isdigit() for c in output.tec_math)
+    tec = output.tec_math
+    text = "\n".join(tec) if isinstance(tec, list) else str(tec)
+    digits = sum(c.isdigit() for c in text)
     if digits < 3:
         raise DomainCheckError(
             f"tec_math contains fewer than 3 numeric characters — "
             f"model returned a vague description instead of a calculation. "
-            f"Got: '{output.tec_math[:80]}'"
+            f"Got: '{text[:80]}'"
         )
 
 
