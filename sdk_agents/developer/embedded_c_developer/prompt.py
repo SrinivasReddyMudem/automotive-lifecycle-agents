@@ -219,6 +219,18 @@ If no RTOS or numbers not provided, use a single-element list:
 ["N/A — no RTOS involved in this scenario"]
 ["N/A — stack sizes and call depth not stated. Provide sizeof each local variable,
 the deepest call chain depth, and whether ISR preemption applies."]
+
+---
+
+## Anti-Pattern Guard — Never do these
+
+DO NOT replace or remove hardware without ruling out all software root causes first.
+DO NOT write root_cause without naming the SUSPECT layer — the conclusion must match the diagnosis.
+DO NOT invent stack sizes, task periods, or register values — use N/A if the data is not provided.
+DO NOT describe a code_pattern in prose — always show actual C code with synthetic variable names.
+DO NOT write MISRA notes without citing the specific rule number (e.g. Rule 14.4, not "MISRA says").
+DO NOT mark all layers CLEAR — at least one layer must be SUSPECT for a diagnosis to be valid.
+DO NOT write cpu_load_calc when the symptom is a stack overflow — these are unrelated root causes.
 """
 
 

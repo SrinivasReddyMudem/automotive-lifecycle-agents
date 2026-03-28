@@ -54,9 +54,17 @@ def _render_probable_causes(causes: list) -> None:
         for i, cause in enumerate(causes):
             rank_color = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(cause.rank, "⚪")
             st.markdown(f"**{rank_color} {cause.rank} — {cause.description}**")
+            # ranking_reason — available on new-style ProbableCause only
+            ranking_reason = getattr(cause, "ranking_reason", "")
+            if ranking_reason:
+                st.caption(f"Rank rationale: {ranking_reason}")
             st.markdown(f"- **Test:** {cause.test}")
             st.markdown(f"- **Pass:** {cause.pass_criteria}")
             st.markdown(f"- **Fail:** {cause.fail_criteria}")
+            # validation_test — single definitive confirm/deny test
+            validation_test = getattr(cause, "validation_test", "")
+            if validation_test:
+                st.info(f"**Definitive test:** {validation_test}")
             if i < len(causes) - 1:
                 st.markdown("---")
 
@@ -76,12 +84,30 @@ def render_can_bus_analyst(output) -> None:
         render_agent_error(output)
         return
 
-    st.info(f"**Expert Diagnosis**\n\n{output.expert_diagnosis}")
+    # Protocol detection badge (new field — safe fallback if absent)
+    proto = getattr(output, "protocol_detection", None)
+    if proto:
+        conf_icon = {"HIGH": "🟢", "MEDIUM": "🟡", "LOW": "🔴"}.get(proto.confidence, "⚪")
+        st.caption(f"Protocol detected: **{proto.protocol}** {conf_icon} {proto.confidence} confidence — {proto.detected_from}")
 
-    col1, col2, col3 = st.columns(3)
+    st.markdown("### 💡 Key Insight")
+    st.info(output.expert_diagnosis)
+
+    col1, col2 = st.columns(2)
     col1.metric("OSI Layer", output.osi_layer)
     col2.metric("AUTOSAR Layer", output.autosar_layer)
-    col3.metric("Recommended Tool", output.recommended_tool)
+
+    # Tool selection (new field — safe fallback to legacy recommended_tool)
+    ts = getattr(output, "tool_selection", None)
+    if ts:
+        with st.expander("Recommended Tools", expanded=False):
+            st.markdown(f"**Primary:** {ts.primary}")
+            st.markdown(f"**Secondary:** {ts.secondary}")
+            st.markdown(f"**Why:** {ts.reason}")
+            st.caption(f"Fallback if unavailable: {ts.fallback}")
+    elif hasattr(output, "recommended_tool"):
+        st.metric("Recommended Tool", output.recommended_tool)
+
     st.markdown("---")
 
     with st.expander("TEC (Transmit Error Counter) Math", expanded=True):
@@ -111,8 +137,14 @@ def render_field_debug_fae(output) -> None:
         render_agent_error(output)
         return
 
+    # Protocol detection badge (new field — safe fallback if absent)
+    proto = getattr(output, "protocol_detection", None)
+    if proto:
+        conf_icon = {"HIGH": "🟢", "MEDIUM": "🟡", "LOW": "🔴"}.get(proto.confidence, "⚪")
+        st.caption(f"Protocol detected: **{proto.protocol}** {conf_icon} {proto.confidence} confidence — {proto.detected_from}")
+
     st_tr = output.symptom_translation
-    with st.expander("STEP 0 — Symptom Translation", expanded=True):
+    with st.expander("STEP 1 — Symptom Translation", expanded=True):
         col1, col2 = st.columns(2)
         col1.markdown(f"**Customer complaint:** {st_tr.customer_complaint}")
         col1.markdown(f"**Function affected:** {st_tr.function_affected}")

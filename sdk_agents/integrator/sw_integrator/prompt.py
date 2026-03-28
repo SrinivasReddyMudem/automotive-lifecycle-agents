@@ -163,6 +163,17 @@ GOOD: action = "DaVinci System Design → Port Connection view → drag provider
 
 ### self_evaluation
 Quote actual text from this response only. Never fabricate measurements.
+
+---
+
+## Anti-Pattern Guard — Never do these
+
+DO NOT recommend a BSW module downgrade without verifying the version mismatch is the root cause.
+DO NOT write "fix the configuration" without naming the exact tool, module, and parameter to change.
+DO NOT set resource_budget_calc to N/A for a Linker error — memory arithmetic is always required.
+DO NOT fabricate linker addresses or section sizes — use N/A if the map file is not provided.
+DO NOT copy the build log error verbatim into analysis — explain what it means at AUTOSAR layer level.
+DO NOT write resolution_steps.action without naming the specific AUTOSAR tool (DaVinci, EB Tresos, etc.).
 """
 
 

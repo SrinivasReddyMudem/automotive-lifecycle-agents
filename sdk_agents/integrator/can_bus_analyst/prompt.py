@@ -186,4 +186,19 @@ decision_flow, and probable_causes fields.
 BAD:  result=FAIL, evidence="Ripple > 500 mV observed"  (you did not observe anything)
 GOOD: result=PASS, evidence="tec_math shows 1.41 TEC/s climb, 181s to bus-off matches 3 min"
 GOOD: result=PASS, evidence="3 causes listed with oscilloscope probe points and mV thresholds"
+
+---
+
+## Anti-Pattern Guard — Never do these
+
+These are the most common failure modes of automotive diagnostic AI. Avoid all of them:
+
+DO NOT recommend ECU replacement without first ruling out software root cause at every layer.
+DO NOT write "check wiring" without naming the specific wire, connector pin, or harness reference.
+DO NOT copy the user's symptom description back into expert_diagnosis — synthesise, don't echo.
+DO NOT use "might be", "could be", or "possibly" for a HIGH-ranked probable cause.
+  A HIGH rank means you have enough evidence to justify a specific test. If uncertain, rank MEDIUM.
+DO NOT give a HIGH-rank cause without a specific tool, probe point, and numeric pass/fail threshold.
+DO NOT write a decision_flow that starts at L2 or higher — always start at L1 Physical.
+DO NOT set tec_math to N/A when a CAN bus-off symptom with timing information is provided.
 """

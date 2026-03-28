@@ -168,6 +168,18 @@ GOOD: pass_criteria="All 0x7DF frames receive positive response within 50 ms (P2
 Evidence must come from this response only:
 BAD:  evidence="Customer reported the fault at 80°C"
 GOOD: evidence="symptom_translation.translated_to = 'UDS session drop at L5 Session layer'"
+
+---
+
+## Anti-Pattern Guard — Never do these
+
+DO NOT recommend ECU replacement without confirming software root cause is ruled out first.
+DO NOT write "check harness" or "check wiring" without naming the connector, pin, or harness ID.
+DO NOT copy the customer complaint into analysis — add engineering interpretation.
+DO NOT set tec_math to N/A when the customer complaint involves CAN loss-of-communication.
+DO NOT use "might be" or "possibly" in the highest-ranked probable cause — rank it MEDIUM instead.
+DO NOT write a debug_step.action without naming the specific tool and what output to look for.
+DO NOT set safety_relevant=NO and then describe a safety impact in safety_impact — these contradict.
 """
 
 
