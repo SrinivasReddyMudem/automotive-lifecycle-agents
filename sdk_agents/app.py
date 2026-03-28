@@ -397,7 +397,7 @@ to produce output an engineer can directly act on.
 AUTOSAR Layer: MCAL (CanDrv)
 Tool:          Oscilloscope
 
-TEC Math:
+TEC (Transmit Error Counter):
   Net climb = 256 / 180s
               = 1.41 TEC/s
   Bus-off: ~181s — 3 min ✓

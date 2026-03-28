@@ -47,10 +47,11 @@ class CanBusAnalystOutput(BaseModel):
     )
     tec_math: str = Field(
         description=(
-            "TEC accumulation calculation with specific numbers: "
+            "TEC (Transmit Error Counter) accumulation calculation with specific numbers: "
             "msg/s assumption, errors needed for bus-off (256/8=32), "
             "minimum error rate %, net TEC climb rate per second, "
             "calculated time to bus-off in seconds. "
+            "Always start with: 'TEC (Transmit Error Counter):' to define the term. "
             "Always end with a plain-English confirmation sentence stating whether "
             "the calculated time matches the reported symptom — e.g. "
             "'Calculated time to bus-off: 181 s — consistent with reported 3-minute onset.' "

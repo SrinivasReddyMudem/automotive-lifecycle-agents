@@ -103,6 +103,7 @@ def get_system_prompt() -> str:
 ## How to fill each field
 
 ### tec_math
+Always open with: "TEC (Transmit Error Counter):" — define the term on first use.
 Work backwards from the symptom timeframe. Formula:
   net_TEC_per_second = (error_rate * 8) - ((1 - error_rate) * 1)
   time_to_bus_off = 256 / net_TEC_per_second
