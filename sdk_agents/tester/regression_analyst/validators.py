@@ -11,11 +11,29 @@ MIN_CLUSTER_CAUSE_LENGTH = 15
 
 
 def validate(output: RegressionAnalystOutput) -> None:
+    _check_summary_counts_logical(output)
     _check_asil_d_prioritised(output)
     _check_cluster_causes_specific(output)
     _check_hold_proceed_rationale(output)
     _check_coverage_blockers_identified(output)
     _check_self_evaluation_has_evidence(output)
+
+
+def _check_summary_counts_logical(output: RegressionAnalystOutput) -> None:
+    s = output.summary
+    # new_failures cannot exceed current failing tests
+    if s.new_failures > s.current_fail:
+        raise DomainCheckError(
+            f"summary.new_failures={s.new_failures} > current_fail={s.current_fail}. "
+            f"New failures cannot exceed total current failures."
+        )
+    # ASIL breakdown cannot exceed new_failures total
+    asil_total = s.asil_d_affected + s.asil_b_affected + s.qm_affected
+    if asil_total > s.new_failures and s.new_failures > 0:
+        raise DomainCheckError(
+            f"ASIL breakdown (D={s.asil_d_affected} + B={s.asil_b_affected} + "
+            f"QM={s.qm_affected} = {asil_total}) exceeds new_failures={s.new_failures}."
+        )
 
 
 def _check_asil_d_prioritised(output: RegressionAnalystOutput) -> None:

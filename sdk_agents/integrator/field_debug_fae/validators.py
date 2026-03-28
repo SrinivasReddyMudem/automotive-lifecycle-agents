@@ -14,11 +14,39 @@ MIN_ANALYSIS_LENGTH = 40
 
 def validate(output: FieldDebugFaeOutput) -> None:
     _check_status_byte_decoded(output)
+    _check_safety_relevant_consistent(output)
+    _check_analysis_has_lab_vs_field(output)
     _check_probable_causes_specific(output)
     _check_nrc_root_causes(output)
     _check_debug_steps_specific(output)
     _check_self_evaluation_has_evidence(output)
 
+
+
+def _check_safety_relevant_consistent(output: FieldDebugFaeOutput) -> None:
+    fd = output.fault_details
+    if fd.safety_relevant == "YES" and "not safety" in fd.safety_impact.lower():
+        raise DomainCheckError(
+            f"fault_details contradiction: safety_relevant='YES' but safety_impact says "
+            f"'{fd.safety_impact}'. These are mutually exclusive."
+        )
+    if fd.safety_relevant == "NO" and fd.safety_impact.strip() and \
+            "not safety" not in fd.safety_impact.lower() and "n/a" not in fd.safety_impact.lower():
+        raise DomainCheckError(
+            f"fault_details contradiction: safety_relevant='NO' but safety_impact describes "
+            f"a safety concern: '{fd.safety_impact[:60]}'. Set safety_relevant='YES' or "
+            f"safety_impact='Not safety-critical'."
+        )
+
+
+def _check_analysis_has_lab_vs_field(output: FieldDebugFaeOutput) -> None:
+    analysis_lower = output.analysis.lower()
+    if "lab" not in analysis_lower and "field" not in analysis_lower and \
+            "workshop" not in analysis_lower and "repro" not in analysis_lower:
+        raise DomainCheckError(
+            "analysis field must include a lab-vs-field assessment. "
+            "State whether field trace is sufficient or lab reproduction is needed, and why."
+        )
 
 
 def _check_status_byte_decoded(output: FieldDebugFaeOutput) -> None:

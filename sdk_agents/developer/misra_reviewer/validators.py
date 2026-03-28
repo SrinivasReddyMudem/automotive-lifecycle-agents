@@ -14,10 +14,21 @@ MIN_ASIL_NOTE_LENGTH = 30
 
 def validate(output: MisraReviewerOutput) -> None:
     _check_violations_have_code(output)
+    _check_violation_counts_consistent(output)
     _check_clusters_present(output)
     _check_action_plan_has_effort(output)
     _check_asil_note_specific(output)
     _check_self_evaluation_has_evidence(output)
+
+
+def _check_violation_counts_consistent(output: MisraReviewerOutput) -> None:
+    declared_total = output.mandatory_count + output.required_count + output.advisory_count
+    if output.total_violations != declared_total:
+        raise DomainCheckError(
+            f"total_violations={output.total_violations} does not match "
+            f"mandatory({output.mandatory_count}) + required({output.required_count}) + "
+            f"advisory({output.advisory_count}) = {declared_total}."
+        )
 
 
 def _check_violations_have_code(output: MisraReviewerOutput) -> None:

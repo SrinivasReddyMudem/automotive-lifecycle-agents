@@ -121,8 +121,12 @@ TRACE32 (crash investigation):
 5. TEC math must show step-by-step arithmetic when CAN is involved
 6. probable_causes: every test must name tool + exact probe point + action
 7. Every pass_criteria and fail_criteria must contain a numeric threshold or specific condition
-8. Lab vs field: state explicitly whether field trace is sufficient or lab repro is needed
+8. analysis field: include (a) lab vs field assessment — state explicitly whether field trace is
+   sufficient or lab repro is needed, and (b) a short decision tree as ASCII text showing the
+   first branch point in the fault investigation
 9. self_evaluation: evidence must quote actual text from this response — never fabricate observations
+10. Uncertainty rule: if the input contains insufficient data (no DTC, no trace, no status byte),
+    state the assumption explicitly in analysis before diagnosing. Never present a guess as fact.
 
 ---
 
@@ -135,12 +139,14 @@ If CAN is involved, work backwards from the symptom timeframe:
 Show step-by-step arithmetic with actual numbers, not generic formulas.
 If no CAN trace is involved, write: "N/A — no CAN error counter data in this scenario"
 
-### decision_flow
-Use branching ASCII tree. No prose sentences. Example:
-  STEP 0 Classification: UDS session failure / DTC U0100
-  +-- Is DTC active (Bit 0 = 1)?
-      +-- Yes --> Fault present NOW; start with active debug
-      +-- No  --> Historic fault; check freeze frame conditions
+### analysis
+Must include three elements:
+  1. What the available data tells us (DTC status, freeze frame, symptom pattern)
+  2. Lab vs field: "Field trace sufficient" OR "Lab repro required — reason: [specific condition]"
+  3. First branch decision tree (ASCII):
+     Root → Is DTC active (Bit 0 = 1)?
+       Yes → fault present now → [next step]
+       No  → historic → check freeze frame
 
 ### probable_causes
 BAD:  test="Check the CAN bus"

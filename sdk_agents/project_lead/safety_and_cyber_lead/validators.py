@@ -13,11 +13,22 @@ MIN_SEC_JUSTIFICATION_LENGTH = 20
 
 
 def validate(output: SafetyAndCyberLeadOutput) -> None:
+    _check_s0_must_be_qm(output)
     _check_safety_goals_have_asil(output)
     _check_sec_justifications_present(output)
     _check_feasibility_totals(output)
     _check_mandatory_review_note(output)
     _check_self_evaluation_has_evidence(output)
+
+
+def _check_s0_must_be_qm(output: SafetyAndCyberLeadOutput) -> None:
+    """ISO 26262: Severity S0 always gives QM regardless of E and C values."""
+    for i, he in enumerate(output.hazardous_events):
+        if he.severity == "S0" and "QM" not in he.asil.upper():
+            raise DomainCheckError(
+                f"hazardous_events[{i}] (HE-ID: {he.he_id}): severity=S0 must always "
+                f"result in ASIL=QM per ISO 26262 Table 4. Got asil='{he.asil}'."
+            )
 
 
 def _check_safety_goals_have_asil(output: SafetyAndCyberLeadOutput) -> None:
