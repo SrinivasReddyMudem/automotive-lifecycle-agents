@@ -129,7 +129,8 @@ def render_can_bus_analyst(output) -> None:
                 if missing and missing != ["None — data is complete"]:
                     st.markdown("**Missing critical data:**")
                     for item in missing:
-                        st.caption(f"- {item}")
+                        prefix = "🔴" if item.startswith("[CRITICAL]") else "🟡"
+                        st.caption(f"{prefix} {item}")
             if input_analysis:
                 facts = getattr(input_analysis, "input_facts", [])
                 assumptions = getattr(input_analysis, "assumptions", [])

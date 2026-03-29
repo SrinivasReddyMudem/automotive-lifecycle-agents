@@ -33,15 +33,17 @@ def _check_violation_counts_consistent(output: MisraReviewerOutput) -> None:
 
 def _check_violations_have_code(output: MisraReviewerOutput) -> None:
     for i, v in enumerate(output.violations):
-        if len(v.violation_pattern.strip()) < MIN_VIOLATION_PATTERN_LENGTH:
+        pattern_text = "\n".join(v.violation_pattern)
+        if len(pattern_text.strip()) < MIN_VIOLATION_PATTERN_LENGTH:
             raise DomainCheckError(
                 f"violations[{i}].violation_pattern is too short "
-                f"({len(v.violation_pattern)} chars). Must show C code pattern."
+                f"({len(pattern_text)} chars). Must show C code pattern."
             )
-        if len(v.compliant_rewrite.strip()) < MIN_REWRITE_LENGTH:
+        rewrite_text = "\n".join(v.compliant_rewrite)
+        if len(rewrite_text.strip()) < MIN_REWRITE_LENGTH:
             raise DomainCheckError(
                 f"violations[{i}].compliant_rewrite is too short "
-                f"({len(v.compliant_rewrite)} chars). Must show compliant C code."
+                f"({len(rewrite_text)} chars). Must show compliant C code."
             )
         if "Rule" not in v.rule and len(v.rule) < 3:
             raise DomainCheckError(

@@ -102,6 +102,40 @@ def get_system_prompt() -> str:
 
 ## How to fill each field
 
+### input_analysis
+Extract only what the user directly stated — no inference.
+input_facts: protocol stated (CAN/CAN-FD/LIN/Ethernet), symptom described (bus-off/error
+  frame/missing ACK), vehicle or ECU name stated, timing information given (duration before
+  fault, periodicity), TEC/REC counter values stated, CAN frame IDs mentioned, baudrate stated.
+assumptions: protocol assumed from symptom description, error rate assumed for TEC math,
+  bus topology assumed from ECU description, message rate assumed for bus load calc.
+
+### data_sufficiency
+Rate completeness for THIS specific CAN fault analysis only.
+SUFFICIENT: symptom + timing + protocol all stated; can calculate TEC math.
+PARTIAL: symptom stated but timing or baudrate missing; can hypothesise but not calculate.
+INSUFFICIENT: only ECU name with no symptom description or timing.
+
+missing_critical_data — ONLY flag inputs that caused one of these:
+  1. You wrote N/A in a field (tec_math = N/A because timing not stated)
+  2. You made an assumption (e.g., "assumed error rate from 3-minute symptom window")
+  3. The missing input would change the probable cause ranking or recommended tool
+
+Format each missing item as:
+  "[CRITICAL] <what> — <why it matters for this diagnosis>"
+  "[OPTIONAL] <what> — <how it would improve one of the calc fields>"
+
+DO NOT flag inputs irrelevant to the fault pattern being diagnosed.
+Example: user describes a bus-off fault — do not flag "full network DBC" unless
+a specific frame-level analysis was attempted or blocked by missing IDs.
+
+Reference catalog (check relevance before flagging):
+  High-criticality: symptom timing (how many seconds/minutes before bus-off),
+    TEC/REC counter values at fault, exact error type (ACK/bit/stuffing/form),
+    baudrate and sample point configuration
+  Medium: oscilloscope trace or CANoe capture, number of nodes on bus,
+    message schedule (for bus load calc), ECU hardware revision
+
 ### tec_math
 If no symptom timing is provided in the user's input (e.g., no "immediately", no minutes or
 seconds stated for when bus-off occurs), do NOT invent a time value.

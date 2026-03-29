@@ -2,11 +2,6 @@
 Unit tests for misra_reviewer — no API calls required.
 Tests: schema structure, validator logic, skill loader, agent instantiation.
 All API calls are mocked — runs without a GROQ_API_KEY.
-
-Note: _check_violations_have_code in validators.py calls .strip() on violation_pattern
-which is list[str] — this is a known pre-existing inconsistency that would raise
-AttributeError if violations list is non-empty. Tests use violations=[] to avoid this
-path. Phase 3 will address validator strengthening.
 """
 
 import pytest
@@ -25,8 +20,7 @@ from sdk_agents.core.shared_schema import SelfEvaluationLine, InputAnalysis, Dat
 
 def make_valid_output(**overrides) -> MisraReviewerOutput:
     """Build a valid MisraReviewerOutput for testing.
-    Scenario: ASIL-B CAN driver module, QAC review, 3 violations (1 mandatory, 2 required).
-    Uses violations=[] to avoid pre-existing validator inconsistency (see module docstring).
+    Scenario: ASIL-B CAN driver module, QAC review, 1 mandatory violation (Rule 11.3).
     """
     data = {
         "file_context": "can_driver.c — CAN transmit handler ASIL-B",
@@ -35,8 +29,8 @@ def make_valid_output(**overrides) -> MisraReviewerOutput:
                 "file: can_driver.c",
                 "ASIL level: ASIL-B",
                 "tool: QAC",
-                "violations: 1 mandatory (Rule 11.3), 2 required (Rule 10.1, Rule 10.4)",
-                "total: 3 violations",
+                "violations: 1 mandatory (Rule 11.3)",
+                "total: 1 violation",
             ],
             assumptions=[
                 "assumed C99 standard — not stated in review request",
@@ -51,11 +45,27 @@ def make_valid_output(**overrides) -> MisraReviewerOutput:
         ),
         "asil_level": "ASIL-B",
         "tool": "QAC",
-        "total_violations": 0,
-        "mandatory_count": 0,
+        "total_violations": 1,
+        "mandatory_count": 1,
         "required_count": 0,
         "advisory_count": 0,
-        "violations": [],  # empty to avoid pre-existing validator inconsistency
+        "violations": [
+            MisraViolation(
+                rule="Rule 11.3",
+                violation_pattern=[
+                    "uint8_t *ptr = (uint8_t *)voidPtr;  /* MISRA Rule 11.3 violation */",
+                    "/* Cast from void pointer to object pointer type is prohibited */",
+                ],
+                explanation=(
+                    "Rule 11.3 prohibits casting between a pointer to object type and a pointer to "
+                    "a different object type. Void pointer casts are not type-safe and hide errors."
+                ),
+                compliant_rewrite=[
+                    "/* Use a typed pointer from allocation — avoid void* intermediate */",
+                    "uint8_t *ptr = typedBufferPtr;  /* compliant: no pointer type cast */",
+                ],
+            )
+        ],
         "root_cause_clusters": [
             RootCauseCluster(
                 cluster_name="Type discipline violations",
@@ -81,7 +91,7 @@ def make_valid_output(**overrides) -> MisraReviewerOutput:
             SelfEvaluationLine(
                 item="Violation counts consistent",
                 result="PASS",
-                evidence="total_violations=0 = mandatory(0) + required(0) + advisory(0)",
+                evidence="total_violations=1 = mandatory(1) + required(0) + advisory(0)",
             ),
             SelfEvaluationLine(
                 item="Clusters present",
@@ -177,8 +187,8 @@ class TestValidators:
 
     def test_violation_count_mismatch_fails(self):
         output = make_valid_output(
-            total_violations=5,  # claims 5 but 0+0+0=0
-            mandatory_count=0,
+            total_violations=5,  # claims 5 but 1+0+0=1
+            mandatory_count=1,
             required_count=0,
             advisory_count=0,
         )
@@ -211,6 +221,32 @@ class TestValidators:
             SelfEvaluationLine(item="Counts", result="PASS", evidence="ok")
         ])
         with pytest.raises(DomainCheckError, match="evidence is empty or too short"):
+            validators.validate(output)
+
+    def test_violation_with_short_pattern_fails(self):
+        """Validator must reject violations whose pattern is too short (tests list[str] join fix)."""
+        short_violation = MisraViolation(
+            rule="Rule 11.3",
+            violation_pattern=["x = y;"],  # too short — only 6 chars
+            explanation="Cast violation",
+            compliant_rewrite=["uint8_t *ptr = typedPtr;  /* compliant rewrite */"],
+        )
+        output = make_valid_output(violations=[short_violation])
+        with pytest.raises(DomainCheckError, match="violation_pattern is too short"):
+            validators.validate(output)
+
+    def test_violation_with_short_rewrite_fails(self):
+        """Validator must reject violations whose rewrite is too short (tests list[str] join fix)."""
+        short_rewrite_violation = MisraViolation(
+            rule="Rule 11.3",
+            violation_pattern=[
+                "uint8_t *ptr = (uint8_t *)voidPtr;  /* MISRA Rule 11.3 violation */",
+            ],
+            explanation="Cast from void pointer to object pointer type is prohibited",
+            compliant_rewrite=["ptr = buf;"],  # too short — only 9 chars
+        )
+        output = make_valid_output(violations=[short_rewrite_violation])
+        with pytest.raises(DomainCheckError, match="compliant_rewrite is too short"):
             validators.validate(output)
 
 
