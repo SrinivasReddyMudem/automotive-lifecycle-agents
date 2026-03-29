@@ -302,6 +302,34 @@ def render_sw_integrator(output) -> None:
         render_agent_error(output)
         return
 
+    # Input analysis + data sufficiency
+    input_analysis = getattr(output, "input_analysis", None)
+    data_suf = getattr(output, "data_sufficiency", None)
+    if input_analysis or data_suf:
+        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+            if data_suf:
+                suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
+                    data_suf.level, "info"
+                )
+                getattr(st, suf_color)(f"**Data: {data_suf.level}**")
+                missing = getattr(data_suf, "missing_critical_data", None)
+                if missing and missing != ["None — data is complete"]:
+                    st.markdown("**Missing critical data:**")
+                    for item in missing:
+                        prefix = "🔴" if item.startswith("[CRITICAL]") else "🟡"
+                        st.caption(f"{prefix} {item}")
+            if input_analysis:
+                facts = getattr(input_analysis, "input_facts", [])
+                assumptions = getattr(input_analysis, "assumptions", [])
+                if facts:
+                    st.markdown("**Observed facts:**")
+                    for f in facts:
+                        st.markdown(f"- {f}")
+                if assumptions:
+                    st.markdown("**Assumptions (not stated by user):**")
+                    for a in assumptions:
+                        st.caption(f"⚠ {a}")
+
     ec = output.error_classification
     col1, col2 = st.columns(2)
     col1.metric("Error Type", ec.error_type[:30])
@@ -347,6 +375,34 @@ def render_autosar_bsw_developer(output) -> None:
     if isinstance(output, AgentError):
         render_agent_error(output)
         return
+
+    # Input analysis + data sufficiency
+    input_analysis = getattr(output, "input_analysis", None)
+    data_suf = getattr(output, "data_sufficiency", None)
+    if input_analysis or data_suf:
+        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+            if data_suf:
+                suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
+                    data_suf.level, "info"
+                )
+                getattr(st, suf_color)(f"**Data: {data_suf.level}**")
+                missing = getattr(data_suf, "missing_critical_data", None)
+                if missing and missing != ["None — data is complete"]:
+                    st.markdown("**Missing critical data:**")
+                    for item in missing:
+                        prefix = "🔴" if item.startswith("[CRITICAL]") else "🟡"
+                        st.caption(f"{prefix} {item}")
+            if input_analysis:
+                facts = getattr(input_analysis, "input_facts", [])
+                assumptions = getattr(input_analysis, "assumptions", [])
+                if facts:
+                    st.markdown("**Observed facts:**")
+                    for f in facts:
+                        st.markdown(f"- {f}")
+                if assumptions:
+                    st.markdown("**Assumptions (not stated by user):**")
+                    for a in assumptions:
+                        st.caption(f"⚠ {a}")
 
     col1, col2, col3 = st.columns(3)
     col1.metric("AUTOSAR Version", output.autosar_version)
@@ -479,6 +535,34 @@ def render_misra_reviewer(output) -> None:
         render_agent_error(output)
         return
 
+    # Input analysis + data sufficiency
+    input_analysis = getattr(output, "input_analysis", None)
+    data_suf = getattr(output, "data_sufficiency", None)
+    if input_analysis or data_suf:
+        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+            if data_suf:
+                suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
+                    data_suf.level, "info"
+                )
+                getattr(st, suf_color)(f"**Data: {data_suf.level}**")
+                missing = getattr(data_suf, "missing_critical_data", None)
+                if missing and missing != ["None — data is complete"]:
+                    st.markdown("**Missing critical data:**")
+                    for item in missing:
+                        prefix = "🔴" if item.startswith("[CRITICAL]") else "🟡"
+                        st.caption(f"{prefix} {item}")
+            if input_analysis:
+                facts = getattr(input_analysis, "input_facts", [])
+                assumptions = getattr(input_analysis, "assumptions", [])
+                if facts:
+                    st.markdown("**Observed facts:**")
+                    for f in facts:
+                        st.markdown(f"- {f}")
+                if assumptions:
+                    st.markdown("**Assumptions (not stated by user):**")
+                    for a in assumptions:
+                        st.caption(f"⚠ {a}")
+
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Total", output.total_violations)
     col2.metric("Mandatory", output.mandatory_count)
@@ -589,6 +673,34 @@ def render_gate_review_approver(output) -> None:
     if isinstance(output, AgentError):
         render_agent_error(output)
         return
+
+    # Input analysis + data sufficiency
+    input_analysis = getattr(output, "input_analysis", None)
+    data_suf = getattr(output, "data_sufficiency", None)
+    if input_analysis or data_suf:
+        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+            if data_suf:
+                suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
+                    data_suf.level, "info"
+                )
+                getattr(st, suf_color)(f"**Data: {data_suf.level}**")
+                missing = getattr(data_suf, "missing_critical_data", None)
+                if missing and missing != ["None — data is complete"]:
+                    st.markdown("**Missing critical data:**")
+                    for item in missing:
+                        prefix = "🔴" if item.startswith("[CRITICAL]") else "🟡"
+                        st.caption(f"{prefix} {item}")
+            if input_analysis:
+                facts = getattr(input_analysis, "input_facts", [])
+                assumptions = getattr(input_analysis, "assumptions", [])
+                if facts:
+                    st.markdown("**Observed facts:**")
+                    for f in facts:
+                        st.markdown(f"- {f}")
+                if assumptions:
+                    st.markdown("**Assumptions (not stated by user):**")
+                    for a in assumptions:
+                        st.caption(f"⚠ {a}")
 
     overall_color = {"PASS": "success", "AMBER": "warning", "FAIL": "error"}.get(output.overall, "info")
     getattr(st, overall_color)(f"**GATE REVIEW — {output.gate_type} | {output.project_ecu}**\n\nOverall: {output.overall} | {output.score}")
@@ -702,6 +814,34 @@ def render_sw_project_lead(output) -> None:
         render_agent_error(output)
         return
 
+    # Input analysis + data sufficiency
+    input_analysis = getattr(output, "input_analysis", None)
+    data_suf = getattr(output, "data_sufficiency", None)
+    if input_analysis or data_suf:
+        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+            if data_suf:
+                suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
+                    data_suf.level, "info"
+                )
+                getattr(st, suf_color)(f"**Data: {data_suf.level}**")
+                missing = getattr(data_suf, "missing_critical_data", None)
+                if missing and missing != ["None — data is complete"]:
+                    st.markdown("**Missing critical data:**")
+                    for item in missing:
+                        prefix = "🔴" if item.startswith("[CRITICAL]") else "🟡"
+                        st.caption(f"{prefix} {item}")
+            if input_analysis:
+                facts = getattr(input_analysis, "input_facts", [])
+                assumptions = getattr(input_analysis, "assumptions", [])
+                if facts:
+                    st.markdown("**Observed facts:**")
+                    for f in facts:
+                        st.markdown(f"- {f}")
+                if assumptions:
+                    st.markdown("**Assumptions (not stated by user):**")
+                    for a in assumptions:
+                        st.caption(f"⚠ {a}")
+
     st.markdown(f"**Type:** {output.request_type}")
     st.info(output.summary)
     if output.decision_required_by != "N/A":
@@ -814,6 +954,34 @@ def render_sil_hil_test_planner(output) -> None:
         render_agent_error(output)
         return
 
+    # Input analysis + data sufficiency
+    input_analysis = getattr(output, "input_analysis", None)
+    data_suf = getattr(output, "data_sufficiency", None)
+    if input_analysis or data_suf:
+        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+            if data_suf:
+                suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
+                    data_suf.level, "info"
+                )
+                getattr(st, suf_color)(f"**Data: {data_suf.level}**")
+                missing = getattr(data_suf, "missing_critical_data", None)
+                if missing and missing != ["None — data is complete"]:
+                    st.markdown("**Missing critical data:**")
+                    for item in missing:
+                        prefix = "🔴" if item.startswith("[CRITICAL]") else "🟡"
+                        st.caption(f"{prefix} {item}")
+            if input_analysis:
+                facts = getattr(input_analysis, "input_facts", [])
+                assumptions = getattr(input_analysis, "assumptions", [])
+                if facts:
+                    st.markdown("**Observed facts:**")
+                    for f in facts:
+                        st.markdown(f"- {f}")
+                if assumptions:
+                    st.markdown("**Assumptions (not stated by user):**")
+                    for a in assumptions:
+                        st.caption(f"⚠ {a}")
+
     col1, col2, col3 = st.columns(3)
     col1.metric("ECU", output.ecu_name)
     col2.metric("ASPICE Scope", output.aspice_scope)
@@ -859,6 +1027,34 @@ def render_sw_unit_tester(output) -> None:
     if isinstance(output, AgentError):
         render_agent_error(output)
         return
+
+    # Input analysis + data sufficiency
+    input_analysis = getattr(output, "input_analysis", None)
+    data_suf = getattr(output, "data_sufficiency", None)
+    if input_analysis or data_suf:
+        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+            if data_suf:
+                suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
+                    data_suf.level, "info"
+                )
+                getattr(st, suf_color)(f"**Data: {data_suf.level}**")
+                missing = getattr(data_suf, "missing_critical_data", None)
+                if missing and missing != ["None — data is complete"]:
+                    st.markdown("**Missing critical data:**")
+                    for item in missing:
+                        prefix = "🔴" if item.startswith("[CRITICAL]") else "🟡"
+                        st.caption(f"{prefix} {item}")
+            if input_analysis:
+                facts = getattr(input_analysis, "input_facts", [])
+                assumptions = getattr(input_analysis, "assumptions", [])
+                if facts:
+                    st.markdown("**Observed facts:**")
+                    for f in facts:
+                        st.markdown(f"- {f}")
+                if assumptions:
+                    st.markdown("**Assumptions (not stated by user):**")
+                    for a in assumptions:
+                        st.caption(f"⚠ {a}")
 
     st.code(output.function_signature, language="c")
     col1, col2, col3 = st.columns(3)
