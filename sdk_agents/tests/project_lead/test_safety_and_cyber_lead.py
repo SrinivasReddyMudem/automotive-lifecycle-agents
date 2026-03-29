@@ -9,6 +9,7 @@ from unittest.mock import patch, MagicMock
 from sdk_agents.project_lead.safety_and_cyber_lead.schema import (
     SafetyAndCyberLeadOutput, HazardousEvent, SafetyGoal,
     ThreatScenario, AttackFeasibility, CybersecurityGoal,
+    InputAnalysis, DataSufficiency,
 )
 from sdk_agents.project_lead.safety_and_cyber_lead import SafetyAndCyberLeadAgent
 from sdk_agents.project_lead.safety_and_cyber_lead import validators
@@ -22,6 +23,31 @@ from sdk_agents.core.shared_schema import SelfEvaluationLine
 def make_valid_output(**overrides) -> SafetyAndCyberLeadOutput:
     data = {
         "item_name": "Electric Power Steering ECU",
+        "input_analysis": InputAnalysis(
+            input_facts=[
+                "Item: Electric Power Steering ECU",
+                "Item boundary: controls steering assist torque, inputs torque sensor and vehicle speed",
+                "Operational scenario OS-01: high-speed motorway driving",
+                "Operational scenario OS-02: urban manoeuvring at low speed",
+                "Threat: OTA firmware injection via update channel",
+            ],
+            assumptions=[
+                "Assumed mechanical steering column is in scope boundary exclusion — not explicitly stated",
+                "Assumed S3 severity for unintended assist — driver-stated scenario, injury class inferred",
+            ],
+        ),
+        "data_sufficiency": DataSufficiency(
+            level="PARTIAL",
+            confidence="MEDIUM",
+            confidence_reason=(
+                "Item boundary and operational scenarios are described but S, E, C "
+                "parameters and TARA threat actor details are not fully stated"
+            ),
+            missing_critical_data=[
+                "[CRITICAL] S/E/C parameter values with justification — needed to confirm ASIL assignment from table",
+                "[OPTIONAL] Existing safety mechanisms — would reduce ASIL decomposition assumptions",
+            ],
+        ),
         "analysis_type": "HARA+TARA",
         "item_definition": (
             "EPS ECU controls steering assist torque. "
@@ -182,6 +208,40 @@ class TestSchema:
             {**make_valid_output().model_dump(), "unknown_extra_field": "x"}
         )
         assert output.item_name == "Electric Power Steering ECU"
+
+    def test_input_analysis_fields_present(self):
+        output = make_valid_output()
+        assert len(output.input_analysis.input_facts) >= 1
+        assert len(output.input_analysis.assumptions) >= 1
+
+    def test_data_sufficiency_fields_present(self):
+        output = make_valid_output()
+        assert output.data_sufficiency.level in ("SUFFICIENT", "PARTIAL", "INSUFFICIENT")
+        assert output.data_sufficiency.confidence in ("HIGH", "MEDIUM", "LOW")
+        assert isinstance(output.data_sufficiency.missing_critical_data, list)
+
+    def test_data_sufficiency_partial_has_missing_items(self):
+        output = make_valid_output()
+        assert output.data_sufficiency.level == "PARTIAL"
+        assert len(output.data_sufficiency.missing_critical_data) > 0
+
+    def test_data_sufficiency_sufficient_has_no_missing(self):
+        output = make_valid_output(
+            data_sufficiency=DataSufficiency(
+                level="SUFFICIENT",
+                confidence="HIGH",
+                confidence_reason="Item boundary, S/E/C parameters, and threat details all provided",
+                missing_critical_data=["None — data is complete"],
+            )
+        )
+        assert output.data_sufficiency.level == "SUFFICIENT"
+
+    def test_input_facts_do_not_contain_assumptions(self):
+        output = make_valid_output()
+        for fact in output.input_analysis.input_facts:
+            assert "assumed" not in fact.lower(), (
+                f"input_facts should not contain assumptions: '{fact}'"
+            )
 
 
 # ── Validator tests ───────────────────────────────────────────────────────────

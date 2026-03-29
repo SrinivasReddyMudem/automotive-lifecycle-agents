@@ -5,7 +5,7 @@ Covers HARA (ISO 26262), TARA (ISO 21434), ASIL assignment, CAL, co-engineering.
 
 from pydantic import BaseModel, Field
 from typing import Literal
-from sdk_agents.core.shared_schema import SelfEvaluationLine
+from sdk_agents.core.shared_schema import SelfEvaluationLine, InputAnalysis, DataSufficiency
 
 
 class HazardousEvent(BaseModel):
@@ -56,6 +56,26 @@ class SafetyAndCyberLeadOutput(BaseModel):
     model_config = {"extra": "ignore"}
 
     item_name: str = Field(description="Item name being analysed e.g. Electric Power Steering ECU")
+    input_analysis: InputAnalysis = Field(
+        description=(
+            "STEP 0 (before HARA/TARA): separate what the user directly stated "
+            "(input_facts) from what you inferred or assumed (assumptions). "
+            "Extract only explicitly provided data: item name, item boundary, "
+            "operational scenarios, S/E/C parameters stated, threat actors, "
+            "attack vectors, asset names. "
+            "Never mix assumed values into input_facts."
+        )
+    )
+    data_sufficiency: DataSufficiency = Field(
+        description=(
+            "Rate data completeness for this specific safety/cybersecurity analysis. "
+            "SUFFICIENT = item boundary + operational scenarios + S/E/C or TARA threat details all present. "
+            "PARTIAL = item described but S, E, or C parameters not stated, or threat actor details incomplete. "
+            "INSUFFICIENT = only item name with no boundary or operational scenario context. "
+            "missing_critical_data: ONLY list inputs that caused N/A in a field or required "
+            "an assumption that would change the ASIL or CAL result if provided."
+        )
+    )
     analysis_type: Literal["HARA", "TARA", "HARA+TARA"]
     item_definition: str = Field(
         description="Item boundary: inputs, functions, outputs, exclusions"

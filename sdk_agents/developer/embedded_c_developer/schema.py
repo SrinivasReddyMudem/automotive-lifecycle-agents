@@ -5,7 +5,7 @@ Covers systematic layer-by-layer diagnosis, RTOS concerns, CFSR decode, MISRA no
 
 from pydantic import BaseModel, Field
 from typing import Literal
-from sdk_agents.core.shared_schema import NarrowingQuestion, SelfEvaluationLine
+from sdk_agents.core.shared_schema import NarrowingQuestion, SelfEvaluationLine, InputAnalysis, DataSufficiency
 
 
 class LayerDiagnosis(BaseModel):
@@ -37,6 +37,25 @@ class EmbeddedCDeveloperOutput(BaseModel):
         description=(
             "One sentence: MCU family + fault type + layer. "
             "E.g. 'Stack overflow during CAN ISR on TC387 — OS layer fault'"
+        )
+    )
+    input_analysis: InputAnalysis = Field(
+        description=(
+            "STEP 0 (before layer diagnosis): separate what the user directly stated "
+            "(input_facts) from what you inferred or assumed (assumptions). "
+            "Extract only explicitly provided data: MCU family, fault symptoms, "
+            "CFSR register value, RTOS task names, stack sizes, error logs. "
+            "Never mix assumed values into input_facts."
+        )
+    )
+    data_sufficiency: DataSufficiency = Field(
+        description=(
+            "Rate data completeness for this specific embedded diagnosis. "
+            "SUFFICIENT = MCU fault registers + RTOS task state + code context all present. "
+            "PARTIAL = some key data missing but fault layer direction is clear. "
+            "INSUFFICIENT = only symptom description, no register values or stack data. "
+            "missing_critical_data: ONLY list inputs that caused an N/A in a field, "
+            "forced an assumption, or would change the layer diagnosis ranking if provided."
         )
     )
     layer_diagnosis: list[LayerDiagnosis] = Field(

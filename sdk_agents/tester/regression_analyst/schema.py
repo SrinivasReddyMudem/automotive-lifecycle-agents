@@ -5,7 +5,7 @@ Covers test delta analysis, failure clustering, coverage drops, HOLD/PROCEED dec
 
 from pydantic import BaseModel, Field
 from typing import Literal
-from sdk_agents.core.shared_schema import SelfEvaluationLine
+from sdk_agents.core.shared_schema import SelfEvaluationLine, InputAnalysis, DataSufficiency
 
 
 class RegressionSummary(BaseModel):
@@ -49,6 +49,25 @@ class RegressionAnalystOutput(BaseModel):
 
     build_current: str = Field(description="Current build identifier")
     build_baseline: str = Field(description="Baseline build being compared against")
+    input_analysis: InputAnalysis = Field(
+        description=(
+            "STEP 0 (before clustering): separate what the user directly stated "
+            "(input_facts) from what you inferred or assumed (assumptions). "
+            "Extract only explicitly provided data: build identifiers, pass/fail counts, "
+            "coverage percentages, ASIL classifications, module names, test names. "
+            "Never mix assumed values into input_facts."
+        )
+    )
+    data_sufficiency: DataSufficiency = Field(
+        description=(
+            "Rate data completeness for this specific regression analysis. "
+            "SUFFICIENT = both builds have pass/fail counts + coverage + ASIL classification all present. "
+            "PARTIAL = some counts or coverage data missing but regression direction is identifiable. "
+            "INSUFFICIENT = only build names with no test result data. "
+            "missing_critical_data: ONLY list inputs that caused an N/A in a field, "
+            "forced an assumption, or would change the HOLD/PROCEED recommendation if provided."
+        )
+    )
     summary: RegressionSummary
     failure_clusters: list[FailureCluster] = Field(
         description="Failures grouped by probable common cause — ranked ASIL-D first"

@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from sdk_agents.tester.regression_analyst.schema import (
     RegressionAnalystOutput, RegressionSummary, FailureCluster,
-    CoverageDelta,
+    CoverageDelta, InputAnalysis, DataSufficiency,
 )
 from sdk_agents.tester.regression_analyst import RegressionAnalystAgent
 from sdk_agents.tester.regression_analyst import validators
@@ -23,6 +23,31 @@ def make_valid_output(**overrides) -> RegressionAnalystOutput:
     data = {
         "build_current": "SW-1.4.2-RC3",
         "build_baseline": "SW-1.4.1-release",
+        "input_analysis": InputAnalysis(
+            input_facts=[
+                "Current build: SW-1.4.2-RC3, baseline: SW-1.4.1-release",
+                "Current pass: 990, current fail: 27",
+                "Baseline pass: 1015, baseline fail: 2",
+                "ASIL-D affected: 3, ASIL-B affected: 8, QM affected: 14",
+                "Coverage: baseline 87.3%, current 84.1%",
+            ],
+            assumptions=[
+                "Assumed all 25 new failures are regressions — not yet confirmed as distinct from pre-existing failures",
+                "Assumed ASIL-D cluster is related to CAN API change — not yet confirmed by diff",
+            ],
+        ),
+        "data_sufficiency": DataSufficiency(
+            level="PARTIAL",
+            confidence="MEDIUM",
+            confidence_reason=(
+                "Pass/fail counts and ASIL classification are present but "
+                "specific failing test names and code change diff are not provided"
+            ),
+            missing_critical_data=[
+                "[CRITICAL] Specific ASIL-D failing test names — needed to confirm cluster membership and probable cause",
+                "[OPTIONAL] Git diff between builds — would confirm CAN API change as root cause",
+            ],
+        ),
         "summary": RegressionSummary(
             previous_pass=1015,
             previous_fail=2,
@@ -153,6 +178,40 @@ class TestSchema:
             {**make_valid_output().model_dump(), "extra_field": "x"}
         )
         assert output.build_current == "SW-1.4.2-RC3"
+
+    def test_input_analysis_fields_present(self):
+        output = make_valid_output()
+        assert len(output.input_analysis.input_facts) >= 1
+        assert len(output.input_analysis.assumptions) >= 1
+
+    def test_data_sufficiency_fields_present(self):
+        output = make_valid_output()
+        assert output.data_sufficiency.level in ("SUFFICIENT", "PARTIAL", "INSUFFICIENT")
+        assert output.data_sufficiency.confidence in ("HIGH", "MEDIUM", "LOW")
+        assert isinstance(output.data_sufficiency.missing_critical_data, list)
+
+    def test_data_sufficiency_partial_has_missing_items(self):
+        output = make_valid_output()
+        assert output.data_sufficiency.level == "PARTIAL"
+        assert len(output.data_sufficiency.missing_critical_data) > 0
+
+    def test_data_sufficiency_sufficient_has_no_missing(self):
+        output = make_valid_output(
+            data_sufficiency=DataSufficiency(
+                level="SUFFICIENT",
+                confidence="HIGH",
+                confidence_reason="All build counts, ASIL classification, and coverage present",
+                missing_critical_data=["None — data is complete"],
+            )
+        )
+        assert output.data_sufficiency.level == "SUFFICIENT"
+
+    def test_input_facts_do_not_contain_assumptions(self):
+        output = make_valid_output()
+        for fact in output.input_analysis.input_facts:
+            assert "assumed" not in fact.lower(), (
+                f"input_facts should not contain assumptions: '{fact}'"
+            )
 
 
 # ── Validator tests ───────────────────────────────────────────────────────────

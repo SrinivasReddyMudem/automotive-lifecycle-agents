@@ -5,7 +5,7 @@ Covers gap analysis, work product RAG status, PA 2.2 checks, assessment readines
 
 from pydantic import BaseModel, Field
 from typing import Literal
-from sdk_agents.core.shared_schema import SelfEvaluationLine
+from sdk_agents.core.shared_schema import SelfEvaluationLine, InputAnalysis, DataSufficiency
 
 
 class WorkProductStatus(BaseModel):
@@ -45,6 +45,26 @@ class AspiceProcessCoachOutput(BaseModel):
     model_config = {"extra": "ignore"}
 
     project_context: str = Field(description="ECU / project name and assessment scope")
+    input_analysis: InputAnalysis = Field(
+        description=(
+            "STEP 0 (before gap analysis): separate what the user directly stated "
+            "(input_facts) from what you inferred or assumed (assumptions). "
+            "Extract only explicitly provided data: project name, capability level target, "
+            "assessment date, work products mentioned, process areas named, "
+            "existing evidence described. "
+            "Never mix assumed values into input_facts."
+        )
+    )
+    data_sufficiency: DataSufficiency = Field(
+        description=(
+            "Rate data completeness for this specific assessment coaching. "
+            "SUFFICIENT = process areas in scope + work product status + timeline all present. "
+            "PARTIAL = process areas known but work product status or timeline missing. "
+            "INSUFFICIENT = only project name with no assessment scope or work product status. "
+            "missing_critical_data: ONLY list inputs that caused N/A in a field or "
+            "forced an assumption that would change the RAG rating or finding type if provided."
+        )
+    )
     target_level: str = Field(description="Capability level target: Level 1 / Level 2 / Level 3")
     weeks_to_assessment: str = Field(description="Weeks remaining to assessment date")
     overall_readiness: Literal["GREEN", "AMBER", "RED"]
