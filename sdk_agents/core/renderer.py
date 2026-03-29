@@ -617,7 +617,6 @@ def render_sw_project_lead(output) -> None:
     with st.expander("Action Plan"):
         st.markdown(f"**Immediate:** {output.immediate_actions}")
         st.markdown(f"**Short-term:** {output.short_term_actions}")
-        st.markdown(f"**Long-term:** {output.long_term_actions}")
     st.caption(f"ASPICE reference: {output.aspice_reference}")
     _render_self_evaluation(output.self_evaluation)
 
