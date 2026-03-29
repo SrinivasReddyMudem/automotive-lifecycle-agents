@@ -180,6 +180,10 @@ BAD:  "< 50 mV" / "Check CAN signal quality" / "Clean signal"
 GOOD: "GND offset < 50 mV" / "Ripple < 200 mV peak-to-peak" / "Dominant level 1.5–3.0 V, recessive 0 V ±0.1 V"
 A bare threshold with no measurement name is too vague — always prefix with the signal or parameter name.
 
+validation_test: the single most definitive test for this cause — one action, one result, one decision.
+GOOD: "Measure GND offset with DMM at ECU GND pin to battery negative, engine at 2000 RPM — if > 200 mV confirmed, if < 50 mV ruled out."
+GOOD: "Probe Vcc AC-coupled with oscilloscope at transceiver pin, engine at 2000 RPM — if ripple > 500 mV confirmed, if < 200 mV ruled out."
+
 ### self_evaluation
 Evaluate ONLY what you wrote in this response. Do not reference measurements you
 did not perform. Base evidence on actual numbers or text from your own tec_math,

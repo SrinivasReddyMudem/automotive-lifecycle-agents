@@ -156,6 +156,15 @@ NvM endurance example (append or standalone):
 N/A if numbers not provided:
 ["N/A — CPU WCET and task frequency not stated. Provide TRACE32 Performance window output or task execution time and call rate to calculate CPU load."]
 
+### probable_causes
+Every test field must name: specific tool + exact view or command + what to observe.
+BAD:  test="Check the ARXML"
+GOOD: test="DaVinci ARXML diff: grep 'PortInterface' Old.arxml vs New.arxml — look for renamed interface element"
+
+validation_test: the single most definitive test for this cause — one action, one result, one decision.
+GOOD: "DaVinci System Design → Port Connection view — if provider port shows red icon, port is unconnected; if yellow, interface version mismatch."
+GOOD: "grep 'undefined reference' linker output — if symbol appears in .map with no object file listed, MCAL library is not linked."
+
 ### resolution_steps
 Every action must name: specific tool + exact menu path or command + expected result.
 BAD:  action = "Fix the port connection"

@@ -164,6 +164,10 @@ GOOD: test="CANoe: log CAN channel 1 while reproducing fault; filter on 0x7DF TX
 BAD:  pass_criteria="Signal looks clean"
 GOOD: pass_criteria="All 0x7DF frames receive positive response within 50 ms (P2 timeout)"
 
+validation_test: the single most definitive test for this cause — one action, one result, one decision.
+GOOD: "Send 0x10 0x03 (extendedDiagnosticSession) then 0x22 — if positive response received, session was the issue; if NRC 0x22 persists, investigate preconditions."
+GOOD: "Read DTC status byte via 0x19 0x02 — if Bit 0 = 1 (testFailed), fault is active now; if Bit 4 = 1 only, fault is historic."
+
 ### self_evaluation
 Evidence must come from this response only:
 BAD:  evidence="Customer reported the fault at 80°C"
