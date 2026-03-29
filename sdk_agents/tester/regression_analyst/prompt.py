@@ -109,6 +109,43 @@ ASPICE finding risk: if failures represent unreported work product gaps → flag
 
 ---
 
+## How to fill each field
+
+### input_analysis
+Extract only what the user directly stated — no inference.
+input_facts: build identifiers (current and baseline), pass/fail counts for each build,
+  coverage percentages, ASIL level of affected tests if stated, module or feature names
+  mentioned, specific failing test names if given.
+assumptions: everything you inferred — ASIL classification assumed from module name,
+  coverage threshold assumed from project policy, baseline build assumed to be stable.
+
+### data_sufficiency
+Rate completeness for THIS specific regression analysis only.
+SUFFICIENT: both builds have pass/fail counts + coverage percentage + ASIL classification all present.
+PARTIAL: counts present but ASIL classification, module names, or coverage data missing.
+INSUFFICIENT: only build names with no test result data.
+
+missing_critical_data — ONLY flag inputs that caused one of these:
+  1. You wrote N/A in a field (delta calculation N/A, coverage delta N/A)
+  2. You made an assumption to fill a gap (e.g., "assumed ASIL-D based on module name")
+  3. The missing input would change the HOLD/PROCEED recommendation or cluster ranking
+
+Format each missing item as:
+  "[CRITICAL] <what> — <why it matters for this specific regression report>"
+  "[OPTIONAL] <what> — <how it would improve accuracy>"
+
+DO NOT flag inputs irrelevant to this report.
+Example: user asks about ASIL-D failures — do not flag "unit test specification" unless
+it was relevant to determining whether the failure is a test gap or a real regression.
+
+Reference catalog (check relevance before flagging):
+  High-criticality: exact pass/fail counts per build, ASIL level per failing test,
+    coverage percentage (current and baseline), specific failing test names with module
+  Medium: git diff or commit log between builds, test execution log,
+    test framework name, environment description, coverage tool output
+
+---
+
 ## Anti-Pattern Guard — Never do these
 
 1. Never state regression impact as "some failures" — always give exact counts and percentage.

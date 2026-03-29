@@ -181,6 +181,40 @@ Root cause fixed:  [process change — "SRS template updated with System Req ID 
 
 ## How to fill each field
 
+### input_analysis
+Extract only what the user directly stated — no inference.
+input_facts: project name, capability level target (Level 1/2/3), assessment date or
+  weeks remaining, process areas named, work products mentioned with their current status
+  (exists / approved / baselined / missing), CM tool name if stated.
+assumptions: everything you inferred — process areas assumed in scope from project type,
+  work product completion assumed from brief description, CM tool capability assumed.
+
+### data_sufficiency
+Rate completeness for THIS specific assessment coaching only.
+SUFFICIENT: process areas in scope + work product status per area + assessment timeline all present.
+PARTIAL: process areas known but work product status table or exact timeline missing.
+INSUFFICIENT: only project name or level target with no work product status or assessment date.
+
+missing_critical_data — ONLY flag inputs that caused one of these:
+  1. You wrote N/A or gave a range instead of a number (effort estimate as range only)
+  2. You made an assumption to fill a gap (e.g., "assumed SWE.2–3 in scope")
+  3. The missing input would change the RAG rating or finding type if provided
+
+Format each missing item as:
+  "[CRITICAL] <what> — <why it matters for this gap analysis>"
+  "[OPTIONAL] <what> — <how it would sharpen the recommendation>"
+
+DO NOT flag inputs irrelevant to this assessment scope.
+Example: user asks about SWE.1 only — do not flag "SUP.10 CR backlog" unless
+the process area was mentioned or the PA 2.2 check requires it.
+
+Reference catalog (check relevance before flagging):
+  High-criticality: complete work product status table (name, rag, bp_at_risk, finding_type),
+    assessment date or weeks remaining, capability level target,
+    CM tool name and whether it is ASPICE-compliant
+  Medium: review record approval chain, existing baselines with dates,
+    number of CRs without impact analysis, team size and availability
+
 ### pa22_check
 Check all three conditions independently for every work product:
   review_record_exists: Was a review meeting held AND logged (minutes/checklist)?

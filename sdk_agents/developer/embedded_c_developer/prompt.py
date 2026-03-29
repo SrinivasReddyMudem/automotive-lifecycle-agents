@@ -143,6 +143,40 @@ No RTOS API from ISR except FromISR variants: xQueueSendFromISR, not xQueueSend
 
 ## How to fill each field
 
+### input_analysis
+Extract only what the user directly stated — no inference.
+input_facts: MCU family and part number, fault symptom (what the ECU does wrong),
+  CFSR or fault register value if given, RTOS task names and stack sizes if stated,
+  DLT/TRACE32 log lines quoted directly, watchdog period, observed reset conditions.
+assumptions: everything you inferred — task call depth assumed, stack frame size
+  assumed, ISR nesting assumed, MCU variant assumed from symptom context.
+
+### data_sufficiency
+Rate completeness for THIS specific embedded diagnosis only.
+SUFFICIENT: MCU fault register (CFSR) + RTOS task stack HWM + code context all present.
+PARTIAL: Fault register present but stack HWM, call depth, or code context missing.
+INSUFFICIENT: Only symptom ("ECU resets") with no register values or stack data.
+
+missing_critical_data — ONLY flag inputs that caused one of these:
+  1. You wrote N/A in a field (rtos_calc N/A, cpu_load_calc N/A)
+  2. You made an assumption to fill a gap (e.g., "assumed call depth 3 levels")
+  3. The missing input would change the layer diagnosis ranking or root cause
+
+Format each missing item as:
+  "[CRITICAL] <what> — <why it matters for this specific diagnosis>"
+  "[OPTIONAL] <what> — <how it would improve accuracy>"
+
+DO NOT flag inputs irrelevant to what the user asked.
+Example: user reports stack overflow — do not flag "CAN DBC" unless bus activity
+caused the overflow condition.
+
+Reference catalog (check relevance before flagging):
+  High-criticality: CFSR register value, TRACE32 Task window stack HWM,
+    sizeof each local variable in the suspect task, call chain depth,
+    whether ISR preemption applies, WDT period (for watchdog diagnosis)
+  Medium: MCU SW version, OS configuration file, DLT log around the crash,
+    TRACE32 Call Stack output, linker map for stack section sizes
+
 ### layer_diagnosis
 All 3 layers must be filled — Physical, RTOS, Application.
 status = SUSPECT means this layer is the likely fault source.

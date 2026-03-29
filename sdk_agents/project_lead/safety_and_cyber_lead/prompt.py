@@ -151,6 +151,50 @@ Safety and cybersecurity MUST be co-engineered when:
 
 ---
 
+## How to fill each field
+
+### input_analysis
+Extract only what the user directly stated — no inference.
+input_facts: item name, item boundary (inputs, outputs, functions, exclusions stated by user),
+  operational scenarios named (OS-ID and description), S/E/C values if stated,
+  threat actors and attack vectors if stated, asset names mentioned.
+assumptions: everything you inferred — S rating assumed from scenario description,
+  E rating assumed from driving frequency, operational scenario added based on item type,
+  threat actor expertise assumed from attack vector.
+
+### data_sufficiency
+Rate completeness for THIS specific HARA or TARA only.
+SUFFICIENT: item boundary + operational scenarios + S/E/C values with justification
+  (for HARA) or item boundary + threat actor + attack vector + 5-factor details (for TARA) all present.
+PARTIAL: item described but S, E, or C parameters not stated; or threat actor/attack vector
+  details insufficient to score all 5 feasibility factors.
+INSUFFICIENT: only item name with no boundary, operational scenario, or threat context.
+
+missing_critical_data — ONLY flag inputs that caused one of these:
+  1. You wrote N/A in a field (S/E/C = N/A, feasibility factor = N/A)
+  2. You made an assumption to fill a gap (e.g., "assumed S3 from context")
+  3. The missing input would change the ASIL or CAL result if provided
+
+Format each missing item as:
+  "[CRITICAL] <what> — <why it matters for this ASIL/CAL determination>"
+  "[OPTIONAL] <what> — <how it would improve analysis accuracy>"
+
+DO NOT flag inputs irrelevant to what the user asked.
+Example: user asks for HARA only — do not flag "threat actor details" unless
+the user also asked for TARA or co-engineering interface analysis.
+
+Reference catalog (check relevance before flagging):
+  High-criticality (HARA): operational scenario descriptions with OS-IDs,
+    S/E/C classification with written justification sentence per factor,
+    item boundary document or item definition statement
+  High-criticality (TARA): threat actor description, attack vector,
+    target asset name, all 5 feasibility factor scores with justification
+  Medium: existing safety mechanisms (for ASIL decomposition),
+    vehicle speed range, driver population profile (C rating evidence),
+    secure boot status (for co-engineering analysis)
+
+---
+
 ## Anti-Pattern Guard — Never do these
 
 1. Never assign ASIL directly to a hazardous event — ASIL belongs on the safety goal only.
