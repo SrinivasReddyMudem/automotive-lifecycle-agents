@@ -398,29 +398,59 @@ if page == "About":
 
     with col1:
         st.markdown("""
-After years working across ECU development, integration, testing, and project roles,
-I repeatedly saw the same pattern — **complex issues taking days to diagnose** when a
-structured, experience-driven approach could narrow them down in under an hour.
+> Most AI tools respond to engineering questions with broad suggestions. This project
+> demonstrates what changes when an LLM is constrained by domain schemas, engineering
+> guardrails, and structured validation — producing outputs that are **precise, verifiable,
+> and ready for real engineering use**.
 
-This gap has real impact: **unstable baselines during integration**, repeated test failures
-and re-validation cycles, **rework during safety reviews**, and late-stage change requests
-that should have been identified earlier in the lifecycle.
+---
+**Project Overview**
 
-Most AI tools do not address this well — they generate broad suggestions without
-classification, calculations, or alignment to engineering standards. In automotive systems,
-where **safety, timing, and traceability** matter, broad suggestions are not sufficient.
+After years across ECU development, integration, testing, and project roles, the same
+pattern kept appearing — **complex issues taking days to diagnose** when a structured,
+experience-driven approach could narrow them down in under an hour.
 
-This project demonstrates how **domain knowledge, structured schemas, and engineering
-guardrails** can constrain an LLM to produce outputs that are precise, traceable, and
-actionable — reflecting how an experienced automotive engineer reasons through a problem,
-and robust enough to stand up to real engineering scrutiny.
+This gap has real impact:
 
-The goal is not to replace engineering judgment, but to make **expert-level reasoning
-accessible, consistent, and scalable** across the development lifecycle.
+- Unstable baselines during integration
+- Repeated test failures and re-validation cycles
+- Rework during safety reviews
+- Late-stage change requests that should have been caught earlier
+
+This project constrains an LLM using **domain knowledge, structured schemas, and engineering
+guardrails** — so outputs reflect how an experienced automotive engineer reasons, not how
+a generic assistant guesses.
+
+**Goal:** Make expert-level reasoning accessible, consistent, and scalable across the
+development lifecycle.
+
+---
+**Gap in Existing AI Tools**
+
+- Generate broad suggestions — no OSI/AUTOSAR classification
+- No calculations shown (TEC math, ASIL determination, risk scoring)
+- No traceability — conclusions without reasoning chains
+- No standards alignment — ISO 26262, ASPICE, MISRA, UDS ignored
+- Cannot distinguish stated facts from inferred assumptions
+
+---
+**Core Approach**
+
+**Input Analysis** — every response separates what the engineer stated from what was
+inferred or assumed. Nothing is silently assumed.
+
+**Data Sufficiency** — before diagnosis, data completeness is rated: `SUFFICIENT` /
+`PARTIAL` / `INSUFFICIENT`. Missing critical inputs are listed explicitly so the engineer
+knows exactly what would sharpen the result.
+
+**Structured Validation** — every output passes a multi-layer domain check before being
+returned. Risk scores verified against P × I, feasibility factors reconciled against
+system totals, schedule impacts numerically quantified. Any response that fails is
+**rejected and retried**.
 """)
 
         st.markdown("---")
-        st.markdown("**Structured reasoning vs generic response — same question, different output**")
+        st.markdown("**Example — Structured vs Generic Output**")
         st.caption('*"CAN node goes bus-off after 3 minutes, only when engine running"*')
 
         ex_col1, ex_col2 = st.columns(2)
@@ -499,35 +529,30 @@ Contradictions:
 ---
 **What engineers get**
 
-- **Classified before diagnosed** — every problem is first placed in context (OSI layer,
-  AUTOSAR layer, ASPICE process area, or safety integrity level), ensuring the right
-  domain approach from the start
+- **Classified before diagnosed** — every problem placed in context (OSI layer, AUTOSAR
+  layer, ASPICE process area, or ASIL level) before analysis begins
 - **Transparent calculations** — TEC accumulation, ASIL determination, risk scoring,
-  and boundary conditions are shown step-by-step, not assumed
+  and boundary conditions shown step-by-step
 - **Concrete, testable outputs** — tool selection, exact probe points, and pass/fail
-  thresholds enable immediate validation, not guesswork
-- **Standards-aligned reasoning** — outputs follow ISO 26262, ASPICE, MISRA C:2012,
-  AUTOSAR, ISO 21434, and UDS, ensuring consistency with real automotive engineering practice
+  thresholds for immediate validation
+- **Standards-aligned reasoning** — outputs consistent with ISO 26262, ASPICE, MISRA C:2012,
+  AUTOSAR, ISO 21434, and UDS
 
 ---
 **How output quality is ensured**
 
-Each response is structured to reflect how an experienced automotive engineer approaches
-a problem — **starting from the available facts**, stating assumptions where data is
-missing, and **narrowing down causes based on evidence**.
+Each response follows a **structured engineering reasoning path** — starting from stated
+facts, declaring assumptions, and narrowing causes based on evidence.
 
-The output is not just a conclusion, but **a clear reasoning path** — what was considered,
-what was ruled out, and why a specific cause is more likely.
+The output is not just a conclusion — it is **a clear reasoning path**: what was considered,
+what was ruled out, and why a specific cause ranks higher than others.
 
 Behind every output is a **multi-layer validation framework** enforcing domain-specific
 rules — including risk scores automatically checked against P × I, feasibility factors
 reconciling against system-level totals, and schedule impacts numerically quantified.
 Any response that fails these checks is **rejected and retried** before the engineer
-sees it, ensuring output that is internally consistent, traceable, and ready for real
-engineering use.
-
-The result is output that is **consistent, traceable, and trustworthy** — supporting
-real engineering decisions rather than generic suggestions.
+sees it. This validation ensures **internal consistency and prevents invalid engineering
+conclusions**.
 
 ---
 **Standards**
@@ -538,6 +563,16 @@ ISO 26262 · ASPICE v3.1 · MISRA C:2012 · AUTOSAR Classic · ISO 21434 · ISO 
 
 *Automotive Ethernet (IEEE 802.3bw) and LIN are recognised, with dedicated skill depth
 under active development.*
+
+---
+**Who this is relevant for**
+
+- SW Integration Engineers — CAN/UDS fault triage, baseline stability
+- Safety Engineers — HARA, ASIL determination, safety review support
+- Embedded Developers — MISRA compliance, AUTOSAR SWC design
+- Test Engineers — SIL/HIL planning, unit test design, MC/DC coverage
+- Project Leads — ASPICE readiness, risk tracking, milestone assessment
+- Field Application Engineers — field fault triage, DTC analysis
 
 ---
 **What's next**
