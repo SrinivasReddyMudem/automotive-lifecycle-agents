@@ -433,34 +433,67 @@ accessible, consistent, and scalable** across the development lifecycle.
  nodes..."''', language="text")
         with ex_col2:
             st.caption("This agent")
-            st.code("""OSI Layer:     L1 Physical
-AUTOSAR Layer: MCAL (CanDrv)
-Tool:          Oscilloscope
+            st.code("""Protocol:   CAN | HIGH confidence
+Data:       PARTIAL — oscilloscope trace required
+            to confirm ripple vs GND offset
 
-TEC (Transmit Error Counter):
+Facts:      bus-off after 3 min, engine-running dependency
+
+Assumptions:
+            ~1 msg/s TX rate (not provided)
+            single node affected (not confirmed)
+
+Basis:
+  bus-off after 3 min
+  → TEC accumulation, intermittent errors
+  only when engine running
+  → engine-coupled noise source
+
+OSI Layer:     L1 Physical
+AUTOSAR Layer: MCAL (CanDrv)
+
+Tool:
+  Oscilloscope
+  - Diff probe on CAN_H/CAN_L (signal integrity)
+  - Single-ended probe on Vcc (ripple check)
+
+TEC Math:
   Net climb = 256 / 180s
               = 1.41 TEC/s
   Bus-off: ~181s — 3 min ✓
-  → consistent with reported
-    3-minute onset
+
+Ruled Out:
+  Software issue — engine-dependent symptom
+                   contradicts SW fault
+  Bus overload   — does not match gradual
+                   TEC-driven failure pattern
 
 Causes:
-  [HIGH]   Alternator ripple
+  [HIGH]   Alternator ripple (most likely)
+           Engine-running maps to supply noise
            Vcc AC-coupled
-           Pass < 200mV
-           Fail > 500mV
+           Pass < 200mV / Fail > 500mV
 
   [MEDIUM] GND offset
-           ECU GND vs bat-
-           Pass < 50mV
-           Fail > 200mV
+           Condition-dependent noise possible
+           but less consistent
+           Pass < 50mV / Fail > 200mV
 
 Decision Flow:
   Vcc + GND OK?
   +-- No  --> Fix supply
   +-- Yes --> Error frames?
-      +-- No  --> Heat gun
-      +-- Yes --> L1/L7""", language="text")
+      +-- No  --> Check thermal drift
+                  (heat gun on transceiver)
+      +-- Yes --> L1/L7
+
+Next Action:
+  Measure Vcc ripple at transceiver pin
+  with engine at 2000 RPM
+
+Contradictions:
+  None — inputs consistent with
+  TEC-driven bus-off behaviour""", language="text")
 
         st.markdown("""
 ---
