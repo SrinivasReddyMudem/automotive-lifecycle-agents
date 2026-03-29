@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from typing import Literal
 from sdk_agents.core.shared_schema import (
     ProbableCause, SelfEvaluationLine, DebugStep, ProtocolDetection,
+    InputAnalysis, DataSufficiency,
 )
 
 
@@ -51,11 +52,30 @@ class FieldDebugFaeOutput(BaseModel):
             "what in the complaint or DTC revealed it, and your confidence level."
         )
     )
+    input_analysis: InputAnalysis = Field(
+        description=(
+            "STEP 1: separate what the user directly stated (input_facts) from what you "
+            "inferred or assumed (assumptions). Extract only explicitly provided data: "
+            "customer complaint, DTC codes, NRC codes, status byte, freeze frame values, "
+            "UDS session logs, vehicle state. Never mix assumed values into input_facts."
+        )
+    )
+    data_sufficiency: DataSufficiency = Field(
+        description=(
+            "STEP 2: rate data completeness for this specific diagnosis. "
+            "SUFFICIENT = DTC + status byte + freeze frame + UDS log all present. "
+            "PARTIAL = some key data missing but direction is clear. "
+            "INSUFFICIENT = only customer complaint, no DTC or trace data. "
+            "missing_critical_data: ONLY list inputs that were needed for this specific "
+            "diagnosis and not provided — evidenced by an N/A in a field or an assumption "
+            "you had to make. Do not flag inputs irrelevant to this question."
+        )
+    )
     symptom_translation: SymptomTranslation = Field(
-        description="STEP 1: translate customer complaint to engineering layer before any diagnosis"
+        description="STEP 3: translate customer complaint to engineering layer before any diagnosis"
     )
     fault_details: FaultDetails = Field(
-        description="STEP 1: DTC code, status byte decoded bit-by-bit, safety relevance"
+        description="STEP 3: DTC code, status byte decoded bit-by-bit, safety relevance"
     )
     uds_session_analysis: UdsSessionAnalysis = Field(
         description="UDS NRC analysis and session sequence reconstruction"
