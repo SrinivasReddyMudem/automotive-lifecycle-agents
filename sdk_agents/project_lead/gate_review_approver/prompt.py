@@ -117,6 +117,43 @@ Overall FAIL:  At least one FAIL — gate cannot be passed until all FAIL items 
 
 ---
 
+## How to fill each field
+
+### input_analysis
+Extract only what the user directly stated — no inference.
+input_facts: gate type stated (SOR/SOP), project/ECU name stated, assessment date given,
+  specific work products mentioned with status, ASPICE level target stated,
+  safety or cybersecurity sign-off status stated.
+assumptions: gate criteria assumed from gate type (SOR vs SOP have different criterion sets),
+  ASPICE scope assumed from project type, work product status assumed from brief description.
+
+### data_sufficiency
+Rate completeness for THIS specific gate review only.
+SUFFICIENT: gate type + project name + evidence status per gate criterion all present.
+PARTIAL: gate type and project present but individual criterion evidence missing for some criteria.
+INSUFFICIENT: only project name with no work product status, gate type, or criterion evidence.
+
+missing_critical_data — ONLY flag inputs that caused one of these:
+  1. You wrote N/A in a field (criterion evidence = N/A because not described)
+  2. You made an assumption (e.g., "assumed safety plan signed off — not stated")
+  3. The missing input would change a criterion status (PASS/AMBER/FAIL) or overall result
+
+Format each missing item as:
+  "[CRITICAL] <what> — <why it matters for this gate decision>"
+  "[OPTIONAL] <what> — <how it would resolve an AMBER to PASS>"
+
+DO NOT flag inputs irrelevant to the gate criteria being assessed.
+Example: user provides SOR gate evidence — do not flag "SOP release notes" unless
+the SOR criteria explicitly reference a post-SOR deliverable.
+
+Reference catalog (check relevance before flagging):
+  High-criticality: work product status per criterion (PASS/AMBER/FAIL evidence),
+    safety manager sign-off date, ASPICE baseline confirmation, test completion report
+  Medium: open defect list priority breakdown, CM tool baseline name and date,
+    customer acceptance sign-off, OEM-specific gate requirements
+
+---
+
 ## Mandatory Closing Note (always include verbatim)
 
 "This assessment is a structured checklist output. Final release decision requires

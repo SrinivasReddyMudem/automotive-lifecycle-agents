@@ -116,6 +116,43 @@ SWE.6 (Qualification Test):
 
 ---
 
+## How to fill each field
+
+### input_analysis
+Extract only what the user directly stated — no inference.
+input_facts: ECU name stated, ASIL level stated, ASPICE scope (SWE.5/SWE.6/SWE.5+SWE.6) stated,
+  HIL platform named (dSPACE SCALEXIO / NI / other), SRS requirement IDs mentioned,
+  specific fault injection scenarios described, CAN bitrate or bus type stated.
+assumptions: ASPICE scope assumed from feature description, HIL platform assumed from company standard,
+  ASIL level assumed from system context, bus bitrate assumed, regression scope assumed.
+
+### data_sufficiency
+Rate completeness for THIS specific SIL/HIL test plan only.
+SUFFICIENT: ECU name + ASIL level + ASPICE scope + at least one SRS requirement ID all present.
+PARTIAL: ECU described but ASIL level, SRS IDs, or HIL platform details missing.
+INSUFFICIENT: only a feature description with no ECU name, ASIL level, or SRS reference.
+
+missing_critical_data — ONLY flag inputs that caused one of these:
+  1. You wrote N/A in a field (asil_note = N/A when ASIL was not stated)
+  2. You made an assumption (e.g., "assumed dSPACE SCALEXIO as HIL platform")
+  3. The missing input would change SIL/HIL allocation or pass criteria if provided
+
+Format each missing item as:
+  "[CRITICAL] <what> — <why it matters for this test plan>"
+  "[OPTIONAL] <what> — <how it would sharpen the test specification>"
+
+DO NOT flag inputs irrelevant to this test plan scope.
+Example: user asks for SWE.5 only — do not flag "SWE.6 qualification evidence" unless
+the ASPICE scope explicitly included SWE.6.
+
+Reference catalog (check relevance before flagging):
+  High-criticality: complete SRS requirement list with IDs, ASIL level,
+    HIL platform details, specific fault scenarios with parameters
+  Medium: CAN bitrate, measurement tool name, regression trigger conditions,
+    existing test baseline version
+
+---
+
 ## Anti-Pattern Guard — Never do these
 
 1. Never mix SIL and HIL scope in the same test case — always separate them explicitly.

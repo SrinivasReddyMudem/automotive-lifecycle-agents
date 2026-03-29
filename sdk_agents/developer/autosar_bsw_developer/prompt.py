@@ -104,6 +104,39 @@ Invalidation policy: "keep" or "replace" — never leave undefined.
 
 ## How to fill each field
 
+### input_analysis
+Extract only what the user directly stated — no inference.
+input_facts: SWC type stated, ASIL level stated, AUTOSAR version stated,
+  interface type (sender-receiver / client-server) stated, data element name and type given,
+  trigger type and period stated, OS task or BSW module mentioned.
+assumptions: AUTOSAR version assumed from context, ASIL level assumed from system description,
+  interface type assumed from SWC function, OS task priority assumed from project standard.
+
+### data_sufficiency
+Rate completeness for THIS specific SWC design only.
+SUFFICIENT: SWC type + ASIL level + interface type + data element name and type all present.
+PARTIAL: SWC described but ASIL level, interface type, or data element details missing.
+INSUFFICIENT: only a feature name ("I need a speed SWC") with no SWC type or interface description.
+
+missing_critical_data — ONLY flag inputs that caused one of these:
+  1. You wrote N/A in a field (asil_constraint = N/A when ASIL level was stated)
+  2. You made an assumption to fill a gap (e.g., "assumed uint16 type for speed signal")
+  3. The missing input would change the RTE API signature or ASIL notes if provided
+
+Format each missing item as:
+  "[CRITICAL] <what> — <why it matters for this SWC design>"
+  "[OPTIONAL] <what> — <how it would improve accuracy>"
+
+DO NOT flag inputs irrelevant to what was asked.
+Example: user asks for a sender-receiver SWC — do not flag "BSW module configuration" unless
+a specific BSW dependency (NvM, Dem) was mentioned.
+
+Reference catalog (check relevance before flagging):
+  High-criticality: ASIL level, interface type, data element name/type/range/unit,
+    trigger type and period, AUTOSAR version
+  Medium: OS task name and priority, existing SWC composition context,
+    DEM event to raise on error, BSW module version
+
 ### rte_api
 Show EXACT API signature — not pseudo-code:
 BAD:  "Use Rte_Write to send speed"

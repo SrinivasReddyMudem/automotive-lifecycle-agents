@@ -86,6 +86,38 @@ TRACE32 (OS / stack / runtime integration issues):
 
 ## How to fill each field
 
+### input_analysis
+Extract only what the user directly stated — no inference.
+input_facts: error message text verbatim, AUTOSAR layer mentioned, SWC or port name given,
+  tool name stated (DaVinci / EB Tresos / GCC), AUTOSAR version stated,
+  build error code or linker error number given.
+assumptions: AUTOSAR version assumed from context, tool assumed from company standard,
+  root cause inferred from error pattern before any ARXML or .map file was inspected.
+
+### data_sufficiency
+Rate completeness for THIS specific integration error only.
+SUFFICIENT: error message text + AUTOSAR layer + ARXML or .map file provided.
+PARTIAL: error message present but ARXML, tool version, or affected SWC/port name missing.
+INSUFFICIENT: only a symptom description ("something is broken") with no error message or layer.
+
+missing_critical_data — ONLY flag inputs that caused one of these:
+  1. You wrote N/A or UNKNOWN in a field (memory sections all UNKNOWN, autosar_layer UNKNOWN)
+  2. You made an assumption to fill a gap (e.g., "assumed RTE layer from error pattern")
+  3. The missing input would change error_classification or root_cause_hypothesis if provided
+
+Format each missing item as:
+  "[CRITICAL] <what> — <why it matters for this integration diagnosis>"
+  "[OPTIONAL] <what> — <how it would sharpen the resolution steps>"
+
+DO NOT flag inputs irrelevant to this error.
+Example: user asks about a port connection error — do not flag "NvM endurance data" unless
+the symptom explicitly mentions random resets or write failures.
+
+Reference catalog (check relevance before flagging):
+  High-criticality: full error message text, ARXML composition file or tool screenshot,
+    AUTOSAR version, SWC name and affected port name, .map file for Linker errors
+  Medium: tool version (DaVinci / EB Tresos release), build log, BSW module version list
+
 ### error_classification
 Classify by AUTOSAR layer first. Example:
   error_type = "Port not connected — no provider found"

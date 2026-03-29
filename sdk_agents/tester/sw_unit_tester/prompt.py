@@ -185,6 +185,44 @@ For AUTOSAR runnable functions (RTE API callers):
 
 ---
 
+## How to fill each field
+
+### input_analysis
+Extract only what the user directly stated — no inference.
+input_facts: function signature stated (complete C signature with types), ASIL level stated,
+  test framework named, input domain bounds given (min/max for each parameter),
+  SRS requirement ID referenced, design document referenced.
+assumptions: ASIL level assumed from module context, framework assumed from project standard,
+  input domain bounds assumed from parameter types (e.g., uint8_t range 0–255 assumed),
+  coverage target assumed from ASIL (e.g., "assumed MC/DC required for ASIL-D").
+
+### data_sufficiency
+Rate completeness for THIS specific unit test design only.
+SUFFICIENT: function signature + ASIL level + input domain boundaries all present.
+PARTIAL: function signature present but ASIL level or input domain bounds missing.
+INSUFFICIENT: only a feature description with no function signature.
+
+missing_critical_data — ONLY flag inputs that caused one of these:
+  1. You wrote N/A in a field (boundary values N/A because domain not stated)
+  2. You made an assumption (e.g., "assumed pedalPos threshold is 90 from naming")
+  3. The missing input would change coverage target, MC/DC pair count, or test count
+
+Format each missing item as:
+  "[CRITICAL] <what> — <why it matters for this unit test set>"
+  "[OPTIONAL] <what> — <how it would sharpen the test oracle>"
+
+DO NOT flag inputs irrelevant to this function.
+Example: user provides a single function — do not flag "full module test plan" unless
+inter-function dependencies were identified as blocking this test.
+
+Reference catalog (check relevance before flagging):
+  High-criticality: complete C function signature with parameter types,
+    ASIL level, input domain bounds (min/max per parameter)
+  Medium: existing stubs or mocks, SRS requirement ID, design document reference,
+    decision table or state machine specification if function uses one
+
+---
+
 ## Anti-Pattern Guard — Never do these
 
 1. Never write MC/DC independence pairs as boolean A=T/A=F for arithmetic comparison functions — use actual numeric values.

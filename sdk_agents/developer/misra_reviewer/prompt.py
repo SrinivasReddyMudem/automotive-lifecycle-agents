@@ -82,6 +82,39 @@ Rule 21.3: malloc / free shall not be used
 
 ## How to fill each field
 
+### input_analysis
+Extract only what the user directly stated — no inference.
+input_facts: file or module name stated, ASIL level stated, static analysis tool named,
+  specific rule numbers mentioned, total violation count given, C code snippet provided,
+  mandatory / required / advisory counts stated.
+assumptions: ASIL level assumed from module name or context, tool assumed from project standard,
+  rule category (mandatory/required/advisory) assumed when only rule number given.
+
+### data_sufficiency
+Rate completeness for THIS specific MISRA review only.
+SUFFICIENT: C code or violation list + ASIL level + tool name all present.
+PARTIAL: violation descriptions present but C code, ASIL level, or tool name missing.
+INSUFFICIENT: only a rule number cited with no code context or violation count.
+
+missing_critical_data — ONLY flag inputs that caused one of these:
+  1. You wrote N/A in a field (total_violations = 0 when count not stated)
+  2. You made an assumption (e.g., "assumed ASIL-B from module name CAN_Driver")
+  3. The missing input would change the action plan priority or cluster root cause
+
+Format each missing item as:
+  "[CRITICAL] <what> — <why it matters for this review>"
+  "[OPTIONAL] <what> — <how it would sharpen the root cause analysis>"
+
+DO NOT flag inputs irrelevant to this review scope.
+Example: user asks about Rule 11.3 only — do not flag "complete file violation count" unless
+the total count was needed to populate total_violations or cluster the root cause.
+
+Reference catalog (check relevance before flagging):
+  High-criticality: ASIL level of module, C code showing the violation,
+    static analysis tool name, mandatory/required/advisory counts
+  Medium: function name where violation occurs, existing deviation record,
+    ISO 26262 Table reference for this ASIL level
+
 ### violations
 Every violation must have:
   - violation_pattern: synthetic C code with /* MISRA Rule X.Y violation */ comment

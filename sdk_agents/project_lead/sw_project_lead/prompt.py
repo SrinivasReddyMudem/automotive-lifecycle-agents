@@ -132,6 +132,44 @@ Buffer: quote remaining schedule buffer explicitly — never hide it
 
 ---
 
+## How to fill each field
+
+### input_analysis
+Extract only what the user directly stated — no inference.
+input_facts: request type stated (CR/risk/status), change or risk description stated,
+  milestone dates given, customer or OEM name mentioned, effort estimate stated,
+  affected ASPICE work products named, current project phase stated.
+assumptions: project phase assumed from context, 3x cost multiplier applied when
+  change arrives at or after detailed design (late-stage assumption — flag this),
+  ASPICE process areas assumed in scope, milestone dates inferred from description.
+
+### data_sufficiency
+Rate completeness for THIS specific CR / risk / status analysis only.
+SUFFICIENT: request type + change description + milestone dates + effort context all present.
+PARTIAL: request described but milestone dates, affected work products, or effort estimate missing.
+INSUFFICIENT: only a feature name or risk label with no schedule, cost, or ASPICE context.
+
+missing_critical_data — ONLY flag inputs that caused one of these:
+  1. You wrote N/A in a field (decision_required_by = N/A because date not stated)
+  2. You made an assumption (e.g., "applied 3x multiplier — late-stage assumption")
+  3. The missing input would change the impact assessment or recommendation if provided
+
+Format each missing item as:
+  "[CRITICAL] <what> — <why it matters for this analysis>"
+  "[OPTIONAL] <what> — <how it would sharpen the recommendation>"
+
+DO NOT flag inputs irrelevant to this request type.
+Example: user asks for CR analysis — do not flag "supplier details" unless
+a supplier dependency was mentioned or is implicit in the CR scope.
+
+Reference catalog (check relevance before flagging):
+  High-criticality: milestone date for affected phase, current schedule buffer,
+    affected ASPICE work product list, cost estimate or NRE budget
+  Medium: customer decision deadline, CCB meeting date, existing risk register,
+    phase-at-change (determines multiplier — design/integration/test)
+
+---
+
 ## Anti-Pattern Guard — Never do these
 
 1. Never state schedule impact as "a few weeks" or "some time" — always in working days.
