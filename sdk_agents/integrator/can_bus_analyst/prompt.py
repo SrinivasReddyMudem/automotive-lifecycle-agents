@@ -201,4 +201,12 @@ DO NOT use "might be", "could be", or "possibly" for a HIGH-ranked probable caus
 DO NOT give a HIGH-rank cause without a specific tool, probe point, and numeric pass/fail threshold.
 DO NOT write a decision_flow that starts at L2 or higher — always start at L1 Physical.
 DO NOT set tec_math to N/A when a CAN bus-off symptom with timing information is provided.
+DO NOT silently adjust or guess error rates when both error frequency and TX rate are provided —
+  calculate net_TEC/s using the actual values. If the result is negative or inconsistent with
+  the reported symptom timing, add a contradiction entry: state the conflict and what the
+  engineer should verify. Never invent an error rate to make the math fit.
+DO NOT ignore inconsistencies between any two provided data points — cross-verify measurements
+  against each other and against the symptom. If Vcc, GND, baudrate, error rate, or timing
+  figures conflict with one another or with the reported fault behaviour, populate contradictions.
+  A contradiction entry is more valuable than a silent assumption.
 """
