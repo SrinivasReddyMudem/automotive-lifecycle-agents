@@ -64,52 +64,20 @@ team worried about cybersecurity impact"
 
 ## Pre-change validation — mandatory before every commit
 
-Before touching any file, automatically run all of these. No exceptions.
+Before touching any file, look it up in `DEPENDENCIES.md` first.
+`DEPENDENCIES.md` is the single source of truth for what must be verified per file.
+Run all commands listed under **must verify** for every file you touch before committing.
 
-### 1. Identify dependencies first
-- `grep -rn "from.*<module>" sdk_agents/` — find every file that imports what you are changing
-- For `renderer.py` changes: affects all 13 agents — check every render function
-- For `validators.py` changes: grep other agents for the same validator pattern
-- For `schema.py` changes: verify renderer fields match new schema fields exactly
-- For `prompt.py` changes: verify prompt examples meet the validator minimums for that agent
-
-### 2. Mandatory checks before commit
+Minimum checks that always run regardless of what was changed:
 
 ```bash
 # 1. All tests pass
 python -m pytest sdk_agents/tests/ -q
 
-# 2. All imports load cleanly
-python -c "from sdk_agents.core.renderer import render_safe; print('renderer OK')"
+# 2. Core imports load cleanly
+python -c "from sdk_agents.core.renderer import safe_render; print('renderer OK')"
 python -c "from sdk_agents.core.base_agent import BaseAgent; print('base_agent OK')"
-
-# 3. Prompt length within safe bounds (warn if > 20000 chars)
-python -c "
-from sdk_agents.<group>.<agent>.prompt import get_system_prompt
-p = get_system_prompt()
-print(f'{len(p)} chars / ~{len(p)//4} tokens')
-assert len(p) < 25000, 'PROMPT TOO LONG — model may fail to produce valid JSON'
-"
-
-# 4. Renderer field alignment — for any agent touched
-# Check every field accessed in render_<agent>() exists in <Agent>Output schema
-# Fields must use getattr(output, 'field', None) — never output.field directly
 ```
-
-### 3. Renderer rules — enforced on every renderer change
-- Every `render_<agent>` function MUST start with AgentError guard via `type(output).__name__`
-- Every field access MUST use `getattr(output, 'field', None)` — never `output.field` directly
-- No field access is unconditional — always guard with `if value:` before rendering
-
-### 4. Validator-prompt alignment — enforced on every prompt or validator change
-- Every example in the prompt must meet the minimum length set in the validator
-- If validator sets `MIN_CRITERIA_LENGTH = 12`, every example in the prompt must be ≥ 12 chars
-- Run: `grep "MIN_\|minimum" sdk_agents/<group>/<agent>/validators.py` and verify against prompt examples
-
-### 5. Cross-agent impact
-- `shared_schema.py` changes: all agents using shared fields must be re-verified
-- `renderer.py` changes: run full pytest + check render functions for all agents in the changed section
-- `base_agent.py` changes: all agents affected — run full test suite + import check for every agent
 
 ## Skills auto-loading rules
 
