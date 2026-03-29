@@ -58,8 +58,10 @@ class CanBusAnalystOutput(BaseModel):
     )
     expert_diagnosis: str = Field(
         description=(
-            "1-2 sentence immediate read: which OSI layer the fault is at "
-            "and what the symptom pattern rules out"
+            "1-2 sentence immediate read: which OSI layer the symptom pattern indicates "
+            "and what it rules out. Use hypothesis language — 'symptom pattern indicates L1', "
+            "NOT 'the fault is at L1'. Confirmed layer requires a measurement explicitly "
+            "provided in the input, not pattern matching alone."
         )
     )
     diagnosis_basis: list[DiagnosisBasisLine] = Field(
