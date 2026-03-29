@@ -486,10 +486,12 @@ missing, and **narrowing down causes based on evidence**.
 The output is not just a conclusion, but **a clear reasoning path** — what was considered,
 what was ruled out, and why a specific cause is more likely.
 
-Behind the output, a **domain validation pipeline enforces correctness** — risk scores
-must equal P × I, feasibility totals must match factor sums, schedule impacts must be
-stated in working days. Responses that fail validation are rejected and retried before
-the engineer sees them.
+Behind every output is a **multi-layer validation framework** enforcing domain-specific
+rules — including risk scores automatically checked against P × I, feasibility factors
+reconciling against system-level totals, and schedule impacts numerically quantified.
+Any response that fails these checks is **rejected and retried** before the engineer
+sees it, ensuring output that is internally consistent, traceable, and ready for real
+engineering use.
 
 The result is output that is **consistent, traceable, and trustworthy** — supporting
 real engineering decisions rather than generic suggestions.
@@ -507,12 +509,9 @@ under active development.*
 ---
 **What's next**
 
-- Extending **structured input analysis** and data sufficiency handling across all diagnostic agents
-- Supporting **real engineering artifacts** such as CAN traces, logs, and coverage reports
-- Expanding **protocol depth** for LIN and Automotive Ethernet diagnostics
-
-*The goal is to move from structured reasoning on described problems toward direct
-analysis of real engineering data.*
+- Extending **structured input analysis** and data sufficiency to additional diagnostic agents
+- Enhancing **protocol coverage** for LIN and Automotive Ethernet
+- Deepening **reasoning logic** for complex multi-node and multi-layer interactions
 
 ---
 *All examples use synthetic data only.*
