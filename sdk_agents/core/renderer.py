@@ -214,8 +214,36 @@ def render_field_debug_fae(output) -> None:
         conf_icon = {"HIGH": "🟢", "MEDIUM": "🟡", "LOW": "🔴"}.get(proto.confidence, "⚪")
         st.caption(f"Protocol detected: **{proto.protocol}** {conf_icon} {proto.confidence} confidence — {proto.detected_from}")
 
+    # Input analysis + data sufficiency
+    input_analysis = getattr(output, "input_analysis", None)
+    data_suf = getattr(output, "data_sufficiency", None)
+    if input_analysis or data_suf:
+        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+            if data_suf:
+                suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
+                    data_suf.level, "info"
+                )
+                getattr(st, suf_color)(f"**Data: {data_suf.level}**")
+                missing = getattr(data_suf, "missing_critical_data", None)
+                if missing and missing != ["None — data is complete"]:
+                    st.markdown("**Missing critical data:**")
+                    for item in missing:
+                        prefix = "🔴" if item.startswith("[CRITICAL]") else "🟡"
+                        st.caption(f"{prefix} {item}")
+            if input_analysis:
+                facts = getattr(input_analysis, "input_facts", [])
+                assumptions = getattr(input_analysis, "assumptions", [])
+                if facts:
+                    st.markdown("**Observed facts:**")
+                    for f in facts:
+                        st.markdown(f"- {f}")
+                if assumptions:
+                    st.markdown("**Assumptions (not stated by user):**")
+                    for a in assumptions:
+                        st.caption(f"⚠ {a}")
+
     st_tr = output.symptom_translation
-    with st.expander("STEP 1 — Symptom Translation", expanded=True):
+    with st.expander("STEP 3 — Symptom Translation", expanded=True):
         col1, col2 = st.columns(2)
         col1.markdown(f"**Customer complaint:** {st_tr.customer_complaint}")
         col1.markdown(f"**Function affected:** {st_tr.function_affected}")
