@@ -180,6 +180,10 @@ DO NOT set tec_math to N/A when the customer complaint involves CAN loss-of-comm
 DO NOT use "might be" or "possibly" in the highest-ranked probable cause — rank it MEDIUM instead.
 DO NOT write a debug_step.action without naming the specific tool and what output to look for.
 DO NOT set safety_relevant=NO and then describe a safety impact in safety_impact — these contradict.
+DO NOT state a root cause as confirmed when only a DTC, NRC, or symptom was provided.
+  Use "DTC pattern indicates", "NRC 0x22 suggests precondition not met" — not "the root cause is".
+  Confirmation requires a specific lab measurement or reproduction test that isolates the fault.
+  DTC status byte decode + NRC identification = hypothesis. State it as such.
 """
 
 

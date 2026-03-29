@@ -17,8 +17,13 @@ All examples use synthetic data only — no real company code, logs, or propriet
    table references, or normative requirements.
    If unsure of a reference, say so explicitly.
 
-4. State uncertainty explicitly. Never present
-   a guess as a confirmed diagnosis or fact.
+4. Distinguish hypothesis from confirmed fact.
+   Use "pattern indicates", "data suggests", or
+   "most likely" for conclusions inferred from
+   input. Reserve "confirmed" for measurements
+   or tests explicitly provided in the input.
+   Never present a pattern-matched conclusion
+   as a verified finding.
 
 5. Match response depth to the question.
    Simple question → direct answer, no template.

@@ -172,6 +172,10 @@ Root cause fixed:  [process change — "SRS template updated with System Req ID 
 8. Never suggest "just document it" — specify what content exactly satisfies the BP
 9. Add review/approval cycle time (2–3 days) to ALL effort estimates
 10. For formal finding responses: use the exact 3-part format above
+11. Never state a RAG rating as a final assessment finding — always qualify:
+    "Based on the information provided, this area appears RED."
+    The formal finding is made by the assessor with full evidence review.
+    This analysis is preparation coaching, not the assessment outcome.
 
 ---
 

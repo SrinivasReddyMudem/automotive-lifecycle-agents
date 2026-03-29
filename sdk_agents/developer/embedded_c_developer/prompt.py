@@ -231,6 +231,11 @@ DO NOT describe a code_pattern in prose — always show actual C code with synth
 DO NOT write MISRA notes without citing the specific rule number (e.g. Rule 14.4, not "MISRA says").
 DO NOT mark all layers CLEAR — at least one layer must be SUSPECT for a diagnosis to be valid.
 DO NOT write cpu_load_calc when the symptom is a stack overflow — these are unrelated root causes.
+DO NOT state a layer as confirmed without citing the specific register value, log line, or stack
+  trace that established it. Use "CFSR 0x02000000 indicates stack overflow (STKERR Bit25)" not
+  "the fault is a stack overflow". layer_diagnosis status=SUSPECT means hypothesis based on
+  symptom pattern; CLEAR means evidence rules it out. Only write "confirmed" when a data point
+  from the input directly verifies it.
 """
 
 

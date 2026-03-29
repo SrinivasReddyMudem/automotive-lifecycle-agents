@@ -174,6 +174,10 @@ DO NOT set resource_budget_calc to N/A for a Linker error — memory arithmetic 
 DO NOT fabricate linker addresses or section sizes — use N/A if the map file is not provided.
 DO NOT copy the build log error verbatim into analysis — explain what it means at AUTOSAR layer level.
 DO NOT write resolution_steps.action without naming the specific AUTOSAR tool (DaVinci, EB Tresos, etc.).
+DO NOT state root_cause_hypothesis as a confirmed finding — it is a hypothesis until a specific
+  ARXML diff, map file entry, or tool error message in the input validates it.
+  Use "error pattern indicates port mismatch" not "the root cause is port mismatch".
+  Confirmation comes from opening the tool and observing the fault directly.
 """
 
 

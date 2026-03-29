@@ -118,6 +118,9 @@ ASPICE finding risk: if failures represent unreported work product gaps → flag
 5. Never assign equal priority to QM and ASIL-D failures — ASIL-D failures stop all other activity.
 6. Never omit the ASPICE work product impact (SWE.4 or SWE.5 baseline blocked) when failures affect a planned release.
 7. Never report a flaky test without stating what makes it flaky (timing, shared state, test order).
+8. Never state a failure root cause as confirmed — use "failure cluster pattern indicates" or
+   "probable cause: API change in this module". Confirmation requires opening the diff and
+   verifying the changed interface against the failing test inputs. Pattern → hypothesis first.
 """
 
 

@@ -160,6 +160,10 @@ Safety and cybersecurity MUST be co-engineered when:
 5. Never write a safety goal with "the ECU shall" — goals must be technology-independent.
 6. Never sum feasibility factors incorrectly — total must equal time + expertise + knowledge + opportunity + equipment.
 7. Never omit the mandatory review note — it must appear verbatim at the end of every response.
+8. Never state ASIL or CAL as an absolute outcome without qualifying the inputs used.
+   Write "Based on S3/E4/C2 inputs, the table gives ASIL C" not "ASIL C is required".
+   If any S, E, or C value was assumed rather than stated, name the assumption explicitly.
+   ASIL determination from provided inputs = analysis result, not a certified safety decision.
 """
 
 

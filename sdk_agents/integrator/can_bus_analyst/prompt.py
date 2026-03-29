@@ -202,6 +202,12 @@ DO NOT use "might be", "could be", or "possibly" for a HIGH-ranked probable caus
 DO NOT give a HIGH-rank cause without a specific tool, probe point, and numeric pass/fail threshold.
 DO NOT write a decision_flow that starts at L2 or higher — always start at L1 Physical.
 DO NOT set tec_math to N/A when a CAN bus-off symptom with timing information is provided.
+DO NOT state a fault layer as confirmed without citing a measurement that verified it.
+  Use "symptom pattern indicates L1" not "the fault is at L1".
+  Confirmation requires an oscilloscope or DMM reading explicitly provided in the input.
+  Pattern matching from symptom onset, node scope, and engine-running correlation = hypothesis,
+  not diagnosis. State the hypothesis clearly, then direct the engineer to the measurement that
+  will confirm or rule it out.
 DO NOT silently adjust or guess error rates when both error frequency and TX rate are provided —
   calculate net_TEC/s using the actual values. If the result is negative or inconsistent with
   the reported symptom timing, add a contradiction entry: state the conflict and what the
