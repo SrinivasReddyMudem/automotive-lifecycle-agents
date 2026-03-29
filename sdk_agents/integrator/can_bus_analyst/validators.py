@@ -123,7 +123,9 @@ def _check_probable_causes_specific(output: CanBusAnalystOutput) -> None:
                 raise DomainCheckError(
                     f"probable_causes[{i}].{field_name} is too vague "
                     f"({len(field_value)} chars, minimum {minimum}). "
-                    f"Got: '{field_value}'"
+                    f"Got: '{field_value}'. "
+                    f"Must name what is being measured AND include a numeric threshold. "
+                    f"BAD: '< 50 mV' — GOOD: 'GND offset < 50 mV' or 'Ripple < 200 mV peak-to-peak'."
                 )
 
 

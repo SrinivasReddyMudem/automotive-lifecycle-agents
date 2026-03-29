@@ -17,6 +17,9 @@ def safe_render(render_fn, output) -> None:
     unexpected LLM field name), the full structured output is still shown
     as formatted JSON so the user always gets the agent's answer.
     """
+    if type(output).__name__ == "AgentError":
+        render_agent_error(output)
+        return
     try:
         render_fn(output)
     except AttributeError as e:
@@ -139,8 +142,10 @@ def render_can_bus_analyst(output) -> None:
                     for a in assumptions:
                         st.caption(f"⚠ {a}")
 
-    st.markdown("### 💡 Key Insight")
-    st.info(output.expert_diagnosis)
+    expert_diag = getattr(output, "expert_diagnosis", None)
+    if expert_diag:
+        st.markdown("### 💡 Key Insight")
+        st.info(expert_diag)
 
     # Diagnosis basis — fact → implication chain
     basis = getattr(output, "diagnosis_basis", None)
