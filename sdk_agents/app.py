@@ -387,8 +387,8 @@ if page == "About":
     st.markdown("---")
 
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-    col_m1.metric("Tests Passing", "✅ 154")
-    col_m2.metric("Agents Live", "✅ 12")
+    col_m1.metric("Tests Passing", "✅ 363")
+    col_m2.metric("Agents Live", "✅ 13")
     col_m3.metric("Skills", "✅ 8")
     col_m4.metric("CI Checks", "✅ 5")
 
@@ -509,7 +509,8 @@ under active development.*
 ---
 **What's next**
 
-- Extending **structured input analysis** and data sufficiency to additional diagnostic agents
+- Adding **structured sub-models** for richer diagnostic context (freeze frame, port connection status, damage scenario, effort estimate)
+- Strengthening **validator coverage** across all 13 agents for edge cases and type safety
 - Enhancing **protocol coverage** for LIN and Automotive Ethernet
 - Deepening **reasoning logic** for complex multi-node and multi-layer interactions
 
@@ -538,13 +539,10 @@ CAN Bus Analyst · Field Debug FAE · SW Integrator
 AUTOSAR BSW Developer · Embedded C Developer · MISRA Reviewer
 
 *Project Lead*
-ASPICE Process Coach · SW Project Lead · Safety & Cyber Lead
+ASPICE Process Coach · Gate Review Approver · Safety & Cyber Lead · SW Project Lead
 
 *Tester*
 Regression Analyst · SIL/HIL Test Planner · SW Unit Tester
-
-*Gate review*
-Gate Review Approver *(trigger: /gate-review)*
         """)
 
         st.markdown("**Domain knowledge loaded**")
