@@ -13,31 +13,60 @@
 
 ## What this is
 
-After years working across ECU development, integration, testing, and project roles,
-I repeatedly saw the same pattern — **complex issues taking days to diagnose** when a
-structured, experience-driven approach could narrow them down in under an hour.
+> Most AI tools respond to engineering questions with broad suggestions. This project
+> demonstrates what changes when an LLM is constrained by domain schemas, engineering
+> guardrails, and structured validation — producing outputs that are **precise, verifiable,
+> and ready for real engineering use**.
 
-This gap has real impact: **unstable baselines during integration**, repeated test failures
-and re-validation cycles, **rework during safety reviews**, and late-stage change requests
-that should have been identified earlier in the lifecycle.
+After years across ECU development, integration, testing, and project roles, the same
+pattern kept appearing — **complex issues taking days to diagnose** when a structured,
+experience-driven approach could narrow them down in under an hour.
 
-Most AI tools do not address this well — they generate broad suggestions without
-classification, calculations, or alignment to engineering standards. In automotive systems,
-where **safety, timing, and traceability** matter, broad suggestions are not sufficient.
+This gap has real impact:
 
-This project demonstrates how **domain knowledge, structured schemas, and engineering
-guardrails** can constrain an LLM to produce outputs that are precise, traceable, and
-actionable — reflecting how an experienced automotive engineer reasons through a problem,
-and robust enough to stand up to real engineering scrutiny.
+- Unstable baselines during integration
+- Repeated test failures and re-validation cycles
+- Rework during safety reviews
+- Late-stage change requests that should have been caught earlier
 
-The goal is not to replace engineering judgment, but to make **expert-level reasoning
-accessible, consistent, and scalable** across the development lifecycle.
+This project constrains an LLM using **domain knowledge, structured schemas, and engineering
+guardrails** — so outputs reflect how an experienced automotive engineer reasons, not how
+a generic assistant guesses.
+
+**Goal:** Make expert-level reasoning accessible, consistent, and scalable across the
+development lifecycle.
+
+---
+
+## Gap in existing AI tools
+
+- Generate broad suggestions — no OSI/AUTOSAR classification
+- No calculations shown (TEC math, ASIL determination, risk scoring)
+- No traceability — conclusions without reasoning chains
+- No standards alignment — ISO 26262, ASPICE, MISRA, UDS ignored
+- Cannot distinguish stated facts from inferred assumptions
+
+---
+
+## Core approach
+
+**Input Analysis** — every response separates what the engineer stated from what was
+inferred or assumed. Nothing is silently assumed.
+
+**Data Sufficiency** — before diagnosis, data completeness is rated: `SUFFICIENT` /
+`PARTIAL` / `INSUFFICIENT`. Missing critical inputs are listed explicitly so the engineer
+knows exactly what would sharpen the result.
+
+**Structured Validation** — every output passes a multi-layer domain check before being
+returned. Risk scores verified against P × I, feasibility factors reconciled against
+system totals, schedule impacts numerically quantified. Any response that fails is
+**rejected and retried**.
 
 ---
 
 ## The difference — one question, two responses
 
-**Question asked:** *"CAN node goes bus-off after 3 minutes, only when engine running. Other nodes fine."*
+**Question asked:** *"CAN node goes bus-off after 3 minutes, only when engine running."*
 
 <table>
 <tr>
@@ -57,76 +86,99 @@ accessible, consistent, and scalable** across the development lifecycle.
 <td>
 
 ```
-BUS ANALYSIS REPORT
-OSI Layer: L1 Physical (confirmed by 3-min gradual onset)
-AUTOSAR: MCAL (CanDrv) — not CanSM/CanIf
-Tool: Oscilloscope + DMM
+Protocol:   CAN | HIGH confidence
+Data:       PARTIAL — oscilloscope trace required
+            to confirm ripple vs GND offset
 
-TEC math:
-  TX rate: 10 msg/s → 1800 tx in 180s
-  Errors needed for bus-off: 256/8 = 32
-  Min error rate: 32/1800 = 1.8%
-  Net TEC climb: 1.4 TEC/s → 180s to bus-off ✓
+Facts:      bus-off after 3 min, engine-running dependency
 
-Probable Causes (ranked):
-1. [HIGH] Alternator AC ripple on transceiver Vcc
-   Test: oscilloscope Vcc pin AC-coupled, 2000 RPM
-   Pass: ripple < 200 mV peak-to-peak
-   Fail: ripple > 500 mV or dips below 4.5 V
+Assumptions:
+            ~1 msg/s TX rate (not provided)
+            single node affected (not confirmed)
 
-2. [HIGH] Ground potential shift under engine load
-   Test: DMM ECU chassis GND to battery negative
-   Pass: offset < 50 mV
-   Fail: offset > 200 mV — replace corroded GND strap
+Basis:
+  bus-off after 3 min
+  → TEC accumulation, intermittent errors
+  only when engine running
+  → engine-coupled noise source
 
-3. [MEDIUM] Thermal drift of CAN transceiver
-   Test: heat gun at PCB, 3 min, engine off, CANoe active
-   Pass: no bus-off from heat alone
-   Fail: bus-off triggered by heat — replace transceiver
+OSI Layer:     L1 Physical
+AUTOSAR Layer: MCAL (CanDrv)
+
+Tool:
+  Oscilloscope
+  - Diff probe on CAN_H/CAN_L (signal integrity)
+  - Single-ended probe on Vcc (ripple check)
+
+TEC Math:
+  Net climb = 256 / 180s
+              = 1.41 TEC/s
+  Bus-off: ~181s — 3 min ✓
+
+Ruled Out:
+  Software issue — engine-dependent symptom
+                   contradicts SW fault
+  Bus overload   — does not match gradual
+                   TEC-driven failure pattern
+
+Causes:
+  [HIGH]   Alternator ripple (most likely)
+           Engine-running maps to supply noise
+           Vcc AC-coupled
+           Pass < 200mV / Fail > 500mV
+
+  [MEDIUM] GND offset
+           Condition-dependent noise possible
+           but less consistent
+           Pass < 50mV / Fail > 200mV
+
+Next Action:
+  Measure Vcc ripple at transceiver pin
+  with engine at 2000 RPM
+
+Contradictions:
+  None — inputs consistent with
+  TEC-driven bus-off behaviour
 ```
 
 </td>
 </tr>
 </table>
 
-The agent classifies the fault by OSI layer and AUTOSAR layer before diagnosing.
-It calculates the exact TEC climb rate from the 3-minute symptom. Each cause has
-a specific tool, probe point, and numeric pass/fail threshold. No guessing.
+The agent declares protocol confidence, separates stated facts from assumptions, shows
+the reasoning basis before the conclusion, calculates TEC math from the symptom, and
+actively rules out hypotheses. Each cause has a specific tool, probe point, and numeric
+pass/fail threshold. No guessing.
 
 ---
 
 ## What engineers get
 
-- **Classified before diagnosed** — every problem is first placed in context (OSI layer,
-  AUTOSAR layer, ASPICE process area, or safety integrity level), ensuring the right
-  domain approach from the start
+- **Classified before diagnosed** — every problem placed in context (OSI layer, AUTOSAR
+  layer, ASPICE process area, or ASIL level) before analysis begins
 - **Transparent calculations** — TEC accumulation, ASIL determination, risk scoring,
-  and boundary conditions are shown step-by-step, not assumed
+  and boundary conditions shown step-by-step
 - **Concrete, testable outputs** — tool selection, exact probe points, and pass/fail
-  thresholds enable immediate validation, not guesswork
-- **Standards-aligned reasoning** — outputs follow ISO 26262, ASPICE, MISRA C:2012,
-  AUTOSAR, ISO 21434, and UDS, ensuring consistency with real automotive engineering practice
+  thresholds for immediate validation
+- **Standards-aligned reasoning** — outputs consistent with ISO 26262, ASPICE, MISRA C:2012,
+  AUTOSAR, ISO 21434, and UDS
 
 ---
 
 ## How output quality is ensured
 
-Each response is structured to reflect how an experienced automotive engineer approaches
-a problem — **starting from the available facts**, stating assumptions where data is
-missing, and **narrowing down causes based on evidence**.
+Each response follows a **structured engineering reasoning path** — starting from stated
+facts, declaring assumptions, and narrowing causes based on evidence.
 
-The output is not just a conclusion, but **a clear reasoning path** — what was considered,
-what was ruled out, and why a specific cause is more likely.
+The output is not just a conclusion — it is **a clear reasoning path**: what was considered,
+what was ruled out, and why a specific cause ranks higher than others.
 
 Behind every output is a **multi-layer validation framework** enforcing domain-specific
 rules — including risk scores automatically checked against P × I, feasibility factors
 reconciling against system-level totals, and schedule impacts numerically quantified.
 Any response that fails these checks is **rejected and retried** before the engineer
-sees it, ensuring output that is internally consistent, traceable, and ready for real
-engineering use.
-
-The result is output that is **consistent, traceable, and trustworthy** — supporting
-real engineering decisions rather than generic suggestions.
+sees it. This validation ensures **internal consistency and prevents invalid engineering
+conclusions**.
 
 ---
 
@@ -280,7 +332,7 @@ Every push runs 5 automated checks:
 
 | Badge | What it validates |
 |---|---|
-| **Tests** | 154 pytest cases — all Python agents produce correct, validated outputs |
+| **Tests** | 363 pytest cases — all Python agents produce correct, validated outputs |
 | **Agents** | All 13 Claude Code agent files are structurally valid with correct frontmatter |
 | **SDK** | All 13 Python agent schemas, imports, routing, and unit tests — no API key needed |
 | **Skills** | All 8 skill reference files present and correctly formatted |
@@ -327,9 +379,21 @@ python tools/gate_review_scorer.py --phase SOP \
 
 ---
 
+## Who this is relevant for
+
+- SW Integration Engineers — CAN/UDS fault triage, baseline stability
+- Safety Engineers — HARA, ASIL determination, safety review support
+- Embedded Developers — MISRA compliance, AUTOSAR SWC design
+- Test Engineers — SIL/HIL planning, unit test design, MC/DC coverage
+- Project Leads — ASPICE readiness, risk tracking, milestone assessment
+- Field Application Engineers — field fault triage, DTC analysis
+
+---
+
 ## What's next
 
-- Extending **structured input analysis** and data sufficiency to additional diagnostic agents
+- Adding **structured sub-models** for richer diagnostic context (freeze frame, port connection status, damage scenario, effort estimate)
+- Strengthening **validator coverage** across all 13 agents for edge cases and type safety
 - Enhancing **protocol coverage** for LIN and Automotive Ethernet
 - Deepening **reasoning logic** for complex multi-node and multi-layer interactions
 
