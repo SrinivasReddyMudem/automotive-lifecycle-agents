@@ -5,7 +5,7 @@ Covers SWC design, BSW configuration, RTE API, and AUTOSAR naming.
 
 from pydantic import BaseModel, Field
 from typing import Literal
-from sdk_agents.core.shared_schema import SelfEvaluationLine
+from sdk_agents.core.shared_schema import SelfEvaluationLine, InputAnalysis, DataSufficiency
 
 
 class PortDesign(BaseModel):
@@ -41,6 +41,26 @@ class AutosarBswDeveloperOutput(BaseModel):
     model_config = {"extra": "ignore"}
 
     autosar_version: str = Field(description="AUTOSAR version assumed: R4.4 / R4.3 / R22 / Adaptive R22")
+    input_analysis: InputAnalysis = Field(
+        description=(
+            "Structured extraction of what the user stated vs what was assumed. "
+            "input_facts: SWC type stated, ASIL level stated, AUTOSAR version stated, "
+            "interface type (sender-receiver/client-server) stated, data element name and type given, "
+            "trigger type and period stated, BSW module mentioned. "
+            "assumptions: AUTOSAR version assumed from context, ASIL assumed from system context, "
+            "interface type assumed, OS task priority assumed."
+        )
+    )
+    data_sufficiency: DataSufficiency = Field(
+        description=(
+            "Rate completeness for this specific SWC design only. "
+            "SUFFICIENT: SWC type + ASIL level + interface type + data element details all present. "
+            "PARTIAL: SWC described but ASIL level or interface type or data element details missing. "
+            "INSUFFICIENT: only a feature name with no SWC type or data interface description. "
+            "missing_critical_data: only flag inputs that caused N/A, forced an assumption, "
+            "or would change the RTE API signature or ASIL notes if provided."
+        )
+    )
     asil_level: str = Field(description="ASIL level: QM / ASIL-A / ASIL-B / ASIL-C / ASIL-D or N/A")
     swc_name: str = Field(description="Primary SWC name in AUTOSAR naming convention")
     swc_type: str = Field(

@@ -13,7 +13,7 @@ from sdk_agents.project_lead.sw_project_lead import SwProjectLeadAgent
 from sdk_agents.project_lead.sw_project_lead import validators
 from sdk_agents.core.base_agent import AgentError, DomainCheckError
 from sdk_agents.core.skill_loader import load_skill
-from sdk_agents.core.shared_schema import SelfEvaluationLine
+from sdk_agents.core.shared_schema import SelfEvaluationLine, InputAnalysis, DataSufficiency
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -21,6 +21,28 @@ from sdk_agents.core.shared_schema import SelfEvaluationLine
 def make_valid_output(**overrides) -> SwProjectLeadOutput:
     data = {
         "request_type": "CHANGE_REQUEST",
+        "input_analysis": InputAnalysis(
+            input_facts=[
+                "request type: CHANGE_REQUEST",
+                "change: OTA capability addition at detailed design phase",
+                "current phase: detailed design (SWE.2)",
+                "customer: requested addition",
+            ],
+            assumptions=[
+                "3x cost multiplier applied — late-stage addition assumption",
+                "SWE.5 milestone date assumed to be 8 weeks out based on typical programme",
+                "ASPICE process areas SWE.1 and SWE.2 assumed in scope for change",
+            ],
+        ),
+        "data_sufficiency": DataSufficiency(
+            level="PARTIAL",
+            confidence="MEDIUM",
+            confidence_reason="Change description present but exact milestone dates and current buffer not stated.",
+            missing_critical_data=[
+                "[CRITICAL] milestone date for SWE.5 — required to calculate schedule delta in working days",
+                "[OPTIONAL] current schedule buffer — would determine if deferral is mandatory or optional",
+            ],
+        ),
         "summary": (
             "Customer requests addition of OTA capability at detailed design phase. "
             "3x cost multiplier applies. Recommend deferring to next release."
@@ -145,6 +167,36 @@ class TestSchema:
             {**make_valid_output().model_dump(), "unexpected_field": "x"}
         )
         assert output.request_type == "CHANGE_REQUEST"
+
+    def test_input_analysis_present(self):
+        output = make_valid_output()
+        assert output.input_analysis is not None
+        assert len(output.input_analysis.input_facts) > 0
+
+    def test_input_analysis_has_request_type_fact(self):
+        output = make_valid_output()
+        assert any("CHANGE_REQUEST" in f for f in output.input_analysis.input_facts)
+
+    def test_data_sufficiency_level_is_valid(self):
+        output = make_valid_output()
+        assert output.data_sufficiency.level in ("SUFFICIENT", "PARTIAL", "INSUFFICIENT")
+
+    def test_data_sufficiency_partial_has_missing_items(self):
+        output = make_valid_output()
+        assert output.data_sufficiency.level == "PARTIAL"
+        assert len(output.data_sufficiency.missing_critical_data) > 0
+
+    def test_data_sufficiency_sufficient_has_empty_missing(self):
+        output = make_valid_output(
+            data_sufficiency=DataSufficiency(
+                level="SUFFICIENT",
+                confidence="HIGH",
+                confidence_reason="All schedule, cost, and ASPICE context present.",
+                missing_critical_data=["None — data is complete"],
+            )
+        )
+        assert output.data_sufficiency.level == "SUFFICIENT"
+        assert output.data_sufficiency.missing_critical_data == ["None — data is complete"]
 
 
 # ── Validator tests ───────────────────────────────────────────────────────────

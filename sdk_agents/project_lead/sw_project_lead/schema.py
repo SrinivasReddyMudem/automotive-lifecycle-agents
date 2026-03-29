@@ -5,7 +5,7 @@ Covers change request analysis, risk register entries, project status.
 
 from pydantic import BaseModel, Field
 from typing import Literal
-from sdk_agents.core.shared_schema import SelfEvaluationLine
+from sdk_agents.core.shared_schema import SelfEvaluationLine, InputAnalysis, DataSufficiency
 
 
 class ImpactItem(BaseModel):
@@ -38,6 +38,26 @@ class SwProjectLeadOutput(BaseModel):
     model_config = {"extra": "ignore"}
 
     request_type: Literal["CHANGE_REQUEST", "RISK_REGISTER", "STATUS_REPORT", "CUSTOMER_RESPONSE", "GENERAL"]
+    input_analysis: InputAnalysis = Field(
+        description=(
+            "Structured extraction of what the user stated vs what was assumed. "
+            "input_facts: request type stated, change or risk description stated, milestone dates given, "
+            "customer or OEM name mentioned, effort estimate stated, affected ASPICE work products named, "
+            "current project phase stated. "
+            "assumptions: project phase assumed from context, 3x cost multiplier applied (late-stage assumption), "
+            "ASPICE process areas assumed in scope, milestone dates inferred from description."
+        )
+    )
+    data_sufficiency: DataSufficiency = Field(
+        description=(
+            "Rate completeness for this specific CR / risk / status analysis only. "
+            "SUFFICIENT: request type + change description + milestone dates + effort context all present. "
+            "PARTIAL: request described but milestone dates, affected work products, or effort estimates missing. "
+            "INSUFFICIENT: only a feature or risk name with no schedule, cost, or ASPICE context. "
+            "missing_critical_data: only flag inputs that caused N/A, forced an assumption, "
+            "or would change the impact assessment or recommendation if provided."
+        )
+    )
     summary: str = Field(
         description="One-paragraph executive summary of the situation and recommendation"
     )

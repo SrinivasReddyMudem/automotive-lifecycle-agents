@@ -5,7 +5,7 @@ Covers ASPICE SWE.4 unit test design: equivalence partitioning, boundary values,
 
 from pydantic import BaseModel, Field
 from typing import Literal
-from sdk_agents.core.shared_schema import SelfEvaluationLine
+from sdk_agents.core.shared_schema import SelfEvaluationLine, InputAnalysis, DataSufficiency
 
 
 class UnitTestCase(BaseModel):
@@ -44,6 +44,26 @@ class SwUnitTesterOutput(BaseModel):
 
     function_signature: str = Field(
         description="Full C function signature e.g. bool BrakeControl_IsEmergencyBrakeRequired(uint8_t pedalPos, bool sensorValid)"
+    )
+    input_analysis: InputAnalysis = Field(
+        description=(
+            "Structured extraction of what the user stated vs what was assumed. "
+            "input_facts: function signature stated, ASIL level stated, test framework named, "
+            "specific input domain bounds given, SRS requirement ID referenced, "
+            "existing stubs or mocks described, design document referenced. "
+            "assumptions: ASIL level assumed from module context, framework assumed, "
+            "input domain bounds assumed from parameter types, coverage target assumed from ASIL."
+        )
+    )
+    data_sufficiency: DataSufficiency = Field(
+        description=(
+            "Rate completeness for this specific unit test design only. "
+            "SUFFICIENT: function signature + ASIL level + input domain boundaries all present. "
+            "PARTIAL: function signature present but ASIL level or input domain bounds missing. "
+            "INSUFFICIENT: only a feature description with no function signature. "
+            "missing_critical_data: only flag inputs that caused N/A, forced an assumption, "
+            "or would change coverage target, MC/DC pair count, or pass criteria if provided."
+        )
     )
     asil_level: str = Field(description="ASIL level: QM / ASIL-A / ASIL-B / ASIL-C / ASIL-D")
     coverage_required: str = Field(

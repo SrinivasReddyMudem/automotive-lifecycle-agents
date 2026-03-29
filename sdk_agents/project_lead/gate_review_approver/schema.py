@@ -6,7 +6,7 @@ Only activated via explicit /gate-review command.
 
 from pydantic import BaseModel, Field
 from typing import Literal
-from sdk_agents.core.shared_schema import SelfEvaluationLine
+from sdk_agents.core.shared_schema import SelfEvaluationLine, InputAnalysis, DataSufficiency
 
 
 class GateCriterion(BaseModel):
@@ -26,6 +26,26 @@ class GateReviewApproverOutput(BaseModel):
     model_config = {"extra": "ignore"}
 
     gate_type: Literal["SOR", "SOP"]
+    input_analysis: InputAnalysis = Field(
+        description=(
+            "Structured extraction of what the user stated vs what was assumed. "
+            "input_facts: gate type stated (SOR/SOP), project/ECU name stated, assessment date given, "
+            "specific work products mentioned with status, ASPICE level target stated, "
+            "safety/cybersecurity sign-off status stated. "
+            "assumptions: gate criteria assumed from gate type, ASPICE scope assumed, "
+            "work product status assumed from brief description."
+        )
+    )
+    data_sufficiency: DataSufficiency = Field(
+        description=(
+            "Rate completeness for this specific gate review only. "
+            "SUFFICIENT: gate type + project name + work product status per criterion all present. "
+            "PARTIAL: gate type and project present but individual criterion evidence missing. "
+            "INSUFFICIENT: only project name with no work product status or gate criteria evidence. "
+            "missing_critical_data: only flag inputs that caused N/A, forced an assumption, "
+            "or would change a criterion status (PASS/AMBER/FAIL) or the overall gate result if provided."
+        )
+    )
     project_ecu: str = Field(description="Project and ECU name")
     assessment_date: str = Field(description="Assessment date or 'not provided'")
     criteria_assessment: list[GateCriterion] = Field(

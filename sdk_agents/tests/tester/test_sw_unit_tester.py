@@ -13,7 +13,7 @@ from sdk_agents.tester.sw_unit_tester import SwUnitTesterAgent
 from sdk_agents.tester.sw_unit_tester import validators
 from sdk_agents.core.base_agent import AgentError, DomainCheckError
 from sdk_agents.core.skill_loader import load_skills
-from sdk_agents.core.shared_schema import SelfEvaluationLine
+from sdk_agents.core.shared_schema import SelfEvaluationLine, InputAnalysis, DataSufficiency
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -21,6 +21,24 @@ from sdk_agents.core.shared_schema import SelfEvaluationLine
 def make_valid_output(**overrides) -> SwUnitTesterOutput:
     data = {
         "function_signature": "bool BrakeControl_IsEmergencyBrakeRequired(uint8_t pedalPos, bool sensorValid, uint8_t vehicleSpeed)",
+        "input_analysis": InputAnalysis(
+            input_facts=[
+                "function: BrakeControl_IsEmergencyBrakeRequired(uint8_t pedalPos, bool sensorValid, uint8_t vehicleSpeed)",
+                "ASIL level: ASIL-D",
+                "framework: Unity",
+                "input domain: pedalPos 0-255 (uint8_t), sensorValid true/false, vehicleSpeed 0-255 (uint8_t)",
+            ],
+            assumptions=[
+                "assumed pedalPos threshold is 90 based on typical brake pedal calibration",
+                "assumed vehicleSpeed minimum threshold is 5 based on function naming convention",
+            ],
+        ),
+        "data_sufficiency": DataSufficiency(
+            level="SUFFICIENT",
+            confidence="HIGH",
+            confidence_reason="Function signature, ASIL level, and input domain bounds are fully specified.",
+            missing_critical_data=["None — data is complete"],
+        ),
         "asil_level": "ASIL-D",
         "coverage_required": "Statement 100% + Branch 100% + MC/DC 100% per ISO 26262-6 Table 13 (ASIL-D)",
         "framework": "Unity",
@@ -165,6 +183,36 @@ class TestSchema:
             {**make_valid_output().model_dump(), "extra_field": "x"}
         )
         assert output.asil_level == "ASIL-D"
+
+    def test_input_analysis_present(self):
+        output = make_valid_output()
+        assert output.input_analysis is not None
+        assert len(output.input_analysis.input_facts) > 0
+
+    def test_input_analysis_has_function_signature_fact(self):
+        output = make_valid_output()
+        assert any("BrakeControl" in f for f in output.input_analysis.input_facts)
+
+    def test_data_sufficiency_level_is_valid(self):
+        output = make_valid_output()
+        assert output.data_sufficiency.level in ("SUFFICIENT", "PARTIAL", "INSUFFICIENT")
+
+    def test_data_sufficiency_sufficient_has_empty_missing(self):
+        output = make_valid_output()
+        assert output.data_sufficiency.level == "SUFFICIENT"
+        assert output.data_sufficiency.missing_critical_data == ["None — data is complete"]
+
+    def test_data_sufficiency_partial_has_missing_items(self):
+        output = make_valid_output(
+            data_sufficiency=DataSufficiency(
+                level="PARTIAL",
+                confidence="MEDIUM",
+                confidence_reason="ASIL level not stated — assumed ASIL-D from module name.",
+                missing_critical_data=["[CRITICAL] ASIL level — determines MC/DC coverage requirement"],
+            )
+        )
+        assert output.data_sufficiency.level == "PARTIAL"
+        assert len(output.data_sufficiency.missing_critical_data) > 0
 
 
 # ── Validator tests ───────────────────────────────────────────────────────────

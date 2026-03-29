@@ -5,7 +5,7 @@ Covers SIL/HIL test planning for ASPICE SWE.5 and SWE.6.
 
 from pydantic import BaseModel, Field
 from typing import Literal
-from sdk_agents.core.shared_schema import SelfEvaluationLine
+from sdk_agents.core.shared_schema import SelfEvaluationLine, InputAnalysis, DataSufficiency
 
 
 class TestEnvironment(BaseModel):
@@ -57,6 +57,26 @@ class SilHilTestPlannerOutput(BaseModel):
     model_config = {"extra": "ignore"}
 
     ecu_name: str
+    input_analysis: InputAnalysis = Field(
+        description=(
+            "Structured extraction of what the user stated vs what was assumed. "
+            "input_facts: ECU name stated, ASIL level stated, ASPICE scope (SWE.5/SWE.6) stated, "
+            "specific SRS requirement IDs mentioned, HIL platform named (dSPACE/NI), "
+            "CAN bitrate or bus type stated, fault injection scenarios described. "
+            "assumptions: ASPICE scope assumed from feature description, HIL platform assumed, "
+            "ASIL level assumed from system context, bus type assumed."
+        )
+    )
+    data_sufficiency: DataSufficiency = Field(
+        description=(
+            "Rate completeness for this specific SIL/HIL test plan only. "
+            "SUFFICIENT: ECU name + ASIL level + ASPICE scope + SRS requirement IDs all present. "
+            "PARTIAL: ECU described but ASIL level, SRS IDs, or HIL platform details missing. "
+            "INSUFFICIENT: only a feature description with no ECU, ASIL, or requirement references. "
+            "missing_critical_data: only flag inputs that caused N/A, forced an assumption, "
+            "or would change SIL/HIL allocation or pass criteria if provided."
+        )
+    )
     aspice_scope: str = Field(description="SWE.5 / SWE.6 / SWE.5 + SWE.6")
     asil_level: str
     test_environment: TestEnvironment

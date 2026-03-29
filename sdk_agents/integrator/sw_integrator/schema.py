@@ -6,7 +6,8 @@ Covers AUTOSAR integration errors, memory map analysis, ASPICE SWE.5 evidence.
 from pydantic import BaseModel, Field
 from typing import Literal
 from sdk_agents.core.shared_schema import (
-    ProbableCause, NarrowingQuestion, SelfEvaluationLine, DebugStep
+    ProbableCause, NarrowingQuestion, SelfEvaluationLine, DebugStep,
+    InputAnalysis, DataSufficiency,
 )
 
 
@@ -45,6 +46,24 @@ class SwIntegratorOutput(BaseModel):
 
     error_classification: IntegrationErrorClassification = Field(
         description="Classify the integration error by AUTOSAR layer before diagnosing"
+    )
+    input_analysis: InputAnalysis = Field(
+        description=(
+            "Structured extraction of what the user stated vs what was assumed. "
+            "input_facts: ARXML file/tool version mentioned, error message text, AUTOSAR layer stated, "
+            "SWC name/port name mentioned, build tool and error code given. "
+            "assumptions: AUTOSAR version assumed, tool version assumed, configuration tool assumed."
+        )
+    )
+    data_sufficiency: DataSufficiency = Field(
+        description=(
+            "Rate completeness for this specific integration error only. "
+            "SUFFICIENT: error message text + AUTOSAR layer + ARXML or .map file all present. "
+            "PARTIAL: error message present but ARXML, tool version, or affected SWC/port name missing. "
+            "INSUFFICIENT: only symptom description with no error message or layer information. "
+            "missing_critical_data: only flag inputs that caused N/A, forced an assumption, "
+            "or would change the error_classification or root_cause_hypothesis if provided."
+        )
     )
     analysis: str = Field(
         description=(

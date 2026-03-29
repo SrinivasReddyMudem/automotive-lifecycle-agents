@@ -14,7 +14,7 @@ from sdk_agents.tester.sil_hil_test_planner import SilHilTestPlannerAgent
 from sdk_agents.tester.sil_hil_test_planner import validators
 from sdk_agents.core.base_agent import AgentError, DomainCheckError
 from sdk_agents.core.skill_loader import load_skill
-from sdk_agents.core.shared_schema import SelfEvaluationLine
+from sdk_agents.core.shared_schema import SelfEvaluationLine, InputAnalysis, DataSufficiency
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -22,6 +22,29 @@ from sdk_agents.core.shared_schema import SelfEvaluationLine
 def make_valid_output(**overrides) -> SilHilTestPlannerOutput:
     data = {
         "ecu_name": "Brake Control ECU",
+        "input_analysis": InputAnalysis(
+            input_facts=[
+                "ECU: Brake Control ECU",
+                "ASIL level: ASIL-B",
+                "ASPICE scope: SWE.5 + SWE.6",
+                "HIL platform: dSPACE SCALEXIO",
+                "SRS requirement: SRS-BCM-012 — DTC P0601 within 500 ms of brake sensor failure",
+                "fault: open circuit on brake pressure sensor",
+            ],
+            assumptions=[
+                "assumed CAN 500 kbps as standard automotive bus — bitrate not stated",
+                "assumed standard brake pedal sensor range from typical ECU specification",
+            ],
+        ),
+        "data_sufficiency": DataSufficiency(
+            level="PARTIAL",
+            confidence="MEDIUM",
+            confidence_reason="ECU and ASIL present but full SRS requirement list and bus configuration not stated.",
+            missing_critical_data=[
+                "[CRITICAL] complete SRS requirement list — required to allocate all test cases to SIL or HIL",
+                "[OPTIONAL] CAN bitrate — would confirm bus configuration for HIL setup",
+            ],
+        ),
         "aspice_scope": "SWE.5 + SWE.6",
         "asil_level": "ASIL-B",
         "test_environment": TestEnvironment(
@@ -151,6 +174,36 @@ class TestSchema:
             {**make_valid_output().model_dump(), "extra_field": "x"}
         )
         assert output.ecu_name == "Brake Control ECU"
+
+    def test_input_analysis_present(self):
+        output = make_valid_output()
+        assert output.input_analysis is not None
+        assert len(output.input_analysis.input_facts) > 0
+
+    def test_input_analysis_has_ecu_fact(self):
+        output = make_valid_output()
+        assert any("Brake Control ECU" in f for f in output.input_analysis.input_facts)
+
+    def test_data_sufficiency_level_is_valid(self):
+        output = make_valid_output()
+        assert output.data_sufficiency.level in ("SUFFICIENT", "PARTIAL", "INSUFFICIENT")
+
+    def test_data_sufficiency_partial_has_missing_items(self):
+        output = make_valid_output()
+        assert output.data_sufficiency.level == "PARTIAL"
+        assert len(output.data_sufficiency.missing_critical_data) > 0
+
+    def test_data_sufficiency_sufficient_has_empty_missing(self):
+        output = make_valid_output(
+            data_sufficiency=DataSufficiency(
+                level="SUFFICIENT",
+                confidence="HIGH",
+                confidence_reason="ECU, ASIL, ASPICE scope, and SRS requirement list all present.",
+                missing_critical_data=["None — data is complete"],
+            )
+        )
+        assert output.data_sufficiency.level == "SUFFICIENT"
+        assert output.data_sufficiency.missing_critical_data == ["None — data is complete"]
 
 
 # ── Validator tests ───────────────────────────────────────────────────────────

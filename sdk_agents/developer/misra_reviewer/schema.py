@@ -5,7 +5,7 @@ Covers MISRA C:2012 violation analysis, deviation justification, root cause clus
 
 from pydantic import BaseModel, Field
 from typing import Literal
-from sdk_agents.core.shared_schema import SelfEvaluationLine
+from sdk_agents.core.shared_schema import SelfEvaluationLine, InputAnalysis, DataSufficiency
 
 
 class MisraViolation(BaseModel):
@@ -40,6 +40,25 @@ class MisraReviewerOutput(BaseModel):
     model_config = {"extra": "ignore"}
 
     file_context: str = Field(description="File or module being reviewed, or 'synthetic pattern analysis'")
+    input_analysis: InputAnalysis = Field(
+        description=(
+            "Structured extraction of what the user stated vs what was assumed. "
+            "input_facts: file or module name stated, ASIL level stated, static analysis tool named, "
+            "specific rule numbers mentioned, total violation count given, C code snippet provided. "
+            "assumptions: ASIL level assumed from module context, tool assumed from project type, "
+            "rule category assumed (mandatory/required/advisory) when only rule number given."
+        )
+    )
+    data_sufficiency: DataSufficiency = Field(
+        description=(
+            "Rate completeness for this specific MISRA review only. "
+            "SUFFICIENT: C code or violation list + ASIL level + tool name all present. "
+            "PARTIAL: violation descriptions present but C code, ASIL level, or tool name missing. "
+            "INSUFFICIENT: only a description of a rule with no code context or violation report. "
+            "missing_critical_data: only flag inputs that caused N/A, forced an assumption, "
+            "or would change the violation count, root cause cluster, or action plan if provided."
+        )
+    )
     asil_level: str = Field(description="ASIL level of the module: QM / ASIL-A / ASIL-B / ASIL-C / ASIL-D")
     tool: str = Field(description="Static analysis tool: Polyspace / QAC / PC-lint / Coverity / N/A")
     total_violations: int
