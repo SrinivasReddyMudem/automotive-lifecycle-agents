@@ -114,7 +114,7 @@ def render_can_bus_analyst(output) -> None:
     input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
     if input_analysis or data_suf:
-        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+        with st.expander("Input Analysis & Data Sufficiency", expanded=True):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
@@ -219,7 +219,7 @@ def render_field_debug_fae(output) -> None:
     input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
     if input_analysis or data_suf:
-        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+        with st.expander("Input Analysis & Data Sufficiency", expanded=True):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
@@ -307,7 +307,7 @@ def render_sw_integrator(output) -> None:
     input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
     if input_analysis or data_suf:
-        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+        with st.expander("Input Analysis & Data Sufficiency", expanded=True):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
@@ -381,7 +381,7 @@ def render_autosar_bsw_developer(output) -> None:
     input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
     if input_analysis or data_suf:
-        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+        with st.expander("Input Analysis & Data Sufficiency", expanded=True):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
@@ -463,7 +463,7 @@ def render_embedded_c_developer(output) -> None:
     input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
     if input_analysis or data_suf:
-        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+        with st.expander("Input Analysis & Data Sufficiency", expanded=True):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
@@ -540,7 +540,7 @@ def render_misra_reviewer(output) -> None:
     input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
     if input_analysis or data_suf:
-        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+        with st.expander("Input Analysis & Data Sufficiency", expanded=True):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
@@ -609,7 +609,7 @@ def render_aspice_process_coach(output) -> None:
     input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
     if input_analysis or data_suf:
-        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+        with st.expander("Input Analysis & Data Sufficiency", expanded=True):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
@@ -679,7 +679,7 @@ def render_gate_review_approver(output) -> None:
     input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
     if input_analysis or data_suf:
-        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+        with st.expander("Input Analysis & Data Sufficiency", expanded=True):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
@@ -736,7 +736,7 @@ def render_safety_and_cyber_lead(output) -> None:
     input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
     if input_analysis or data_suf:
-        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+        with st.expander("Input Analysis & Data Sufficiency", expanded=True):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
@@ -819,7 +819,7 @@ def render_sw_project_lead(output) -> None:
     input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
     if input_analysis or data_suf:
-        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+        with st.expander("Input Analysis & Data Sufficiency", expanded=True):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
@@ -890,7 +890,7 @@ def render_regression_analyst(output) -> None:
     input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
     if input_analysis or data_suf:
-        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+        with st.expander("Input Analysis & Data Sufficiency", expanded=True):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
@@ -959,7 +959,7 @@ def render_sil_hil_test_planner(output) -> None:
     input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
     if input_analysis or data_suf:
-        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+        with st.expander("Input Analysis & Data Sufficiency", expanded=True):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
@@ -1033,7 +1033,7 @@ def render_sw_unit_tester(output) -> None:
     input_analysis = getattr(output, "input_analysis", None)
     data_suf = getattr(output, "data_sufficiency", None)
     if input_analysis or data_suf:
-        with st.expander("Input Analysis & Data Sufficiency", expanded=False):
+        with st.expander("Input Analysis & Data Sufficiency", expanded=True):
             if data_suf:
                 suf_color = {"SUFFICIENT": "success", "PARTIAL": "warning", "INSUFFICIENT": "error"}.get(
                     data_suf.level, "info"
