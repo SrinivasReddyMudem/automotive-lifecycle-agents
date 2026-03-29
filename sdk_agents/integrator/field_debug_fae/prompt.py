@@ -132,6 +132,39 @@ TRACE32 (crash investigation):
 
 ## How to fill each field
 
+### input_analysis
+Extract only what the user directly stated — no inference.
+input_facts: customer complaint text, DTC codes, NRC codes, status byte hex value,
+  freeze frame values, UDS session log entries, vehicle state at fault (ignition, speed, temp).
+assumptions: everything you inferred — ECU identity, baudrate, session sequence assumed,
+  operating condition assumed.
+
+### data_sufficiency
+Rate completeness for THIS specific question only.
+SUFFICIENT: DTC code + status byte + freeze frame + UDS session log all present.
+PARTIAL: DTC present but status byte, freeze frame, or session log missing.
+INSUFFICIENT: only customer complaint with no DTC, NRC, or log data.
+
+missing_critical_data — ONLY flag inputs that caused one of these:
+  1. You wrote N/A in a field (tec_math N/A, session_sequence_issue N/A)
+  2. You made an assumption to fill a gap (e.g., "assumed BCM is the reporting ECU")
+  3. The missing input would change the diagnosis or ranking if provided
+
+Format each missing item as:
+  "[CRITICAL] <what> — <why it matters for this specific diagnosis>"
+  "[OPTIONAL] <what> — <how it would improve accuracy>"
+
+DO NOT flag inputs that are irrelevant to what the user asked.
+Example: user asks about a UDS NRC — do not flag "CAN logs" unless bus activity
+was relevant to the session failure described.
+
+Reference catalog (check relevance before flagging):
+  High-criticality: DTC status byte (hex), freeze frame with sensor values,
+    UDS session log (service IDs + NRC sequence), customer symptom in plain language,
+    vehicle state at fault (ignition on/off, speed, ambient temp)
+  Medium: ECU software version, CAN logs for bus-level correlation,
+    actuator/sensor readings, error counters / event history
+
 ### tec_math
 If no symptom timing is provided in the user's input (e.g., no "immediately", no minutes or
 seconds stated for when bus-off occurs), do NOT invent a time value.
