@@ -175,9 +175,10 @@ If baudrate or message schedule not provided:
 
 ### probable_causes
 Every test field must name: tool + exact probe point + action.
-Every pass_criteria and fail_criteria must contain a numeric threshold.
-BAD:  "Check CAN signal quality" / "Clean signal"
-GOOD: "Oscilloscope differential probe on CAN_H/CAN_L at ECU J3 pin 4" / "Dominant level 1.5-3.0 V, recessive 0 V +/-0.1 V"
+Every pass_criteria and fail_criteria must name what is being measured AND include a numeric threshold.
+BAD:  "< 50 mV" / "Check CAN signal quality" / "Clean signal"
+GOOD: "GND offset < 50 mV" / "Ripple < 200 mV peak-to-peak" / "Dominant level 1.5–3.0 V, recessive 0 V ±0.1 V"
+A bare threshold with no measurement name is too vague — always prefix with the signal or parameter name.
 
 ### self_evaluation
 Evaluate ONLY what you wrote in this response. Do not reference measurements you
