@@ -37,6 +37,12 @@ def safe_render(render_fn, output) -> None:
 
 
 def render_agent_error(error: AgentError) -> None:
+    msg = error.message.lower()
+    if "429" in error.message or "rate_limit" in msg or "rate limit" in msg:
+        st.warning(
+            "**Daily API quota reached.** Please try again later or tomorrow."
+        )
+        return
     st.error(f"**{error.error_type.replace('_', ' ').title()}**")
     st.markdown(f"Agent: `{error.agent}`")
     st.markdown(f"Message: {error.message}")
