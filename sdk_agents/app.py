@@ -423,30 +423,6 @@ a generic assistant guesses.
 
 **Goal:** Make expert-level reasoning accessible, consistent, and scalable across the
 development lifecycle.
-
----
-**Gap in Existing AI Tools**
-
-- Generate broad suggestions — no OSI/AUTOSAR classification
-- No calculations shown (TEC math, ASIL determination, risk scoring)
-- No traceability — conclusions without reasoning chains
-- No standards alignment — ISO 26262, ASPICE, MISRA, UDS ignored
-- Cannot distinguish stated facts from inferred assumptions
-
----
-**Core Approach**
-
-**Input Analysis** — every response separates what the engineer stated from what was
-inferred or assumed. Nothing is silently assumed.
-
-**Data Sufficiency** — before diagnosis, data completeness is rated: `SUFFICIENT` /
-`PARTIAL` / `INSUFFICIENT`. Missing critical inputs are listed explicitly so the engineer
-knows exactly what would sharpen the result.
-
-**Structured Validation** — every output passes a multi-layer domain check before being
-returned. Risk scores verified against P × I, feasibility factors reconciled against
-system totals, schedule impacts numerically quantified. Any response that fails is
-**rejected and retried**.
 """)
 
         st.markdown("---")
@@ -526,6 +502,30 @@ Contradictions:
   TEC-driven bus-off behaviour""", language="text")
 
         st.markdown("""
+---
+**Gap in Existing AI Tools**
+
+- Generate broad suggestions — no OSI/AUTOSAR classification
+- No calculations shown (TEC math, ASIL determination, risk scoring)
+- No traceability — conclusions without reasoning chains
+- No standards alignment — ISO 26262, ASPICE, MISRA, UDS ignored
+- Cannot distinguish stated facts from inferred assumptions
+
+---
+**Core Approach**
+
+**Input Analysis** — every response separates what the engineer stated from what was
+inferred or assumed. Nothing is silently assumed.
+
+**Data Sufficiency** — before diagnosis, data completeness is rated: `SUFFICIENT` /
+`PARTIAL` / `INSUFFICIENT`. Missing critical inputs are listed explicitly so the engineer
+knows exactly what would sharpen the result.
+
+**Structured Validation** — every output passes a multi-layer domain check before being
+returned. Risk scores verified against P × I, feasibility factors reconciled against
+system totals, schedule impacts numerically quantified. Any response that fails is
+**rejected and retried**.
+
 ---
 **What engineers get**
 
