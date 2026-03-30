@@ -657,6 +657,11 @@ elif page == "Try the Agent":
     else:
         example = EXAMPLE_PROMPTS.get(selected_agent, "Describe your engineering problem...")
     st.caption(f"Example: *{example}*")
+    st.caption(
+        "Note: This is a live technical prototype. If you encounter any issues, "
+        "please refresh the page to re-initialize the environment or contact the "
+        "developer for support."
+    )
 
     # Display chat history
     for entry in st.session_state[history_key]:
