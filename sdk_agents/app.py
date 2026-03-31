@@ -594,6 +594,7 @@ under active development.*
             "structured engineering reasoning when built around the right knowledge, "
             "constraints, and validation."
         )
+        st.caption("Source code on private GitHub.")
         st.markdown("---")
 
         st.markdown("**Agents**")
@@ -626,7 +627,6 @@ Regression Analyst · SIL/HIL Test Planner · SW Unit Tester
         """)
 
         st.markdown("---")
-        st.caption("Source code available on request.")
         st.info("Use **Try the Agent** in the sidebar to run a live query.")
 
 # ── Agent chat page ────────────────────────────────────────────────────────────
