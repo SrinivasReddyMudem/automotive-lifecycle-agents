@@ -626,6 +626,7 @@ Regression Analyst · SIL/HIL Test Planner · SW Unit Tester
         """)
 
         st.markdown("---")
+        st.caption("Source code available on request.")
         st.info("Use **Try the Agent** in the sidebar to run a live query.")
 
 # ── Agent chat page ────────────────────────────────────────────────────────────
