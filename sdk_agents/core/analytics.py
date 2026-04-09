@@ -34,12 +34,13 @@ import streamlit as st
 # ── Config ─────────────────────────────────────────────────────────────────────
 
 ANALYTICS_ENABLED: bool = os.getenv("ANALYTICS_ENABLED", "true").lower() == "true"
-ANALYTICS_SECRET: str   = os.getenv("ANALYTICS_SECRET", "admin")
-GA_MEASUREMENT_ID: str  = os.getenv("GA_MEASUREMENT_ID", "")   # Tier B: set G-XXXXXXXXXX
+ANALYTICS_SECRET: str = os.getenv("ANALYTICS_SECRET", "admin")
+GA_MEASUREMENT_ID: str = os.getenv("GA_MEASUREMENT_ID", "")  # Tier B: set G-XXXXXXXXXX
 
-_LOGS_DIR   = Path(__file__).parents[1] / "logs"
-_CSV_PATH   = _LOGS_DIR / "analytics.csv"
+_LOGS_DIR = Path(__file__).parents[1] / "logs"
+_CSV_PATH = _LOGS_DIR / "analytics.csv"
 _CSV_FIELDS = ["session_id", "timestamp", "ref", "event_name", "details", "duration_sec"]
+
 
 # ── Public API ─────────────────────────────────────────────────────────────────
 
@@ -56,8 +57,8 @@ def init_analytics() -> None:
         if "_analytics_session_id" in st.session_state:
             return  # already initialised this session
         st.session_state["_analytics_session_id"] = str(uuid4())
-        st.session_state["_analytics_start"]      = datetime.now(timezone.utc)
-        st.session_state["_analytics_ref"]        = st.query_params.get("ref", "unknown")
+        st.session_state["_analytics_start"] = datetime.now(timezone.utc)
+        st.session_state["_analytics_ref"] = st.query_params.get("ref", "unknown")
         st.session_state["_analytics_prev_agent"] = "__initial__"
         _write_row("session_start", {})
     except Exception:
@@ -160,10 +161,10 @@ def render_analytics_dashboard() -> None:
 
         # ── Top-line metrics ───────────────────────────────────────────────────
         total_sessions = df["session_id"].nunique()
-        total_queries  = int(len(df[df["event_name"] == "input_submitted"]))
-        durations      = df.groupby("session_id")["duration_sec"].max()
+        total_queries = int(len(df[df["event_name"] == "input_submitted"]))
+        durations = df.groupby("session_id")["duration_sec"].max()
         avg_dur = round(float(durations.mean()), 1) if not durations.empty else 0.0
-        max_dur = round(float(durations.max()),  1) if not durations.empty else 0.0
+        max_dur = round(float(durations.max()), 1) if not durations.empty else 0.0
 
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Total Sessions",  total_sessions)
