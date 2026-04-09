@@ -31,6 +31,10 @@ from sdk_agents.core.renderer import (  # noqa: E402
     render_sw_unit_tester,
     render_agent_error,
 )
+from sdk_agents.core.analytics import (  # noqa: E402
+    init_analytics, track_event, track_agent_selected,
+    is_admin_request, render_analytics_dashboard,
+)
 
 # ── Auto-routing: weighted keyword scoring ─────────────────────────────────────
 # Each agent has (keyword → score) pairs.
@@ -352,6 +356,11 @@ st.set_page_config(
     layout="wide",
 )
 
+init_analytics()
+if is_admin_request():
+    render_analytics_dashboard()
+    st.stop()
+
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.title("Automotive Lifecycle Agents")
@@ -379,6 +388,7 @@ with st.sidebar:
             st.caption("Describe your problem — the agent is selected automatically from your words.")
         else:
             st.caption(f"Fixed to **{selected_display}**. Clear the dropdown to return to Auto.")
+        track_agent_selected(selected_agent)
 
 # ── About page ─────────────────────────────────────────────────────────────────
 if page == "About":
@@ -701,6 +711,7 @@ elif page == "Try the Agent":
 
         # If Auto mode and no agent could be detected, save and rerun so it shows in history
         if active_agent is None:
+            track_event("no_agent_matched", {"query": prompt[:300]})
             st.session_state[history_key].append({
                 "prompt": prompt, "result": None, "agent": None,
                 "auto_routed_to": None, "secondaries": [],
@@ -711,6 +722,12 @@ elif page == "Try the Agent":
         with st.spinner(f"Analysing with {AGENT_DISPLAY_NAMES[active_agent]}..."):
             agent = get_agent(active_agent)
             result = agent.run(prompt)
+
+        track_event("input_submitted", {"agent": active_agent, "query": prompt[:300]})
+        track_event("agent_output_received", {
+            "agent": active_agent,
+            "success": not hasattr(result, "error_type"),
+        })
 
         # Save everything needed to re-render this entry from history on future reruns
         st.session_state[history_key].append({
