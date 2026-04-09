@@ -148,12 +148,19 @@ def render_analytics_dashboard() -> None:
             return
 
         # ── Bot filter ─────────────────────────────────────────────────────────
+        # A session is a likely bot only if it lasted under 5 seconds AND
+        # submitted no query. HR/non-technical visitors who read the About page
+        # spend 30–60 seconds and are counted as real sessions.
         show_bots = st.checkbox(
-            "Include likely bots (sessions with no submitted query)", value=False
+            "Include likely bots (< 5s session with no submitted query)", value=False
         )
         if not show_bots:
-            real_sessions = df[df["event_name"] == "input_submitted"]["session_id"].unique()
-            df = df[df["session_id"].isin(real_sessions)]
+            max_duration = df.groupby("session_id")["duration_sec"].max()
+            has_input = df[df["event_name"] == "input_submitted"]["session_id"].unique()
+            bot_sessions = max_duration[
+                (max_duration < 5) & (~max_duration.index.isin(has_input))
+            ].index
+            df = df[~df["session_id"].isin(bot_sessions)]
 
         if df.empty:
             st.info("No real user sessions yet (all current sessions filtered as bots).")
