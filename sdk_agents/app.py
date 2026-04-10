@@ -718,10 +718,14 @@ elif page == "Try the Agent":
             })
             st.rerun()
 
-        # Run the agent — show spinner while processing
+        # Run the agent — show spinner while processing.
+        # If the model returns an intermittent error (e.g. Groq schema rejection),
+        # retry once silently at the UI layer so the user never sees a transient failure.
         with st.spinner(f"Analysing with {AGENT_DISPLAY_NAMES[active_agent]}..."):
             agent = get_agent(active_agent)
             result = agent.run(prompt)
+            if hasattr(result, "error_type"):
+                result = agent.run(prompt)  # silent auto-retry — user sees spinner only
 
         track_event("input_submitted", {"agent": active_agent, "query": prompt[:300]})
         track_event("agent_output_received", {
