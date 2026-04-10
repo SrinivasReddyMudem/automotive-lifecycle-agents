@@ -6,6 +6,9 @@ Each agent type gets a dedicated render function.
 import json
 import streamlit as st
 from sdk_agents.core.base_agent import AgentError
+from sdk_agents.core.logger import get_logger
+
+_renderer_logger = get_logger("renderer")
 
 
 # ── Shared helpers ──────────────────────────────────────────────────────────────
@@ -43,6 +46,11 @@ def render_agent_error(error: AgentError) -> None:
             "**Daily API quota reached.** Please try again later or tomorrow."
         )
         return
+    # Log full technical detail to file for debugging — never shown to the user
+    _renderer_logger.error(
+        f"AgentError | agent={error.agent} | type={error.error_type} | "
+        f"message={error.message} | raw={error.raw_response}"
+    )
     st.warning(
         "**Something went wrong — please try again.** "
         "The AI model returned an unexpected response. "
