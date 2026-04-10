@@ -186,6 +186,16 @@ class BaseAgent:
         return raw
 
     def _parse(self, raw: str) -> BaseModel:
+        import json
+        # Groq occasionally wraps the output in a JSON array [{}] instead of {}.
+        # Unwrap single-element arrays before Pydantic validation.
+        try:
+            decoded = json.loads(raw)
+            if isinstance(decoded, list) and len(decoded) == 1:
+                self.logger.warning("Model returned array instead of object — unwrapping.")
+                raw = json.dumps(decoded[0])
+        except Exception:
+            pass  # let model_validate_json handle malformed JSON and report clearly
         return self.get_schema().model_validate_json(raw)
 
     def _validate_domain(self, parsed: BaseModel) -> None:
