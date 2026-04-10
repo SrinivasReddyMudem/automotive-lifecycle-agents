@@ -43,12 +43,11 @@ def render_agent_error(error: AgentError) -> None:
             "**Daily API quota reached.** Please try again later or tomorrow."
         )
         return
-    st.error(f"**{error.error_type.replace('_', ' ').title()}**")
-    st.markdown(f"Agent: `{error.agent}`")
-    st.markdown(f"Message: {error.message}")
-    if error.raw_response:
-        with st.expander("Raw API response (for debugging)"):
-            st.code(error.raw_response)
+    st.warning(
+        "**Something went wrong — please try again.** "
+        "The AI model returned an unexpected response. "
+        "This is usually a one-time issue and resolves on the next attempt."
+    )
 
 
 def _render_self_evaluation(self_eval: list) -> None:
