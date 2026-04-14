@@ -147,6 +147,12 @@ def render_analytics_dashboard() -> None:
             st.info("No analytics data yet. Share the app link to start collecting sessions.")
             return
 
+        # Convert UTC timestamps to Germany time (Europe/Berlin) for display
+        try:
+            df["timestamp"] = df["timestamp"].dt.tz_localize("UTC").dt.tz_convert("Europe/Berlin")
+        except Exception:
+            pass  # already tz-aware or conversion failed — show as-is
+
         # ── Bot filter ─────────────────────────────────────────────────────────
         # A session is a likely bot only if it lasted under 5 seconds AND
         # submitted no query. HR/non-technical visitors who read the About page
