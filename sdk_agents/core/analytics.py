@@ -147,11 +147,16 @@ def render_analytics_dashboard() -> None:
             st.info("No analytics data yet. Share the app link to start collecting sessions.")
             return
 
-        # Convert UTC timestamps to Germany time (Europe/Berlin) for display
+        # Convert UTC timestamps to Germany time (Europe/Berlin) for display.
+        # Timestamps in CSV are tz-aware (stored with +00:00) so tz_convert
+        # is used directly — tz_localize would fail on already-aware timestamps.
         try:
-            df["timestamp"] = df["timestamp"].dt.tz_localize("UTC").dt.tz_convert("Europe/Berlin")
+            ts = df["timestamp"]
+            if ts.dt.tz is None:
+                ts = ts.dt.tz_localize("UTC")
+            df["timestamp"] = ts.dt.tz_convert("Europe/Berlin")
         except Exception:
-            pass  # already tz-aware or conversion failed — show as-is
+            pass  # conversion failed — show as-is
 
         # ── Bot filter ─────────────────────────────────────────────────────────
         # A session is a likely bot only if it lasted under 5 seconds AND
