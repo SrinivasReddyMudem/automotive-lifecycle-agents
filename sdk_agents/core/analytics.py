@@ -25,6 +25,7 @@ Tier B/C upgrade path (5-line future hook):
 import csv
 import json
 import os
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -40,6 +41,38 @@ GA_MEASUREMENT_ID: str = os.getenv("GA_MEASUREMENT_ID", "")  # Tier B: set G-XXX
 _LOGS_DIR = Path(__file__).parents[1] / "logs"
 _CSV_PATH = _LOGS_DIR / "analytics.csv"
 _CSV_FIELDS = ["session_id", "timestamp", "ref", "event_name", "details", "duration_sec"]
+
+# ── Supabase persistence ────────────────────────────────────────────────────────
+
+_supabase_client: object = None  # lazy-initialised, reused across reruns
+
+
+def _get_secret(key: str) -> str:
+    """Read from env var first, then st.secrets (Streamlit Cloud). Silent on any error."""
+    val = os.getenv(key, "")
+    if val:
+        return val
+    try:
+        return str(st.secrets.get(key, ""))
+    except Exception:
+        return ""
+
+
+def _get_supabase():
+    """Return a cached Supabase client, or None if not configured / unavailable."""
+    global _supabase_client
+    if _supabase_client is not None:
+        return _supabase_client
+    try:
+        url = _get_secret("SUPABASE_URL")
+        key = _get_secret("SUPABASE_KEY")
+        if not url or not key:
+            return None
+        from supabase import create_client  # noqa: PLC0415
+        _supabase_client = create_client(url, key)
+        return _supabase_client
+    except Exception:
+        return None
 
 
 # ── Public API ─────────────────────────────────────────────────────────────────
@@ -268,22 +301,49 @@ def render_analytics_dashboard() -> None:
 # ── Private helpers ─────────────────────────────────────────────────────────────
 
 def _write_row(event_name: str, details: dict) -> None:
-    """Append one row to analytics.csv. Silently swallows all exceptions."""
+    """
+    Build the row on the main thread (session_state access must be synchronous),
+    then hand it off to a daemon thread. Main thread never blocks on network I/O.
+    """
     try:
-        _LOGS_DIR.mkdir(exist_ok=True)
-        write_header = not _CSV_PATH.exists()
-        with _CSV_PATH.open("a", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=_CSV_FIELDS)
-            if write_header:
-                writer.writeheader()
-            writer.writerow({
-                "session_id":   st.session_state.get("_analytics_session_id", ""),
-                "timestamp":    datetime.now(timezone.utc).isoformat(),
-                "ref":          st.session_state.get("_analytics_ref", "unknown"),
-                "event_name":   event_name,
-                "details":      json.dumps(details),
-                "duration_sec": _duration_sec(),
-            })
+        row = {
+            "session_id":   st.session_state.get("_analytics_session_id", ""),
+            "timestamp":    datetime.now(timezone.utc).isoformat(),
+            "ref":          st.session_state.get("_analytics_ref", "unknown"),
+            "event_name":   event_name,
+            "details":      json.dumps(details),
+            "duration_sec": _duration_sec(),
+        }
+        threading.Thread(target=_persist_row, args=(row,), daemon=True).start()
+    except Exception:
+        pass
+
+
+def _persist_row(row: dict) -> None:
+    """
+    Background thread: write one row to Supabase when configured, else CSV.
+    daemon=True — dies with the process; never blocks the Streamlit main thread.
+    Three independent try/except layers mean no exception can escape.
+    """
+    try:
+        sb = _get_supabase()
+        if sb:
+            try:
+                sb.table("analytics").insert(row).execute()
+                return
+            except Exception:
+                pass  # Supabase failed — fall through to CSV
+        # CSV fallback: local dev or Supabase not configured / temporarily down
+        try:
+            _LOGS_DIR.mkdir(exist_ok=True)
+            write_header = not _CSV_PATH.exists()
+            with _CSV_PATH.open("a", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=_CSV_FIELDS)
+                if write_header:
+                    writer.writeheader()
+                writer.writerow(row)
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -300,9 +360,26 @@ def _duration_sec() -> float:
 
 
 def _load_df():
-    """Read analytics.csv into a DataFrame. Returns None if unavailable."""
+    """
+    Read analytics data into a DataFrame.
+    Tries Supabase first (persistent); falls back to local CSV (dev / not configured).
+    Returns None if no data is available from either source.
+    """
     try:
         import pandas as pd
+        sb = _get_supabase()
+        if sb:
+            try:
+                response = sb.table("analytics").select("*").order("timestamp", desc=False).execute()
+                if response.data:
+                    df = pd.DataFrame(response.data)
+                    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+                    # Return only the expected columns in the expected order
+                    return df[[c for c in _CSV_FIELDS if c in df.columns]]
+                return pd.DataFrame(columns=_CSV_FIELDS)
+            except Exception:
+                pass  # Supabase read failed — fall through to CSV
+        # CSV fallback
         if not _CSV_PATH.exists():
             return None
         return pd.read_csv(_CSV_PATH, parse_dates=["timestamp"])
