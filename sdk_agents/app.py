@@ -418,7 +418,7 @@ if page == "About":
 
 After years across ECU development, integration, testing, and project roles, the same
 pattern kept appearing — **complex issues taking days to diagnose** when a structured,
-experience-driven approach could narrow them down in under an hour.
+experience-driven approach could narrow them down in less time.
 
 This gap has real impact:
 
