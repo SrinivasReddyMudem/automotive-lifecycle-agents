@@ -45,7 +45,11 @@ class BaseAgent:
     def __init__(self):
         self.provider = os.getenv("LLM_PROVIDER", "groq").lower()
         self.groq_model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
-        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
+        # Not "gemini-flash-latest": that alias tracks whichever model is
+        # newest, and brand-new models ship with far stingier free-tier
+        # quotas (gemini-3.6-flash hit a 20-request limit within minutes).
+        # A named, established version gets a much larger, stable quota.
+        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
         self.logger = get_logger(self.AGENT_NAME)
 
         if self.provider == "gemini":
