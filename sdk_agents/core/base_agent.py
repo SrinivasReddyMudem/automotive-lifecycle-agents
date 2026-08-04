@@ -48,8 +48,11 @@ class BaseAgent:
         # Not "gemini-flash-latest": that alias tracks whichever model is
         # newest, and brand-new models ship with far stingier free-tier
         # quotas (gemini-3.6-flash hit a 20-request limit within minutes).
-        # A named, established version gets a much larger, stable quota.
-        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+        # gemini-3.5-flash has a larger quota but was intermittently returning
+        # "503 high demand" and taking 90-140s per call under current load.
+        # gemini-3.1-flash-lite verified faster (4-14s) and reliable under the
+        # same conditions, with no quality loss visible in the schema output.
+        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
         self.logger = get_logger(self.AGENT_NAME)
 
         if self.provider == "gemini":
