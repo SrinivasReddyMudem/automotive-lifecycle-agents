@@ -1,10 +1,17 @@
 """
-Base agent — Groq-backed implementation.
-Uses json_schema response_format to enforce structured JSON output.
-No prompt-based format instructions needed — schema enforcement is at API level.
+Base agent — multi-provider implementation (Groq or Gemini).
+Uses schema-enforced structured JSON output. No prompt-based format
+instructions needed — schema enforcement is at the API level for both providers.
 
-Free tier: Groq — 14,400 requests/day, 6000 tokens/min on llama-3.3-70b.
-Get a free API key (no credit card) at: console.groq.com
+Provider is selected via LLM_PROVIDER env var: "groq" (default) or "gemini".
+
+Groq free tier: only openai/gpt-oss-20b and openai/gpt-oss-120b support strict
+json_schema, both capped at 8,000 tokens/minute — too small for several of this
+project's larger agent prompts (sw-integrator, gate-review-approver, etc.).
+Get a free key (no credit card) at: console.groq.com
+
+Gemini free tier: no credit card required, much larger token-per-minute budget,
+native response_schema support. Get a free key at: aistudio.google.com/apikey
 """
 
 import os
@@ -13,7 +20,6 @@ from pydantic import BaseModel, ValidationError
 from typing import Literal
 from .logger import get_logger
 
-MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 MAX_RETRIES = 2  # retry up to 2 times after first failure
 
 
@@ -34,15 +40,34 @@ class BaseAgent:
     AGENT_NAME = "base"
 
     def __init__(self):
-        api_key = os.getenv("GROQ_API_KEY")
-        if not api_key:
-            raise EnvironmentError(
-                "GROQ_API_KEY not set.\n"
-                "Get a free key (no credit card) at console.groq.com\n"
-                "Then add it to sdk_agents/.env as: GROQ_API_KEY=your-key"
-            )
-        self.client = Groq(api_key=api_key)
+        self.provider = os.getenv("LLM_PROVIDER", "groq").lower()
+        self.groq_model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
         self.logger = get_logger(self.AGENT_NAME)
+
+        if self.provider == "gemini":
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key:
+                raise EnvironmentError(
+                    "GEMINI_API_KEY not set.\n"
+                    "Get a free key (no credit card) at aistudio.google.com/apikey\n"
+                    "Then add it to sdk_agents/.env as: GEMINI_API_KEY=your-key"
+                )
+            from google import genai
+            self.client = genai.Client(api_key=api_key)
+        elif self.provider == "groq":
+            api_key = os.getenv("GROQ_API_KEY")
+            if not api_key:
+                raise EnvironmentError(
+                    "GROQ_API_KEY not set.\n"
+                    "Get a free key (no credit card) at console.groq.com\n"
+                    "Then add it to sdk_agents/.env as: GROQ_API_KEY=your-key"
+                )
+            self.client = Groq(api_key=api_key)
+        else:
+            raise EnvironmentError(
+                f"Unknown LLM_PROVIDER '{self.provider}'. Use 'groq' or 'gemini'."
+            )
 
     def run(self, user_message: str) -> BaseModel | AgentError:
         """
@@ -157,11 +182,16 @@ class BaseAgent:
 
     def _call_api(self, user_message: str, domain_feedback: str | None = None) -> str:
         """
-        Call Groq API with json_schema response_format enforcement.
+        Call the configured provider with schema-enforced structured output.
         The model must return JSON matching the schema — cannot return free text.
         If domain_feedback is set (retry after DomainCheckError), it is appended
         as a follow-up user message so the model knows exactly what to fix.
         """
+        if self.provider == "gemini":
+            return self._call_gemini(user_message, domain_feedback)
+        return self._call_groq(user_message, domain_feedback)
+
+    def _call_groq(self, user_message: str, domain_feedback: str | None = None) -> str:
         schema = self._inline_schema(self.get_schema().model_json_schema())
         messages: list[dict] = [
             {"role": "system", "content": self.get_prompt()},
@@ -170,7 +200,7 @@ class BaseAgent:
         if domain_feedback:
             messages.append({"role": "user", "content": domain_feedback})
         response = self.client.chat.completions.create(
-            model=MODEL,
+            model=self.groq_model,
             messages=messages,
             response_format={
                 "type": "json_schema",
@@ -182,6 +212,26 @@ class BaseAgent:
             },
         )
         raw = response.choices[0].message.content
+        self.logger.debug(f"Raw response preview: {raw[:300]}")
+        return raw
+
+    def _call_gemini(self, user_message: str, domain_feedback: str | None = None) -> str:
+        # Gemini's SDK accepts a Pydantic model class directly as response_schema
+        # and handles the OpenAPI-schema conversion internally — no manual
+        # $ref-inlining needed here (unlike Groq's strict json_schema mode).
+        contents = user_message
+        if domain_feedback:
+            contents = f"{user_message}\n\n{domain_feedback}"
+        response = self.client.models.generate_content(
+            model=self.gemini_model,
+            contents=contents,
+            config={
+                "system_instruction": self.get_prompt(),
+                "response_mime_type": "application/json",
+                "response_schema": self.get_schema(),
+            },
+        )
+        raw = response.text
         self.logger.debug(f"Raw response preview: {raw[:300]}")
         return raw
 
