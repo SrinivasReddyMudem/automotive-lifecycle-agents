@@ -4,6 +4,7 @@ Each agent type gets a dedicated render function.
 """
 
 import json
+import re
 import streamlit as st
 from sdk_agents.core.base_agent import AgentError
 from sdk_agents.core.logger import get_logger
@@ -41,9 +42,26 @@ def safe_render(render_fn, output) -> None:
 
 def render_agent_error(error: AgentError) -> None:
     msg = error.message.lower()
-    if "429" in error.message or "rate_limit" in msg or "rate limit" in msg:
+    is_rate_limit = "429" in error.message or "rate_limit" in msg or "rate limit" in msg
+    if is_rate_limit:
+        # Free-tier providers enforce both a short per-minute burst limit and a
+        # much larger per-day limit. Most 429s in practice are the per-minute
+        # one and clear within a minute — only say "come back tomorrow" when
+        # the provider's own message actually says so.
+        is_daily = any(kw in msg for kw in ("per day", "rpd", "daily", "requests per day"))
+        if is_daily:
+            st.warning(
+                "**Daily API quota reached.** Please try again later or tomorrow."
+            )
+            return
+        retry_hint = ""
+        match = re.search(r"retry[^0-9]{0,15}(\d+(?:\.\d+)?)\s*s", msg)
+        if match:
+            retry_hint = f" (try again in about {match.group(1)}s)"
         st.warning(
-            "**Daily API quota reached.** Please try again later or tomorrow."
+            f"**Rate limit hit — this is short-term, not a daily cap.** "
+            f"The free tier allows only a few requests per minute; wait a moment "
+            f"and try again{retry_hint}."
         )
         return
     # Log full technical detail to file for debugging — never shown to the user
