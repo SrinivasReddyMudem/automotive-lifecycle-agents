@@ -42,8 +42,7 @@ def safe_render(render_fn, output) -> None:
 
 def render_agent_error(error: AgentError) -> None:
     msg = error.message.lower()
-    is_rate_limit = "429" in error.message or "rate_limit" in msg or "rate limit" in msg
-    if is_rate_limit:
+    if error.error_type == "rate_limited":
         # Free-tier providers enforce both a short per-minute burst limit and a
         # much larger per-day limit. Most 429s in practice are the per-minute
         # one and clear within a minute — only say "come back tomorrow" when

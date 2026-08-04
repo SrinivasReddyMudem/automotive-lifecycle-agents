@@ -15,7 +15,8 @@ native response_schema support. Get a free key at: aistudio.google.com/apikey
 """
 
 import os
-from groq import Groq, BadRequestError
+from groq import Groq, BadRequestError, RateLimitError as GroqRateLimitError
+from google.genai.errors import APIError as GeminiAPIError
 from pydantic import BaseModel, ValidationError
 from typing import Literal
 from .logger import get_logger
@@ -26,7 +27,9 @@ MAX_RETRIES = 2  # retry up to 2 times after first failure
 class AgentError(BaseModel):
     """Returned instead of crashing when API or validation fails."""
     agent: str
-    error_type: Literal["api_error", "validation_error", "domain_check_failed"]
+    error_type: Literal[
+        "api_error", "validation_error", "domain_check_failed", "rate_limited"
+    ]
     message: str
     raw_response: str | None = None
 
@@ -137,6 +140,19 @@ class BaseAgent:
                 )
 
             except Exception as e:
+                is_rate_limit = isinstance(e, GroqRateLimitError) or (
+                    isinstance(e, GeminiAPIError) and e.code == 429
+                )
+                if is_rate_limit:
+                    # Retrying immediately only makes rate limiting worse — the
+                    # provider just asked us to back off. Fail fast instead of
+                    # burning the remaining attempts in a rapid-fire burst.
+                    self.logger.warning(f"Rate limited (attempt {attempt + 1}): {e}")
+                    return AgentError(
+                        agent=self.AGENT_NAME,
+                        error_type="rate_limited",
+                        message=str(e),
+                    )
                 self.logger.error(f"Unexpected error (attempt {attempt + 1}): {e}")
                 if attempt == MAX_RETRIES:
                     return AgentError(
