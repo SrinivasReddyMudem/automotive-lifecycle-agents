@@ -15,7 +15,7 @@ native response_schema support. Get a free key at: aistudio.google.com/apikey
 """
 
 import os
-from groq import Groq, BadRequestError, RateLimitError as GroqRateLimitError
+from groq import Groq, BadRequestError, APIStatusError as GroqAPIStatusError
 from google.genai.errors import APIError as GeminiAPIError
 from pydantic import BaseModel, ValidationError
 from typing import Literal
@@ -140,9 +140,12 @@ class BaseAgent:
                 )
 
             except Exception as e:
-                is_rate_limit = isinstance(e, GroqRateLimitError) or (
-                    isinstance(e, GeminiAPIError) and e.code == 429
-                )
+                # 429 = too many requests; Groq also returns 413 for "request
+                # too large for tokens-per-minute budget" — both mean retrying
+                # immediately will not help and only wastes the budget further.
+                is_rate_limit = (
+                    isinstance(e, GroqAPIStatusError) and e.status_code in (429, 413)
+                ) or (isinstance(e, GeminiAPIError) and e.code == 429)
                 if is_rate_limit:
                     # Retrying immediately only makes rate limiting worse — the
                     # provider just asked us to back off. Fail fast instead of
