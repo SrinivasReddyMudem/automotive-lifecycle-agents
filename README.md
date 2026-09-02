@@ -324,6 +324,11 @@ pytest sdk_agents/tests/ -v
 python sdk_agents/test_routing.py
 ```
 
+App not responding, or working locally but not on a deployed instance?
+See [docs/troubleshooting.md](docs/troubleshooting.md) — a runbook for
+provider/quota/deployment issues, with the exact diagnostic commands used
+to resolve each one.
+
 ---
 
 ## CI quality checks
