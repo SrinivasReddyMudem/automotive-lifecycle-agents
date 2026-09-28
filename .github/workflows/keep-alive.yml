@@ -1,0 +1,56 @@
+name: Keep Streamlit App Awake
+
+# Streamlit Community Cloud puts a free-tier app to sleep after a period
+# of no visitor traffic. Anyone opening the link cold then sees a
+# platform-level "Zzzz, this app has gone to sleep" interstitial and has
+# to click a button and wait for a cold boot before the real app loads.
+# That page is served by Streamlit's own proxy — nothing in this repo's
+# app code can intercept or skip it, because the app process isn't even
+# running yet when a sleeping visitor lands on the URL. The only real fix
+# is to make sure the app never accumulates enough idle time to sleep in
+# the first place, by visiting it on a schedule well inside that window.
+#
+# See docs/troubleshooting.md for the full incident this workflow fixes.
+
+on:
+  schedule:
+    # Every 6 hours — Streamlit's hibernation window is measured in days
+    # of total inactivity, so this leaves a large safety margin.
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    name: Ping the deployed app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request the app URL to reset its inactivity timer
+        run: |
+          # A plain `curl -L` with no cookie jar hits an actual infinite
+          # redirect loop on this app (verified: 50 redirects, no
+          # resolution) — Streamlit Cloud's anonymous-viewer auth handshake
+          # (app -> share.streamlit.io/-/auth/app -> app/-/login?payload=...
+          # -> app) needs a cookie carried across requests to terminate.
+          # A cookie jar reused across two sequential requests resolves it
+          # reliably (also verified). Do NOT "simplify" this to a single
+          # bare curl call — it will silently loop/fail every single run.
+          COOKIES=$(mktemp)
+          curl -sS -o /dev/null --max-time 30 \
+            -c "$COOKIES" -b "$COOKIES" \
+            --user-agent "Mozilla/5.0 (keep-alive ping; see docs/troubleshooting.md)" \
+            "https://automotive-skilled-ai-agents.streamlit.app/" || true
+
+          STATUS=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 \
+            -c "$COOKIES" -b "$COOKIES" -L --max-redirs 5 \
+            --user-agent "Mozilla/5.0 (keep-alive ping; see docs/troubleshooting.md)" \
+            "https://automotive-skilled-ai-agents.streamlit.app/")
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "::warning::Unexpected status $STATUS from the app URL — check manually, this ping may not have registered as a visit."
+          fi
+          # Note: the "app is asleep" interstitial is rendered client-side
+          # by JavaScript, not present in the raw HTML response — a 200
+          # here does not distinguish "app running" from "sleep page
+          # loaded." That's fine for THIS job's purpose (registering a
+          # visit to reset the inactivity timer works either way), but
+          # don't add a grep-for-sleep-text check here, it will never match.

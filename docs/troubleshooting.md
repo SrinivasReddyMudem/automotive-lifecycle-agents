@@ -111,13 +111,54 @@ GROQ_API_KEY = "..."
 ```
 Saving triggers an automatic restart.
 
-### Public link redirects to `share.streamlit.io/-/auth/app` (login wall)
-Separate setting from Secrets. The app's viewer access is set to private.
-**Settings → General** (wording varies by Streamlit version) → find the
-"who can view this app" control → set to public. A private app and a
-crashed app look identical to an outside visitor (or to an unauthenticated
-fetch) — both just show the login wall — so fix this setting *and* verify
-in an incognito window before concluding the app itself is broken.
+### Public link redirects to `share.streamlit.io/-/auth/app`
+**Correction (2026-09-28): this was previously misdiagnosed here as "the
+app is private, go make it public."** That conclusion was wrong — it came
+from checking with a stateless fetch tool (no cookie jar), which cannot
+complete Streamlit Cloud's normal anonymous-viewer auth handshake and
+therefore *looks* identical to a real private-app login wall whether the
+app is public or not. Verified directly: a bare `curl -L` (no cookie
+support) on this exact public app hits a genuine infinite redirect loop
+(app → `share.streamlit.io/-/auth/app` → `app/-/login?payload=...` →
+app → repeat, 50+ times, never resolving). The same request with a cookie
+jar reused across two sequential calls completes normally and returns
+`200`. **This redirect chain happens on every Streamlit Cloud app, public
+or private — it is not evidence of a privacy setting.**
+
+If you actually suspect the viewer-access setting (not just seeing this
+redirect), the real test is opening the link in an incognito **browser**
+window — a browser completes the cookie handshake automatically. If a
+real browser, fully logged out, still shows a login/access-request
+screen instead of the app (or the sleep page), *then* check
+**Settings → General → who can view this app**. Don't conclude "private"
+from a curl/fetch-tool redirect alone.
+
+### App shows "Zzzz, this app has gone to sleep" to visitors
+Streamlit Community Cloud hibernates a free-tier app after a period with
+no visitor traffic. This page is served by Streamlit's own proxy *before*
+the app process starts — nothing in this repo's app code can intercept,
+skip, or restyle it. The fix is a scheduled keep-alive ping frequent
+enough that the app never accumulates enough idle time to sleep:
+`.github/workflows/keep-alive.yml`, runs every 6 hours via `workflow_dispatch`
++ `schedule`.
+
+**Important implementation detail if you ever touch that workflow:** a
+plain `curl -L` with no cookie jar does **not** reliably reach the app —
+it hits the same infinite redirect loop described above (Streamlit's
+auth handshake needs a cookie carried across requests to terminate). The
+workflow does two sequential requests sharing a cookie jar file
+(`-c "$COOKIES" -b "$COOKIES"`) specifically to avoid this — verified
+locally with 3 consecutive successful runs before being trusted in CI.
+Also: the sleep-page content is rendered client-side by JavaScript, not
+present in the raw HTML response, so don't add a `grep -i "gone to
+sleep"` check against the response body — it will never match, on either
+a sleeping or awake app.
+
+If the app is *currently* asleep, this workflow does not wake it on its
+own — waking requires the actual button click a browser performs (a
+JS-driven action, not a plain page load). The workflow only prevents
+*future* sleep. If you land on the sleep page, click through once
+manually; the keep-alive ping then keeps it from happening again.
 
 ### Deployed dependency version differs from what you tested locally
 `requirements.txt` entries without a pinned version (e.g. `google-genai>=1.0`)
