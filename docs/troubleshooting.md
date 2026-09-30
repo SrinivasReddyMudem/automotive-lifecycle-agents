@@ -137,28 +137,45 @@ from a curl/fetch-tool redirect alone.
 Streamlit Community Cloud hibernates a free-tier app after a period with
 no visitor traffic. This page is served by Streamlit's own proxy *before*
 the app process starts — nothing in this repo's app code can intercept,
-skip, or restyle it. The fix is a scheduled keep-alive ping frequent
-enough that the app never accumulates enough idle time to sleep:
-`.github/workflows/keep-alive.yml`, runs every 6 hours via `workflow_dispatch`
-+ `schedule`.
+skip, or restyle it. Fixed by `.github/workflows/keep-alive.yml`, which
+visits the app on a schedule frequent enough that it never accumulates
+enough idle time to sleep.
 
-**Important implementation detail if you ever touch that workflow:** a
-plain `curl -L` with no cookie jar does **not** reliably reach the app —
-it hits the same infinite redirect loop described above (Streamlit's
-auth handshake needs a cookie carried across requests to terminate). The
-workflow does two sequential requests sharing a cookie jar file
-(`-c "$COOKIES" -b "$COOKIES"`) specifically to avoid this — verified
-locally with 3 consecutive successful runs before being trusted in CI.
-Also: the sleep-page content is rendered client-side by JavaScript, not
-present in the raw HTML response, so don't add a `grep -i "gone to
-sleep"` check against the response body — it will never match, on either
-a sleeping or awake app.
+**This took two attempts — the first one silently didn't work, learn
+from that before touching this workflow:**
 
-If the app is *currently* asleep, this workflow does not wake it on its
-own — waking requires the actual button click a browser performs (a
-JS-driven action, not a plain page load). The workflow only prevents
-*future* sleep. If you land on the sleep page, click through once
-manually; the keep-alive ping then keeps it from happening again.
+*Attempt 1 (removed): plain curl requests, run every 6 hours.* Ran
+"successfully" (HTTP 200) every single scheduled run for 2 full days
+straight — and the app still went to sleep and showed the interstitial
+to a real visitor anyway. **A scripted HTTP GET returning 200 does not
+mean the ping actually counted as activity.** Best working theory:
+Streamlit Cloud's hibernation tracking requires a real browser session
+— specifically the WebSocket connection Streamlit's own frontend opens
+after the page loads — which curl can never establish no matter which
+endpoint or how many redirects it correctly follows. Checked
+`/_stcore/health` and `/healthz` too; neither changed this conclusion.
+**Do not "fix" this workflow by going back to curl just because it
+returns 200 — 200 does not mean it worked, as proven here.**
+
+*Attempt 2 (current): a real headless browser (Playwright + Chromium),
+just loading the page.* Verified directly and empirically, against the
+live app while it was actually asleep: the browser detected the "gone to
+sleep" text, found and clicked the real "Yes, get this app back up!"
+button, and the app transitioned to booting. That's a real click on a
+real rendered button — not a request that merely resembles one.
+
+**Deliberately does not submit a query to any agent.** That was
+considered (a real agent interaction is an even stronger activity
+signal), but it would trigger a real Groq/Gemini API call on every
+scheduled run — 4 times a day, forever, against the same limited
+free-tier quota this project has already had real problems with running
+out of. A plain page load with a real browser session was sufficient on
+its own; don't add query submission back in without a specific reason,
+since it trades quota for a signal strength that isn't needed.
+
+If the app is *currently* asleep, this workflow's own visit clicks the
+wake button as part of the same run — unlike the old curl version, it
+doesn't need you to do that manually first.
 
 ### Deployed dependency version differs from what you tested locally
 `requirements.txt` entries without a pinned version (e.g. `google-genai>=1.0`)

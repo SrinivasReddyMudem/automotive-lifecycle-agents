@@ -6,9 +6,23 @@ name: Keep Streamlit App Awake
 # to click a button and wait for a cold boot before the real app loads.
 # That page is served by Streamlit's own proxy — nothing in this repo's
 # app code can intercept or skip it, because the app process isn't even
-# running yet when a sleeping visitor lands on the URL. The only real fix
-# is to make sure the app never accumulates enough idle time to sleep in
-# the first place, by visiting it on a schedule well inside that window.
+# running yet when a sleeping visitor lands on the URL.
+#
+# IMPORTANT — this workflow previously used plain curl requests. That
+# ran successfully (HTTP 200) every 6 hours for 2 full days straight and
+# the app STILL went to sleep — proof that a scripted HTTP GET does not
+# count as real activity to Streamlit Cloud's hibernation tracking. It
+# very likely requires an actual browser session (the WebSocket
+# connection Streamlit's frontend opens after the page loads), which
+# curl can never establish. Confirmed empirically: a real headless
+# browser visiting the URL does register — verified live against this
+# app, both waking it from an active sleep state and loading it cleanly
+# while already awake.
+#
+# Deliberately does NOT submit a query to an agent — that would trigger
+# a real Groq/Gemini API call on every scheduled run (4x/day), burning
+# through the same limited free-tier quota this project has already hit
+# problems with. A plain page load with a real browser is sufficient.
 #
 # See docs/troubleshooting.md for the full incident this workflow fixes.
 
@@ -21,36 +35,45 @@ on:
 
 jobs:
   ping:
-    name: Ping the deployed app
+    name: Load the app with a real browser
     runs-on: ubuntu-latest
     steps:
-      - name: Request the app URL to reset its inactivity timer
-        run: |
-          # A plain `curl -L` with no cookie jar hits an actual infinite
-          # redirect loop on this app (verified: 50 redirects, no
-          # resolution) — Streamlit Cloud's anonymous-viewer auth handshake
-          # (app -> share.streamlit.io/-/auth/app -> app/-/login?payload=...
-          # -> app) needs a cookie carried across requests to terminate.
-          # A cookie jar reused across two sequential requests resolves it
-          # reliably (also verified). Do NOT "simplify" this to a single
-          # bare curl call — it will silently loop/fail every single run.
-          COOKIES=$(mktemp)
-          curl -sS -o /dev/null --max-time 30 \
-            -c "$COOKIES" -b "$COOKIES" \
-            --user-agent "Mozilla/5.0 (keep-alive ping; see docs/troubleshooting.md)" \
-            "https://automotive-skilled-ai-agents.streamlit.app/" || true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-          STATUS=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 \
-            -c "$COOKIES" -b "$COOKIES" -L --max-redirs 5 \
-            --user-agent "Mozilla/5.0 (keep-alive ping; see docs/troubleshooting.md)" \
-            "https://automotive-skilled-ai-agents.streamlit.app/")
-          echo "HTTP status: $STATUS"
-          if [ "$STATUS" != "200" ]; then
-            echo "::warning::Unexpected status $STATUS from the app URL — check manually, this ping may not have registered as a visit."
-          fi
-          # Note: the "app is asleep" interstitial is rendered client-side
-          # by JavaScript, not present in the raw HTML response — a 200
-          # here does not distinguish "app running" from "sleep page
-          # loaded." That's fine for THIS job's purpose (registering a
-          # visit to reset the inactivity timer works either way), but
-          # don't add a grep-for-sleep-text check here, it will never match.
+      - name: Install Playwright
+        run: |
+          pip install --quiet playwright
+          playwright install --with-deps chromium
+
+      - name: Visit the app (wakes it if asleep, keeps it alive if awake)
+        run: |
+          python -c "
+          from playwright.sync_api import sync_playwright
+
+          URL = 'https://automotive-skilled-ai-agents.streamlit.app/'
+
+          with sync_playwright() as p:
+              browser = p.chromium.launch(headless=True)
+              page = browser.new_page()
+              print(f'Navigating to {URL} ...')
+              page.goto(URL, wait_until='domcontentloaded', timeout=60000)
+
+              body_text = page.inner_text('body')
+              if 'gone to sleep' in body_text.lower():
+                  print('App was asleep — clicking wake button...')
+                  page.get_by_text('Yes, get this app back up!', exact=False).first.click()
+                  page.wait_for_timeout(20000)
+                  print('State after wake click:', page.inner_text('body')[:200])
+              else:
+                  print('App was already awake.')
+                  print('Title:', page.title())
+
+              # Hold the session open briefly — a real WebSocket connection,
+              # not just a fetch, is what appears to register as activity.
+              page.wait_for_timeout(8000)
+              browser.close()
+              print('Done.')
+          "
