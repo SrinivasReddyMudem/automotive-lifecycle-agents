@@ -393,7 +393,7 @@ with st.sidebar:
 # ── About page ─────────────────────────────────────────────────────────────────
 if page == "About":
     st.title("Domain-Specific AI Agents")
-    st.subheader("For automotive and embedded software engineering")
+    st.subheader("Domain-specific AI agents for automotive and embedded software engineering — structured, traceable, and standards-aligned.")
     st.markdown("---")
 
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
