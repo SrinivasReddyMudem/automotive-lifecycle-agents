@@ -351,7 +351,7 @@ RENDER_MAP = {
 }
 
 st.set_page_config(
-    page_title="Automotive Lifecycle Agents",
+    page_title="Domain-Specific AI Agents",
     page_icon=":car:",
     layout="wide",
 )
@@ -363,7 +363,7 @@ if is_admin_request():
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.title("Automotive Lifecycle Agents")
+    st.title("Domain-Specific AI Agents")
     st.caption("by Srinivas Reddy Mudem")
     st.markdown("---")
 
@@ -392,8 +392,8 @@ with st.sidebar:
 
 # ── About page ─────────────────────────────────────────────────────────────────
 if page == "About":
-    st.title("Automotive Lifecycle Agents")
-    st.subheader("Domain-specific AI agents for automotive ECU engineering — structured, traceable, and standards-aligned.")
+    st.title("Domain-Specific AI Agents")
+    st.subheader("For automotive and embedded software engineering")
     st.markdown("---")
 
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)

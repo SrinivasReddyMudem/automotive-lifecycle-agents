@@ -1,4 +1,6 @@
-# Automotive Lifecycle Agents
+# Domain-Specific AI Agents
+
+For automotive and embedded software engineering.
 
 [![Tests](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/tests.yml/badge.svg)](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/tests.yml)
 [![Agents](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate-agents.yml/badge.svg)](https://github.com/SrinivasReddyMudem/automotive-lifecycle-agents/actions/workflows/validate-agents.yml)
