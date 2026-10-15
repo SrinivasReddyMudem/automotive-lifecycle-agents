@@ -133,3 +133,16 @@ prompt.py → skill_loader.py (loads skills)
 4. Add test file to `sdk_agents/tests/<group>/test_<agent>.py`
 5. **Add entry to this DEPENDENCIES.md** — agent registry table + schema/render cross-check row
 6. Run full validation: `python -m pytest sdk_agents/tests/ -q`
+
+
+## Full-response clipboard control
+
+`sdk_agents/core/response_copy.py` formats all structured fields as Markdown.
+`sdk_agents/core/copy_component/index.html` copies that text in the browser.
+`sdk_agents/app.py` mounts one control per successful history entry, with a unique key.
+No agent schemas, prompts, validators, provider calls, or dependencies are changed.
+
+Must verify when changing these files:
+- Formatter: nested fields, empty values, code fences, Unicode, hostile HTML text.
+- Browser: complete collapsed content, separate history entries, reruns, clipboard failure.
+- Existing SDK suite, core imports, routing test, and Python syntax before commit.

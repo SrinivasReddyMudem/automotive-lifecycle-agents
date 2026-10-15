@@ -31,6 +31,7 @@ from sdk_agents.core.renderer import (  # noqa: E402
     render_sw_unit_tester,
     render_agent_error,
 )
+from sdk_agents.core.response_copy import render_copy_button  # noqa: E402
 from sdk_agents.core.analytics import (  # noqa: E402
     init_analytics, track_event, track_agent_selected,
     is_admin_request, render_analytics_dashboard,
@@ -675,7 +676,7 @@ elif page == "Try the Agent":
     )
 
     # Display chat history
-    for entry in st.session_state[history_key]:
+    for entry_index, entry in enumerate(st.session_state[history_key]):
         with st.chat_message("user"):
             st.markdown(entry["prompt"])
             # Restore routing captions saved at submission time
@@ -699,6 +700,13 @@ elif page == "Try the Agent":
             entry_agent = entry.get("agent", selected_agent)
             _render = RENDER_MAP.get(entry_agent, render_agent_error)
             safe_render(_render, entry["result"])
+            if not hasattr(entry["result"], "error_type"):
+                render_copy_button(
+                    entry["prompt"],
+                    AGENT_DISPLAY_NAMES.get(entry_agent, entry_agent or "Agent"),
+                    entry["result"],
+                    key=f"copy_{history_key}_{entry_index}",
+                )
 
     # Chat input — new submission
     if prompt := st.chat_input("Describe the fault or ask your engineering question..."):
