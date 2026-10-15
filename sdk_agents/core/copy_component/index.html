@@ -17,7 +17,6 @@
   <span id="status" role="status" aria-live="polite"></span>
   <textarea id="fallback" readonly aria-label="Full response for manual copying"></textarea>
   <script>
-    let text = "";
     const button = document.getElementById("copy");
     const status = document.getElementById("status");
     const fallback = document.getElementById("fallback");
@@ -27,12 +26,34 @@
     function resize() {
       send("streamlit:setFrameHeight", {height: document.body.scrollHeight + 8});
     }
+    function renderedResponse() {
+      const root = window.frameElement.closest('[data-testid="stChatMessageContent"]');
+      if (!root) throw new Error("Response container unavailable");
+      const doc = root.ownerDocument;
+      const selection = doc.getSelection();
+      const previous = Array.from({length: selection.rangeCount}, (_, i) => selection.getRangeAt(i).cloneRange());
+      const closed = Array.from(root.querySelectorAll("details:not([open])"));
+      const inert = Array.from(root.querySelectorAll("[inert]"));
+      // Open only for synchronous text extraction. Restore before the next paint.
+      // Browser selection preserves rendered headings, list text and code layout.
+      try {
+        closed.forEach(detail => { detail.open = true; });
+        inert.forEach(element => element.removeAttribute("inert"));
+        const range = doc.createRange();
+        range.selectNodeContents(root);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        return selection.toString();
+      } finally {
+        closed.forEach(detail => { detail.open = false; });
+        inert.forEach(element => element.setAttribute("inert", ""));
+        selection.removeAllRanges();
+        previous.forEach(range => selection.addRange(range));
+      }
+    }
     window.addEventListener("message", event => {
       if (event.source !== window.parent || event.data.type !== "streamlit:render") return;
-      const next = String(event.data.args.text || "");
-      if (next !== text) { status.textContent = ""; fallback.style.display = "none"; }
-      text = next;
-      button.disabled = Boolean(event.data.disabled) || !text;
+      button.disabled = Boolean(event.data.disabled);
       const theme = event.data.theme || {};
       document.documentElement.style.setProperty("--text", theme.textColor || "#31333f");
       document.documentElement.style.setProperty("--background", theme.backgroundColor || "white");
@@ -40,12 +61,18 @@
       resize();
     });
     button.addEventListener("click", async () => {
+      let text;
+      try { text = renderedResponse(); }
+      catch (_) {
+        status.textContent = "Unable to copy this response. Please refresh and try again.";
+        resize();
+        return;
+      }
       let copied = false;
       try {
         await navigator.clipboard.writeText(text);
         copied = true;
       } catch (_) {
-        // Some browser policies block the async API inside iframes.
         fallback.value = text;
         fallback.style.display = "block";
         fallback.focus();

@@ -701,12 +701,7 @@ elif page == "Try the Agent":
             _render = RENDER_MAP.get(entry_agent, render_agent_error)
             safe_render(_render, entry["result"])
             if not hasattr(entry["result"], "error_type"):
-                render_copy_button(
-                    entry["prompt"],
-                    AGENT_DISPLAY_NAMES.get(entry_agent, entry_agent or "Agent"),
-                    entry["result"],
-                    key=f"copy_{history_key}_{entry_index}",
-                )
+                render_copy_button(key=f"copy_{history_key}_{entry_index}")
 
     # Chat input — new submission
     if prompt := st.chat_input("Describe the fault or ask your engineering question..."):

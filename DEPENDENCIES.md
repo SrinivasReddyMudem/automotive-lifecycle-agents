@@ -137,12 +137,12 @@ prompt.py → skill_loader.py (loads skills)
 
 ## Full-response clipboard control
 
-`sdk_agents/core/response_copy.py` formats all structured fields as Markdown.
-`sdk_agents/core/copy_component/index.html` copies that text in the browser.
+`sdk_agents/core/response_copy.py` mounts a browser-local clipboard control.
+`sdk_agents/core/copy_component/index.html` copies the actual rendered response, including closed expanders, without adding or renaming content.
 `sdk_agents/app.py` mounts one control per successful history entry, with a unique key.
 No agent schemas, prompts, validators, provider calls, or dependencies are changed.
 
 Must verify when changing these files:
-- Formatter: nested fields, empty values, code fences, Unicode, hostile HTML text.
+- Browser: exact displayed wording/order, code, lists, Unicode, all collapsed sections; no export-only content.
 - Browser: complete collapsed content, separate history entries, reruns, clipboard failure.
 - Existing SDK suite, core imports, routing test, and Python syntax before commit.
