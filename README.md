@@ -11,6 +11,17 @@ Domain-specific AI agents for automotive and embedded software engineering — s
 > **13 AI agents purpose-built for automotive software engineering.**
 > Available as Claude Code agents and as a Streamlit browser app — no credit card required.
 
+## Domain Knowledge Skills
+
+[![AUTOSAR Classic](docs/assets/domain-skills/autosar-classic.svg)](skills/autosar-classic/SKILL.md)
+[![ISO 26262 / HARA](docs/assets/domain-skills/iso26262-hara.svg)](skills/iso26262-hara/SKILL.md)
+[![ISO 21434 / TARA](docs/assets/domain-skills/iso21434-tara.svg)](skills/iso21434-tara/SKILL.md)
+[![MISRA C:2012](docs/assets/domain-skills/misra-c-2012.svg)](skills/misra-c-2012/SKILL.md)
+[![ASPICE](docs/assets/domain-skills/aspice-process.svg)](skills/aspice-process/SKILL.md)
+[![CAN Analysis](docs/assets/domain-skills/can-bus-analysis.svg)](skills/can-bus-analysis/SKILL.md)
+[![UDS Diagnostics](docs/assets/domain-skills/uds-diagnostics.svg)](skills/uds-diagnostics/SKILL.md)
+[![Embedded / RTOS](docs/assets/domain-skills/embedded-patterns.svg)](skills/embedded-patterns/SKILL.md)
+
 ---
 
 ## What this is
