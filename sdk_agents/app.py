@@ -397,6 +397,12 @@ if page == "About":
     st.subheader("Domain-specific AI agents for automotive and embedded software engineering — structured, traceable, and standards-aligned.")
     st.markdown("---")
 
+    # Shared domain knowledge, displayed above the existing project metrics.
+    st.markdown(
+        '<style>.engineering-skill-pills{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px}.engineering-skill-pills span{display:inline-flex;align-items:center;border:1px solid;border-radius:999px;padding:5px 11px;font-size:13px;font-weight:600;line-height:1.5;white-space:nowrap}</style><div class="engineering-skill-pills" role="list" aria-label="Domain knowledge skills"><span role="listitem" style="background:#eaf1ff;color:#214c92;border-color:#214c9233">AUTOSAR</span><span role="listitem" style="background:#e7f5ed;color:#216145;border-color:#21614533">ISO 26262 / HARA</span><span role="listitem" style="background:#fff2da;color:#805013;border-color:#80501333">ISO 21434 / TARA</span><span role="listitem" style="background:#e5f5f1;color:#17614e;border-color:#17614e33">MISRA C:2012</span><span role="listitem" style="background:#f0eafa;color:#65428b;border-color:#65428b33">ASPICE</span><span role="listitem" style="background:#e5f3fb;color:#215d7b;border-color:#215d7b33">CAN Analysis</span><span role="listitem" style="background:#fbeaf0;color:#8b3654;border-color:#8b365433">UDS Diagnostics</span><span role="listitem" style="background:#edf0f5;color:#43516c;border-color:#43516c33">Embedded / RTOS</span></div>',
+        unsafe_allow_html=True,
+    )
+
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
     col_m1.metric("Tests Passing", "✅ 363")
     col_m2.metric("Agents Live", "✅ 13")
